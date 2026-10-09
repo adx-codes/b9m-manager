@@ -540,8 +540,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const GKA = [['reflexes', 'Réflexes'], ['placement', 'Placement'], ['gk7m', 'Arrêts sur 7 m'], ['relance', 'Relance'], ['endurance', 'Endurance']];
   const WEIGHTS = {
     GB: { reflexes: 0.4, placement: 0.35, gk7m: 0.15, relance: 0.1 },
-    AiG: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, duelDef: 0.15 },
-    AiD: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, duelDef: 0.15 },
+    AiG: { tirAile: 0.37, vitesse: 0.3, position: 0.15, penalty: 0.1, duelDef: 0.08 },
+    AiD: { tirAile: 0.37, vitesse: 0.3, position: 0.15, penalty: 0.1, duelDef: 0.08 },
     ArG: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
     ArD: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
     DC: { vision: 0.3, passes: 0.2, duel: 0.2, sangfroid: 0.15, tirLoin: 0.15 },
@@ -653,6 +653,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   }
   const backStyle = (p) => p.style || autoStyle(p);
   const BACK_POS = ['ArG', 'DC', 'ArD'];
+  // Ligne défensive (de la droite à la gauche du défenseur) et vis-à-vis de chaque attaquant
+  const DLINE = ['AiD', 'ArD', 'DC', 'Piv', 'ArG', 'AiG'];
+  const FACING = { ArG: 'ArD', ArD: 'ArG', DC: 'DC', Piv: 'Piv', AiG: 'AiD', AiD: 'AiG' };
 
   // ---------- Génération ----------
   function overall(p) {
@@ -974,6 +977,24 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return '6-0';
   };
   // Défense centrale : les ailiers comptent moins face aux arrières
+  // Face-à-face : l'attaquant affronte le défenseur placé en face de lui (l'arrière gauche face à l'arrière droit adverse…).
+  // En défense collective, chaque défenseur s'appuie sur ses voisins de ligne (stat « élargie ») ; en homme à homme, il est seul.
+  // Les ailiers pèsent moins en défense ; un défenseur absent (exclu) laisse un trou.
+  P.defFace = function (D, i, attPos, k) {
+    const map = {};
+    for (const x of this.field(D, i)) map[x.pos] = x.p;
+    const fpos = FACING[attPos] || 'DC', idx = DLINE.indexOf(fpos);
+    const val = (pos) => { const pl = map[pos]; if (!pl) return null; const v = this.eff(D, pl, k); return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
+    const own = val(fpos);
+    const nb = [DLINE[idx - 1], DLINE[idx + 1]].filter(Boolean).map((pos) => ({ pos, v: val(pos) })).filter((x) => x.v !== null);
+    let ws = 0, sum = 0;
+    for (const x of nb) { const w = x.pos.startsWith('Ai') ? 0.5 : 1; sum += x.v * w; ws += w; }
+    const nbAvg = ws ? sum / ws : 9;
+    if (own === null) return { v: nbAvg - 2.5, who: nb.length ? map[nb[0].pos] : null, hole: true };
+    if (D.tac.dstyle === 'homme') return { v: own, who: map[fpos] };
+    const share = k === 'contre' ? 0.5 : 0.35;
+    return { v: own * (1 - share) + nbAvg * share, who: map[fpos] };
+  };
   P.defAvg = function (D, i, k) {
     const f = this.field(D, i);
     if (!f.length) return 10;
@@ -1237,13 +1258,14 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       skill = sk(p);
       // Percée : le duel défensif peut provoquer un passage en force
       if (zone === 'percee') {
-        const dd = this.defAvg(D, i, 'duelDef');
-        const pf = clamp(0.05 + (dd - e(p, 'duel')) * 0.008 + (backStyle(p) === 'contact' ? 0.015 : 0), 0.01, 0.14);
+        const face = this.defFace(D, i, A.at[p.id] || p.pos, 'duelDef'), dd = face.v;
+        const pf = clamp(0.05 + (dd - e(p, 'duel')) * 0.012 + (backStyle(p) === 'contact' ? 0.015 : 0), 0.01, 0.16);
         if (rnd() < pf) {
           A.st.to++;
           this.ps(A, p.id).to++;
           this.last = { by: ai, kind: 'to' };
-          const blk = wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'duelDef'), 2)).p;
+          const blk = face.who || wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'duelDef'), 2)).p;
+          this.ps(D, blk.id).st = (this.ps(D, blk.id).st || 0) + 1;
           this.push('to', ai, `Passage en force de ${p.name}, bien stoppé par ${blk.name}`, false, { att: ai, pid: p.id, zone: 'percee' });
           return;
         }
@@ -1263,8 +1285,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
         const nat = autoStyle(p);
         if (nat !== 'equilibre') pr += zone === (nat === 'loin' ? 'loin' : 'percee') ? 0.03 : -0.025;
       }
-      if (zone === 'loin') pr -= (this.defAvg(D, i, 'contre') - 12) * 0.012;
-      if (zone === 'percee') pr -= (this.defAvg(D, i, 'duelDef') - 12) * 0.018;
+      const fpos = A.at[p.id] || p.pos;
+      if (zone === 'loin') pr -= (this.defFace(D, i, fpos, 'contre').v - 12) * 0.012;
+      if (zone === 'percee') { const f = this.defFace(D, i, fpos, 'duelDef'); pr -= (f.v - 12) * 0.026 - (f.hole ? 0.03 : 0); }
       if (D.tac.dstyle === 'homme') {
         if (zone === 'percee') {
           const backs = onA.filter(x => ['ArG', 'ArD', 'DC'].includes(x.pos));
@@ -1343,9 +1366,10 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       this.push('but', ai, geste ? `${geste} de ${p.name} : but ${ZONE_TXT[zone]} !` : `But de ${p.name} ${ZONE_TXT[zone]}`, key, { pid: p.id, geste: !!geste, att: ai, pos: atPos, zone, shot: 'but' });
     } else {
       this.last = { by: ai, kind: 'miss' };
-      const cpb = !kind && zone === 'loin' ? clamp(0.3 + (this.defAvg(D, i, 'contre') - 12) * 0.04, 0.1, 0.6) : 0;
+      const cface = !kind && zone === 'loin' ? this.defFace(D, i, A.at[p.id] || p.pos, 'contre') : null;
+      const cpb = cface ? clamp(0.3 + (cface.v - 12) * 0.04, 0.1, 0.6) : 0;
       if (cpb && rnd() < cpb) {
-        const blk = wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'contre'), 2)).p;
+        const blk = cface.who && rnd() < 0.7 ? cface.who : wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'contre'), 2)).p;
         D.st.blocks = (D.st.blocks || 0) + 1;
         this.ps(D, blk.id).bl = (this.ps(D, blk.id).bl || 0) + 1;
         this.push('contre', 1 - ai, `Tir de ${p.name} contré par ${blk.name}`, false, { geste: !!geste, att: ai, pid: p.id, zone, shot: 'contre' });
@@ -1556,7 +1580,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, autoStyle, backStyle, BACK_POS, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -1963,6 +1987,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">Joueurs à surveiller</span>
               ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted num">${p.ovr.toFixed(1)}</span></div>`).join('')}
             </div>
+            ${faceHtml(t, opp)}
           </div>
         </section>
       </div>
@@ -2115,6 +2140,30 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const c = document.getElementById('ctl');
       if (c) c.innerHTML = ctlHtml();
     }
+  }
+  // Face-à-face de tes arrières et de ton pivot contre leur vis-à-vis (stat élargie en défense collective)
+  function faceVal(opp, attPos, k) {
+    const at = (pos) => opp.players.find((p) => p.id === opp.lineup[pos]);
+    const fpos = H.FACING[attPos], idx = H.DLINE.indexOf(fpos);
+    const val = (pos) => { const pl = at(pos); if (!pl) return null; const v = pl.a[k]; return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
+    const own = val(fpos), nb = [H.DLINE[idx - 1], H.DLINE[idx + 1]].filter(Boolean);
+    let ws = 0, sum = 0;
+    for (const pos of nb) { const v = val(pos); if (v === null) continue; const w = pos.startsWith('Ai') ? 0.5 : 1; sum += v * w; ws += w; }
+    const v = opp.tactic.dstyle === 'homme' ? own : own * (1 - (k === 'contre' ? 0.5 : 0.35)) + (sum / ws) * (k === 'contre' ? 0.5 : 0.35);
+    return { v, who: at(fpos) };
+  }
+  function faceHtml(t, opp) {
+    const rows = ['ArG', 'DC', 'ArD'].map((pos) => {
+      const me1 = t.players.find((p) => p.id === t.lineup[pos]);
+      if (!me1) return '';
+      const d = faceVal(opp, pos, 'duelDef'), c = faceVal(opp, pos, 'contre');
+      const gap = me1.a.duel - d.v;
+      const verdict = gap >= 2 ? '<span class="dlt" title="Avantage à ton joueur en percée">▲</span>' : gap <= -2 ? '<span class="dlt neg" title="Percée difficile : privilégie le tir de loin">▼</span>' : '<span class="muted" title="Duel équilibré">=</span>';
+      return `<tr><td><span class="pos">${pos}</span> ${plink(me1, short(me1.name))}</td><td class="r num">${me1.a.duel}</td><td>${d.who ? plink(d.who, short(d.who.name)) : '–'}</td><td class="r num">${d.v.toFixed(1)}</td><td class="r num">${c.v.toFixed(1)}</td><td>${verdict}</td></tr>`;
+    }).join('');
+    return `<div class="opt"><span class="label">Face-à-face en attaque</span>
+      <div class="scroll"><table class="pt"><thead><tr><th>Ton joueur</th><th class="r" title="Duel / pénétration">Duel</th><th>Son vis-à-vis</th><th class="r" title="Duel défensif ${opp.tactic.dstyle === 'homme' ? 'individuel' : 'élargi (avec ses voisins)'}">Duel D</th><th class="r" title="Contre ${opp.tactic.dstyle === 'homme' ? 'individuel' : 'élargi'}">Contre</th><th title="Avantage en percée">±</th></tr></thead><tbody>${rows}</tbody></table></div>
+      <p style="margin:6px 0 0">${opp.tactic.dstyle === 'homme' ? "En homme à homme, chaque défenseur est seul face à son joueur : vise le plus faible." : "En défense collective, chaque défenseur s'appuie sur ses voisins : ses notes sont « élargies » (35 % pour le duel, 50 % pour le contre viennent des voisins). Les ailiers pèsent moins."} ▲ ton joueur gagne le duel en percée, ▼ mieux vaut tirer de loin (si le contre le permet). Une percée face à un défenseur exclu passe beaucoup plus facilement.</p></div>`;
   }
   function renderRest() {
     const games = G.sched[G.round];
