@@ -514,6 +514,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 #notif b { color: var(--digit); }
 #notif .nbadge { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; font: 800 0.8rem var(--f-display); color: #fff; }
 #notif .nclose { position: absolute; top: 8px; right: 8px; background: none; border: 0; color: var(--board-dim); font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
+#notif.short { font-size: 0.86rem; padding-block: 9px; border-left-color: var(--board-dim); }
+#notif.short .nbadge { width: 30px; height: 30px; font-size: 0.7rem; }
 @media (prefers-reduced-motion: reduce) { #notif { transition: none; } }
 </style>
 </head>
@@ -2330,6 +2332,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const evs = m.step();
     if (m.done) { finishMatch(); return; }
     if (m.halfDone && !U.htDone) { U.htDone = true; U.paused = true; U.tPanel = 'mt'; clearTimeout(U.timer); liveUpdate(evs); return; }
+    // Décisions du coach adverse : notification courte
+    const dec = evs.filter((e) => e.side === 1 - U.side && (e.type === 'coach' || (e.type === 'sys' && /consigne du coach/.test(e.text))));
+    if (dec.length && !U.notifSticky) {
+      const opp = m.S[1 - U.side].team;
+      notify(`<span class="nbadge" style="background:${opp.color}">${esc(opp.id)}</span><span><b>Coach adverse · ${dec[0].m}'</b><br>${dec.map((e) => esc(e.text.replace(opp.name + ' ', '').replace(/^./, (c) => c.toUpperCase()))).join('<br>')}</span>`, false);
+    }
     const atm = evs.find((e) => e.type === 'tm' && e.side !== U.side);
     if (atm) {
       U.paused = true; U.tPanel = 'adv'; clearTimeout(U.timer); liveUpdate(evs);
@@ -2348,9 +2356,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     el.innerHTML = html + '<button class="nclose" data-act="nclose" aria-label="Fermer la notification">✕</button>';
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     clearTimeout(U.notifT);
-    if (!sticky) U.notifT = setTimeout(hideNotify, 6000);
+    U.notifSticky = !!sticky;
+    el.classList.toggle('short', !sticky);
+    if (!sticky) U.notifT = setTimeout(hideNotify, 4500);
   }
-  function hideNotify() { const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
+  function hideNotify() { U.notifSticky = false; const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
   function finishMatch() {
     hideNotify();
     clearTimeout(U.timer);
