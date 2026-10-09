@@ -1730,8 +1730,11 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     if (!G) { app.innerHTML = renderHome(); return; }
     const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '');
+    const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '');
     if (U.youthModal && G.youth) { const f = document.querySelector('.modal button'); if (f) f.focus(); }
+    const nm = document.querySelector('#bsov .modal');
+    if (nm && oscroll) nm.scrollTop = oscroll;
     U.ctlSig = ctlSig();
   }
 
@@ -2614,14 +2617,23 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     save();
     render();
   }
+  function backStyleSummary(t) {
+    const st = H.BACK_POS.map((pos) => ({ pos, p: t.players.find((x) => x.id === t.lineup[pos]) })).filter((x) => x.p);
+    const custom = t.players.filter((p) => H.BACK_POS.includes(p.pos) && p.style).length;
+    return `<div class="opt"><span class="label">Jeu des arrières</span>
+      <div class="row" style="gap:6px">${st.map((x) => `<span class="chip"><span class="pos">${x.pos}</span>${esc(short(x.p.name))} · <b>${H.BACK_STYLES[H.backStyle(x.p)]}</b></span>`).join('')}</div>
+      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Jeu conseillé par le staff pour tous'}</span></div></div>`;
+  }
   function backStyleHtml(t) {
     const backs = t.players.filter((p) => H.BACK_POS.includes(p.pos)).sort((a, b) => H.BACK_POS.indexOf(a.pos) - H.BACK_POS.indexOf(b.pos) || b.ovr - a.ovr);
     const starters = new Set(Object.values(t.lineup));
-    return `<div class="opt"><span class="label">Jeu des arrières</span>
+    return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="bstitle" style="margin:0">Jeu des arrières</h2><button class="btn" data-act="bsclose" aria-label="Fermer">✕</button></div>
+      <p class="muted" style="margin:6px 0 10px">Choisis comment chaque arrière attaque. Le réglage suit le joueur, même s'il change de poste.</p>
       <div class="bstyles">${backs.map((p) => { const nat = H.autoStyle(p), cur = H.backStyle(p);
         return `<div class="bsrow"><span class="bsname"><span class="pos">${p.pos}</span> ${plink(p, short(p.name))}${starters.has(p.id) ? ' <span class="tit" title="Titulaire">T</span>' : ''}<span class="bsnotes muted num" title="Tir de loin · tir à 6 m · duel">9 m ${p.a.tirLoin} · 6 m ${p.a.tirPres} · duel ${p.a.duel}</span></span>
           <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}" title="${k === nat ? 'Conseillé par le staff selon ses notes' : ''}">${l}${k === nat ? ' <span class="reco" aria-label="conseillé">●</span>' : ''}</button>`).join('')}</span></div>`; }).join('')}</div>
-      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Le point ● marque le jeu conseillé selon ses notes : dans son registre, il gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p></div>`;
+      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Le point ● marque le jeu conseillé selon ses notes : dans son registre, il gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p>
+      <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre au jeu conseillé</button></div>`;
   }
   function renderTactics() {
     if (me().players.length > 14) H.ensureSheet(me());
@@ -2643,7 +2655,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
           <div class="opt"><span class="label">Rythme</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="att" data-id="${x}" aria-pressed="${tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div><p>${ATT_TXT[tac.att][1]}.</p></div>
           <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="jeu" data-id="${k}" aria-pressed="${tac.jeu === k}">${l}</button>`).join('')}</div>
             <p>${JEU_TXT[tac.jeu]} Ton équipe est <b style="color:var(--fg)">${fi.id.label.toLowerCase()}</b> (esprit collectif moyen ${fi.id.v.toFixed(1)}) : <span class="${fi.cls}">${fi.txt}</span>.</p></div>
-          ${backStyleHtml(t)}
+          ${backStyleSummary(t)}
         </div>
         <div class="tsec"><span class="tsech">Défense</span>
           <div class="opt"><span class="label">Style</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="dstyle" data-id="${k}" aria-pressed="${tac.dstyle === k}">${l}</button>`).join('')}</div>
@@ -2692,6 +2704,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 
   // ---------- Événements ----------
   document.addEventListener('click', (e) => {
+    if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
     const act = b.dataset.act, id = b.dataset.id;
@@ -2699,6 +2712,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const ms = U.m ? U.m.S[U.side] : null;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
+      case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
+      case 'bsclose': U.bsModal = false; render(); { const o = document.querySelector('[data-act=bsopen]'); if (o) o.focus(); } return;
+      case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
       case 'psclose': closeSheet(); return;
@@ -2779,6 +2795,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
+    if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
     if (document.getElementById('psheet')) return;
     if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
       e.preventDefault();
