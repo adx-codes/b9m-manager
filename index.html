@@ -1853,25 +1853,26 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   function clubTheme(t) {
     const base = H.CLUBS.find((c) => c.id === t.id) || t;
-    const [h, s0] = hexToHsl(t.color);
+    const [h, s0, l0] = hexToHsl(t.color);
     const [h2, s2] = hexToHsl(base.color2 || '#c8a24a');
-    const s = Math.min(s0, 0.55), grey = s0 < 0.1;
-    const sc = Math.min(Math.max(s2, 0.35), 0.62);
-    const tint = grey ? 0.02 : 0.1;
+    // Couleurs du club volontairement atténuées : la base reste sobre, le contraste n'est qu'une touche
+    const grey = s0 < 0.1, s = Math.min(s0, 0.38);
+    const sc = Math.min(Math.max(s2, 0.25), 0.45);
+    const tint = grey ? 0.01 : 0.04;
     const light = {
-      bg: hsl(h, tint, 0.962), sunk: hsl(h, tint, 0.915), line: hsl(h, tint, 0.85), muted: hsl(h, grey ? 0.04 : 0.1, 0.42), fg: hsl(h, grey ? 0.05 : 0.25, 0.11),
-      accent: hsl(h, s, clampN(hexToHsl(t.color)[2], 0.24, 0.36)), 'accent-soft': hsl(h, grey ? 0.04 : 0.32, 0.93),
-      court: hsl(h, Math.min(s, 0.45), grey ? 0.2 : 0.24), 'court-soft': hsl(h, grey ? 0.04 : 0.28, 0.91),
-      board: hsl(h, grey ? 0.05 : 0.32, 0.1), 'board-dim': hsl(h, grey ? 0.04 : 0.14, 0.64),
-      digit: hsl(h2, sc, 0.66), gold: hsl(h2, sc, 0.42), zone: hsl(h2, sc * 0.9, 0.55), 'on-accent': '#ffffff'
+      bg: hsl(h, tint, 0.962), sunk: hsl(h, tint, 0.918), line: hsl(h, tint, 0.85), muted: hsl(h, 0.05, 0.42), fg: hsl(h, grey ? 0.04 : 0.12, 0.12),
+      accent: hsl(h, s, clampN(l0, 0.26, 0.36)), 'accent-soft': hsl(h, grey ? 0.03 : 0.16, 0.935),
+      court: hsl(h, Math.min(s, 0.3), grey ? 0.22 : 0.27), 'court-soft': hsl(h, grey ? 0.03 : 0.14, 0.915),
+      board: hsl(h, grey ? 0.04 : 0.16, 0.11), 'board-dim': hsl(h, 0.06, 0.64),
+      digit: hsl(h2, sc, 0.7), gold: hsl(h2, sc, 0.42), zone: hsl(h2, sc * 0.7, 0.58), 'on-accent': '#ffffff'
     };
     const dark = {
-      bg: hsl(h, grey ? 0.03 : 0.2, 0.06), surface: hsl(h, grey ? 0.03 : 0.17, 0.09), sunk: hsl(h, grey ? 0.03 : 0.2, 0.07), line: hsl(h, grey ? 0.04 : 0.15, 0.17),
-      fg: hsl(h, 0.1, 0.92), muted: hsl(h, grey ? 0.04 : 0.1, 0.63),
-      accent: hsl(h, grey ? 0 : Math.max(s, 0.35), grey ? 0.85 : 0.66), 'accent-soft': hsl(h, grey ? 0.03 : 0.3, 0.16),
-      court: hsl(h, Math.min(s, 0.42), grey ? 0.26 : 0.33), 'court-soft': hsl(h, grey ? 0.03 : 0.28, 0.13),
-      board: hsl(h, grey ? 0.04 : 0.3, 0.05), 'board-dim': hsl(h, grey ? 0.04 : 0.12, 0.58),
-      digit: hsl(h2, sc, 0.68), gold: hsl(h2, sc, 0.66), zone: hsl(h2, sc * 0.9, 0.5), 'on-accent': hsl(h, 0.3, 0.08), 'pos-fg': hsl(h, grey ? 0 : 0.45, 0.76)
+      bg: hsl(h, grey ? 0.02 : 0.1, 0.065), surface: hsl(h, grey ? 0.02 : 0.08, 0.095), sunk: hsl(h, grey ? 0.02 : 0.1, 0.075), line: hsl(h, grey ? 0.03 : 0.08, 0.18),
+      fg: hsl(h, 0.06, 0.92), muted: hsl(h, 0.05, 0.63),
+      accent: hsl(h, grey ? 0 : Math.max(s, 0.28), grey ? 0.84 : 0.68), 'accent-soft': hsl(h, grey ? 0.02 : 0.16, 0.16),
+      court: hsl(h, Math.min(s, 0.28), grey ? 0.27 : 0.33), 'court-soft': hsl(h, grey ? 0.02 : 0.14, 0.13),
+      board: hsl(h, grey ? 0.03 : 0.14, 0.055), 'board-dim': hsl(h, 0.06, 0.58),
+      digit: hsl(h2, sc, 0.7), gold: hsl(h2, sc, 0.66), zone: hsl(h2, sc * 0.7, 0.5), 'on-accent': hsl(h, 0.2, 0.08), 'pos-fg': hsl(h, grey ? 0 : 0.3, 0.76)
     };
     const css = (o) => Object.entries(o).map(([k, v]) => `--${k}: ${v};`).join(' ');
     return `html:root { ${css(light)} }
