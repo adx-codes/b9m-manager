@@ -842,6 +842,11 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     }
     if (!st.youthLog) st.youthLog = [];
     if (!st.legends) st.legends = [];
+    // Anciens noms de légendes, trop proches des vrais : renommés
+    const LEG_OLD = { 'Thierry Omeyre': 'Thomas Omeyrac', 'Arpad Sterbich': 'Árpi Sterbán', 'Niklas Landinn': 'Nils Landström', 'Nicola Karabatik': 'Nikolaï Karabatov', 'Ivano Balicz': 'Ivo Balinović', 'Jackson Richardsonn': 'Jason Richardin', 'Aron Palmarsonn': 'Aric Palmarsen', 'Talant Duchebaev': 'Talan Dujshenko', 'Mikel Hanssen': 'Mikael Hanstrup', 'Daniel Narcis': 'Danny Narcissot', 'Kiril Lazarow': 'Kyrill Lazarević', 'Jérôme Fernandès': 'Jérémy Fernandini', 'Uwe Genshaimer': 'Uli Gensmeier', 'Michel Guigoux': 'Mickaël Guigard', 'Luc Abalow': 'Luca Abalone', 'Hans Lindbergh': 'Hans Lindhorst', 'Ivan Cupitch': 'Ivo Čupovac', 'Bertrand Gile': 'Bertrand Gillot', 'Bjarte Myrol': 'Bjørn Myrvold', 'Cédric Sorindo': 'Cédric Sorhandier' };
+    st.legends = st.legends.map(n => LEG_OLD[n] || n);
+    for (const t of st.teams) for (const p of t.players) if (LEG_OLD[p.name]) p.name = LEG_OLD[p.name];
+    if (st.youth && LEG_OLD[st.youth.p.name]) st.youth.p.name = LEG_OLD[st.youth.p.name];
     if (st.youth === undefined) st.youth = null;
     for (const t of st.teams) {
       for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
@@ -863,13 +868,13 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   // ---------- Centre de formation et feuille de match ----------
   // « Regens » : de jeunes pépites aux noms qui rappellent des légendes du hand, au même poste
   const LEGENDS = [
-    { name: 'Thierry Omeyre', pos: 'GB', hand: 'D' }, { name: 'Arpad Sterbich', pos: 'GB', hand: 'D' }, { name: 'Niklas Landinn', pos: 'GB', hand: 'D' },
-    { name: 'Nicola Karabatik', pos: 'DC', hand: 'D' }, { name: 'Ivano Balicz', pos: 'DC', hand: 'D' }, { name: 'Jackson Richardsonn', pos: 'DC', hand: 'D' }, { name: 'Aron Palmarsonn', pos: 'DC', hand: 'D' }, { name: 'Talant Duchebaev', pos: 'DC', hand: 'D' },
-    { name: 'Mikel Hanssen', pos: 'ArG', hand: 'D' }, { name: 'Daniel Narcis', pos: 'ArG', hand: 'D' },
-    { name: 'Kiril Lazarow', pos: 'ArD', hand: 'G' }, { name: 'Jérôme Fernandès', pos: 'ArD', hand: 'G' },
-    { name: 'Uwe Genshaimer', pos: 'AiG', hand: 'D' }, { name: 'Michel Guigoux', pos: 'AiG', hand: 'D' },
-    { name: 'Luc Abalow', pos: 'AiD', hand: 'G' }, { name: 'Hans Lindbergh', pos: 'AiD', hand: 'G' }, { name: 'Ivan Cupitch', pos: 'AiD', hand: 'G' },
-    { name: 'Bertrand Gile', pos: 'Piv', hand: 'D' }, { name: 'Bjarte Myrol', pos: 'Piv', hand: 'D' }, { name: 'Cédric Sorindo', pos: 'Piv', hand: 'D' }
+    { name: 'Thomas Omeyrac', pos: 'GB', hand: 'D' }, { name: 'Árpi Sterbán', pos: 'GB', hand: 'D' }, { name: 'Nils Landström', pos: 'GB', hand: 'D' },
+    { name: 'Nikolaï Karabatov', pos: 'DC', hand: 'D' }, { name: 'Ivo Balinović', pos: 'DC', hand: 'D' }, { name: 'Jason Richardin', pos: 'DC', hand: 'D' }, { name: 'Aric Palmarsen', pos: 'DC', hand: 'D' }, { name: 'Talan Dujshenko', pos: 'DC', hand: 'D' },
+    { name: 'Mikael Hanstrup', pos: 'ArG', hand: 'D' }, { name: 'Danny Narcissot', pos: 'ArG', hand: 'D' },
+    { name: 'Kyrill Lazarević', pos: 'ArD', hand: 'G' }, { name: 'Jérémy Fernandini', pos: 'ArD', hand: 'G' },
+    { name: 'Uli Gensmeier', pos: 'AiG', hand: 'D' }, { name: 'Mickaël Guigard', pos: 'AiG', hand: 'D' },
+    { name: 'Luca Abalone', pos: 'AiD', hand: 'G' }, { name: 'Hans Lindhorst', pos: 'AiD', hand: 'G' }, { name: 'Ivo Čupovac', pos: 'AiD', hand: 'G' },
+    { name: 'Bertrand Gillot', pos: 'Piv', hand: 'D' }, { name: 'Bjørn Myrvold', pos: 'Piv', hand: 'D' }, { name: 'Cédric Sorhandier', pos: 'Piv', hand: 'D' }
   ];
   function legendize(p, L, st) {
     p.name = L.name; p.hand = L.hand; delete p.nat;
