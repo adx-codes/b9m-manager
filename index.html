@@ -2643,7 +2643,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const net = poly([P(g.gx, g.gy - g.w, h), P(back, g.gy - g.w, h * 0.6), P(back, g.gy + g.w, h * 0.6), P(g.gx, g.gy + g.w, h)], 'var(--iso-mark)', 'fill-opacity="0.3"') + poly([P(back, g.gy - g.w, 0), P(back, g.gy + g.w, 0), P(back, g.gy + g.w, h * 0.6), P(back, g.gy - g.w, h * 0.6)], 'var(--iso-mark)', 'fill-opacity="0.25"');
       add(g.gx + 0.01, g.gy, `<g class="deco">${net}${ln(a1, a2, 'var(--iso-press)')}${ln(b1, b2, 'var(--iso-press)')}${ln(a2, b2, 'var(--iso-mark)')}</g>`);
     }
-    { const [bx, by] = P(1.85, 10.4, 0.9); add(1.85, 10.4, `<g class="deco"><circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="1.4" fill="var(--iso-lamp)" stroke="var(--iso-pole)" stroke-width="0.4"/></g>`); }
+    // Un petit arrière en bleu, en suspension, armé au 9 m : un clin d'œil aux légendes du hand français
+    { const [fx, fy] = P(2.12, 10.62, 2.5);
+      add(2.12, 10.62, `<g class="deco" transform="translate(${fx.toFixed(1)} ${fy.toFixed(1)})">
+        <ellipse cx="0" cy="${(P(2.12, 10.62, 0)[1] - fy).toFixed(1)}" rx="2.6" ry="1.1" fill="#000" fill-opacity="0.18"/>
+        <path d="M-1 -1 L-2.3 2.6 M1 -1 L2.2 1.4 L1.4 3" stroke="#f4f4f4" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+        <rect x="-1.7" y="-6.6" width="3.4" height="5.8" rx="1" fill="#2b4fa0"/>
+        <path d="M-1.4 -5.6 L-3.4 -3.2 M1.4 -5.8 L3.2 -9.4" stroke="#d9a982" stroke-width="1.1" stroke-linecap="round"/>
+        <circle cx="3.6" cy="-10.4" r="1.3" fill="var(--iso-lamp)" stroke="var(--iso-pole)" stroke-width="0.3"/>
+        <circle cx="0" cy="-8.2" r="1.6" fill="#d9a982"/><path d="M-1.6 -8.6 Q0 -10.6 1.6 -8.6" fill="#3a2a20"/>
+      </g>`); }
     // Car de l'équipe, garé devant la salle
     {
       const bus = { x: 5.42, y: 9.6, w: 0.38, d: 1.45, h: 10, c: t.color };
