@@ -480,6 +480,22 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .modsbtn span { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 800 0.75rem/1 var(--f-body); color: #fff; }
 .modsbtn .mp { background: var(--good); } .modsbtn .mm { background: var(--bad); }
 .modsbtn:hover { border-color: var(--accent); }
+.frows { display: grid; gap: 8px; margin-top: 4px; }
+.frow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who adv" "d1 adv" "d2 adv"; gap: 3px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.fwho { grid-area: who; min-width: 0; font-size: 0.9rem; }
+.frow .fduel:nth-of-type(2) { grid-area: d1; } .frow .fduel:nth-of-type(3) { grid-area: d2; }
+.fduel { display: grid; grid-template-columns: 70px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 0.78rem; }
+.fduel .fl { color: var(--muted); }
+.fduel .num { text-align: right; }
+.fbar { position: relative; height: 8px; background: var(--sunk); border-radius: 4px; overflow: hidden; }
+.fbar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: 0.5; }
+.fbar span { position: absolute; top: 0; bottom: 0; border-radius: 4px; }
+.fbar .pos { background: var(--good); } .fbar .neg { background: var(--bad); }
+.fadv { grid-area: adv; justify-self: end; font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+.fadv.ok { background: color-mix(in srgb, var(--good) 18%, var(--surface)); color: var(--good); }
+.fadv.far { background: var(--accent-soft); color: var(--accent); }
+.fadv.bad { background: color-mix(in srgb, var(--bad) 16%, var(--surface)); color: var(--bad); }
+.fadv.mid { background: var(--sunk); color: var(--muted); }
 </style>
 </head>
 <body>
@@ -2153,17 +2169,23 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return { v, who: at(fpos) };
   }
   function faceHtml(t, opp) {
+    const homme = opp.tactic.dstyle === 'homme';
     const rows = ['ArG', 'DC', 'ArD'].map((pos) => {
       const me1 = t.players.find((p) => p.id === t.lineup[pos]);
       if (!me1) return '';
       const d = faceVal(opp, pos, 'duelDef'), c = faceVal(opp, pos, 'contre');
-      const gap = me1.a.duel - d.v;
-      const verdict = gap >= 2 ? '<span class="dlt" title="Avantage à ton joueur en percée">▲</span>' : gap <= -2 ? '<span class="dlt neg" title="Percée difficile : privilégie le tir de loin">▼</span>' : '<span class="muted" title="Duel équilibré">=</span>';
-      return `<tr><td><span class="pos">${pos}</span> ${plink(me1, short(me1.name))}</td><td class="r num">${me1.a.duel}</td><td>${d.who ? plink(d.who, short(d.who.name)) : '–'}</td><td class="r num">${d.v.toFixed(1)}</td><td class="r num">${c.v.toFixed(1)}</td><td>${verdict}</td></tr>`;
+      const gD = me1.a.duel - d.v, gL = me1.a.tirLoin - c.v;
+      const adv = gD >= 2 && gD >= gL ? ['ok', 'Percer'] : gL >= 2 && gL > gD ? ['far', 'Tirer de loin'] : gD <= -2 && gL <= -2 ? ['bad', 'Duel difficile'] : ['mid', 'Au choix'];
+      const bar = (a, b) => { const w = Math.max(-6, Math.min(6, a - b)); return `<span class="fbar"><span class="${w >= 0 ? 'pos' : 'neg'}" style="width:${Math.abs(w) / 6 * 50}%;${w >= 0 ? 'left:50%' : 'right:50%'}"></span></span>`; };
+      return `<div class="frow">
+        <div class="fwho"><span class="pos">${pos}</span> ${plink(me1, short(me1.name))}<span class="muted"> face à </span>${d.who ? plink(d.who, short(d.who.name)) : '–'}</div>
+        <div class="fduel"><span class="fl">Percée</span>${bar(me1.a.duel, d.v)}<span class="num muted">${me1.a.duel} / ${d.v.toFixed(0)}</span></div>
+        <div class="fduel"><span class="fl">Tir de loin</span>${bar(me1.a.tirLoin, c.v)}<span class="num muted">${me1.a.tirLoin} / ${c.v.toFixed(0)}</span></div>
+        <span class="fadv ${adv[0]}">${adv[1]}</span></div>`;
     }).join('');
     return `<div class="opt"><span class="label">Face-à-face en attaque</span>
-      <div class="scroll"><table class="pt"><thead><tr><th>Ton joueur</th><th class="r" title="Duel / pénétration">Duel</th><th>Son vis-à-vis</th><th class="r" title="Duel défensif ${opp.tactic.dstyle === 'homme' ? 'individuel' : 'élargi (avec ses voisins)'}">Duel D</th><th class="r" title="Contre ${opp.tactic.dstyle === 'homme' ? 'individuel' : 'élargi'}">Contre</th><th title="Avantage en percée">±</th></tr></thead><tbody>${rows}</tbody></table></div>
-      <p style="margin:6px 0 0">${opp.tactic.dstyle === 'homme' ? "En homme à homme, chaque défenseur est seul face à son joueur : vise le plus faible." : "En défense collective, chaque défenseur s'appuie sur ses voisins : ses notes sont « élargies » (35 % pour le duel, 50 % pour le contre viennent des voisins). Les ailiers pèsent moins."} ▲ ton joueur gagne le duel en percée, ▼ mieux vaut tirer de loin (si le contre le permet). Une percée face à un défenseur exclu passe beaucoup plus facilement.</p></div>`;
+      <div class="frows">${rows}</div>
+      <p style="margin:6px 0 0">Barre vers la droite : ton joueur prend le dessus (son duel contre le duel défensif adverse, son tir de loin contre le contre adverse). ${homme ? "En homme à homme, chaque défenseur est seul : vise le plus faible." : "En défense collective, chaque défenseur est aidé par ses voisins (notes élargies)."} Un défenseur exclu laisse un trou.</p></div>`;
   }
   function renderRest() {
     const games = G.sched[G.round];
