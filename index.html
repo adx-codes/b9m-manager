@@ -465,6 +465,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .dragchip { cursor: grab; }
 .dragchip.dragging { opacity: 0.4; }
 .dragchip .grip { color: var(--muted); font-size: 0.7rem; letter-spacing: -2px; margin-right: -2px; }
+.bstyles { display: grid; gap: 6px; margin: 4px 0 6px; }
+.bsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.bsname { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.bsnotes { font-size: 0.78rem; flex-basis: 100%; }
+.seg.sm button { padding: 5px 9px; font-size: 0.8rem; }
+.reco { color: var(--gold); font-size: 0.6rem; vertical-align: 2px; }
 </style>
 </head>
 <body>
@@ -519,18 +525,18 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     ['tirLoin', 'Tir de loin (9 m)'], ['tirPres', 'Tir de près (6 m)'], ['tirAile', "Tir de l'aile"],
     ['penalty', 'Pénalty (7 m)'], ['passes', 'Passes'], ['position', 'Prise de position'],
     ['vision', 'Vision de jeu'], ['duel', 'Duel / pénétration'], ['vitesse', 'Vitesse'],
-    ['defense', 'Défense'], ['discipline', 'Discipline'], ['endurance', 'Endurance'], ['sangfroid', 'Sang-froid']
+    ['contre', 'Contre'], ['duelDef', 'Duel défensif'], ['discipline', 'Discipline'], ['endurance', 'Endurance'], ['sangfroid', 'Sang-froid']
   ];
   const TRAITS = [['excentricite', 'Excentricité'], ['collectif', 'Esprit collectif']];
   const GKA = [['reflexes', 'Réflexes'], ['placement', 'Placement'], ['gk7m', 'Arrêts sur 7 m'], ['relance', 'Relance'], ['endurance', 'Endurance']];
   const WEIGHTS = {
     GB: { reflexes: 0.4, placement: 0.35, gk7m: 0.15, relance: 0.1 },
-    AiG: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, defense: 0.15 },
-    AiD: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, defense: 0.15 },
-    ArG: { tirLoin: 0.35, duel: 0.25, passes: 0.15, defense: 0.15, tirPres: 0.1 },
-    ArD: { tirLoin: 0.35, duel: 0.25, passes: 0.15, defense: 0.15, tirPres: 0.1 },
+    AiG: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, duelDef: 0.15 },
+    AiD: { tirAile: 0.35, vitesse: 0.25, position: 0.15, penalty: 0.1, duelDef: 0.15 },
+    ArG: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
+    ArD: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
     DC: { vision: 0.3, passes: 0.2, duel: 0.2, sangfroid: 0.15, tirLoin: 0.15 },
-    Piv: { tirPres: 0.45, position: 0.3, defense: 0.25 }
+    Piv: { tirPres: 0.45, position: 0.3, contre: 0.1, duelDef: 0.15 }
   };
   // Attributs travaillés à l'entraînement : ceux du poste, plus endurance et discipline pour les joueurs de champ
   const POS_ATTRS = Object.fromEntries(Object.entries(WEIGHTS).map(([k, w]) => [k, Object.keys(w).concat(k === 'GB' ? [] : ['endurance', 'discipline'])]));
@@ -625,9 +631,19 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return { sup: { on: true, sys: '5-1' }, mene: { on: true, sys: '4-2', ecart: 3, min: 50 }, tireur: { on: false, sys: '5-1' } };
   }
   const CONSIGNES = [
-    ['pivot', 'Cibler le pivot'], ['ailes', 'Cibler les ailes'], ['loin', 'Tir de loin privilégié'],
+    ['pivot', 'Cibler le pivot'], ['ailes', 'Cibler les ailes'],
     ['agressive', 'Défense agressive'], ['rotations', 'Rotations fréquentes']
   ];
+
+  // Jeu des arrières : de loin (tir à 9 m) ou au contact (6 m et duel) ; par défaut selon ses notes
+  const BACK_STYLES = { loin: 'De loin', equilibre: 'Équilibré', contact: 'Au contact' };
+  function autoStyle(p) {
+    if (p.pos === 'GB') return 'equilibre';
+    const loin = p.a.tirLoin, near = (p.a.tirPres + p.a.duel) / 2;
+    return loin - near >= 2 ? 'loin' : near - loin >= 2 ? 'contact' : 'equilibre';
+  }
+  const backStyle = (p) => p.style || autoStyle(p);
+  const BACK_POS = ['ArG', 'DC', 'ArD'];
 
   // ---------- Génération ----------
   function overall(p) {
@@ -656,6 +672,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       }
       a.excentricite = clamp(Math.round(9 + gauss() * 3.8), 1, 20);
       a.collectif = clamp(Math.round(11 + gauss() * 3.2), 1, 20);
+      // Profil des arrières : tireur de loin, pénétrant, ou complet
+      if (['ArG', 'DC', 'ArD'].includes(pos)) {
+        const r0 = rnd();
+        if (r0 < 0.38) { a.tirLoin = clamp(a.tirLoin + 2, 1, 20); a.duel = clamp(a.duel - 1, 1, 20); a.tirPres = clamp(a.tirPres - 1, 1, 20); }
+        else if (r0 < 0.72) { a.tirLoin = clamp(a.tirLoin - 2, 1, 20); a.duel = clamp(a.duel + 2, 1, 20); a.tirPres = clamp(a.tirPres + 2, 1, 20); }
+      }
     }
     // Côté droit (arrière et ailier droits) : toujours des gauchers ; ailleurs, environ 15 % de gauchers
     const left = (pos === 'ArD' || pos === 'AiD') ? true : rnd() < 0.15;
@@ -710,6 +732,13 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const pool = Object.keys(MODS).filter(k => k !== 'calendrier');
     for (const t of st.teams) {
       for (const p of t.players) {
+        // Ancien attribut Défense : réparti en Contre et Duel défensif
+        for (const a of [p.a, p.a0]) if (a && a.defense !== undefined) {
+          a.contre = clamp(Math.round(a.defense + gauss() * 1.5), 1, 20);
+          a.duelDef = clamp(Math.round(a.defense + gauss() * 1.5), 1, 20);
+          delete a.defense;
+        }
+        if (p.a0 && p.a.contre !== undefined && p.a0.contre === undefined) { p.a0.contre = p.a.contre; p.a0.duelDef = p.a.duelDef; }
         p.ovr = overall(p);
         if (p.pot === undefined) p.pot = potFor(p);
         p.pot = Math.max(p.pot, p.ovr);
@@ -735,6 +764,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       if (!tc.rules) tc.rules = defaultRules();
       if (!tc.dstyle) tc.dstyle = 'zone';
       if (!tc.jeu) tc.jeu = 'equilibre';
+      tc.cons = (tc.cons || []).filter(c => c !== 'loin');
       delete tc.def;
       if (t.cohesion === undefined) { t.cohesion = 50; t.lastXI = null; }
       if (!t.mods) t.mods = [];
@@ -865,7 +895,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       // Plan de rotation propre à chaque poste et à chaque match : décalage, temps de jeu visé, marge
       rot: Object.fromEntries(POS.map(p => [p, { off: ri(0, 7), share: (40 + (rnd() - 0.5) * 10) / 60, slack: 1 + rnd() * 4, since: 0, stint: 0 }])),
       score: 0, half: 0, goals: {}, saves: {}, empty: false, to: [0, 0],
-      st: { shots: 0, goals: 0, saves: 0, excl: 0, seven: 0, sevenG: 0, to: 0, ca: 0, caG: 0, gest: 0, gestOk: 0 }
+      st: { shots: 0, goals: 0, saves: 0, excl: 0, seven: 0, sevenG: 0, to: 0, ca: 0, caG: 0, gest: 0, gestOk: 0, blocks: 0 }
     };
   }
 
@@ -933,6 +963,20 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     if (r.sup.on && this.short(A, i) > this.short(D, i)) return r.sup.sys;
     if (r.tireur.on && this.field(A, i).some(x => ['ArG', 'ArD', 'DC'].includes(x.pos) && this.eff(A, x.p, 'tirLoin') >= 16)) return r.tireur.sys;
     return '6-0';
+  };
+  // Défense centrale : les ailiers comptent moins face aux arrières
+  P.defAvg = function (D, i, k) {
+    const f = this.field(D, i);
+    if (!f.length) return 10;
+    let s = 0, w = 0;
+    for (const x of f) { const wt = x.pos.startsWith('Ai') ? 0.4 : 1; s += this.eff(D, x.p, k) * wt; w += wt; }
+    return s / w;
+  };
+  // Part des arrières sur le terrain qui jouent de loin ou au contact
+  P.backMix = function (A, i) {
+    const b = this.field(A, i).filter(x => BACK_POS.includes(x.pos));
+    if (!b.length) return { loin: 0, contact: 0 };
+    return { loin: b.filter(x => backStyle(x.p) === 'loin').length / b.length, contact: b.filter(x => backStyle(x.p) === 'contact').length / b.length };
   };
   P.ps = function (s, id) { return s.ps[id] || (s.ps[id] = { sh: 0, g: 0, to: 0, ex: 0, sv: 0, fa: 0 }); };
   P.swap = function (s, pos, p) {
@@ -1013,7 +1057,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       for (const p of s.team.players) {
         if (onIds.has(p.id)) {
           const base = p.pos === 'GB' ? FAT.gk : FAT.gain;
-          s.fat[p.id] = Math.min(100, s.fat[p.id] + base * (1.6 - p.a.endurance / 20) * mult);
+          const ct = BACK_POS.includes(s.at[p.id]) && backStyle(p) === 'contact' ? 1.08 : 1;
+          s.fat[p.id] = Math.min(100, s.fat[p.id] + base * (1.6 - p.a.endurance / 20) * mult * ct);
         } else {
           s.fat[p.id] = Math.max(0, s.fat[p.id] - FAT.rest);
         }
@@ -1113,7 +1158,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const perso = this.field(A, i).filter(x => (x.p.a.collectif || 11) <= 7).length;
     const pTo = 0.165 + (A.tac.att === 'rapide' ? 0.025 : -0.01) + TO_MATRIX[dsys][A.tac.att] - (this.avg(A, i, 'passes') - 12) * 0.006
       + (D.tac.dstyle === 'homme' ? 0.008 : 0) + (A.tac.jeu === 'collectif' ? -0.01 + perso * 0.007 : 0) - this.fit(A, i) * 0.5 - (A.coh - 50) * 0.0006
-      + (this.avg(D, i, 'defense') - 12) * 0.005
+      + ((this.avg(D, i, 'contre') + this.avg(D, i, 'duelDef')) / 2 - 12) * 0.005
       + (man0 < 0 ? 0.03 : man0 > 0 ? -0.02 : 0) + (D.tac.cons.includes('agressive') ? 0.015 : 0) + (A.empty ? 0.02 : 0)
       + (D === this.h && hasMod(D.team, 'public+') ? 0.015 : 0) + (A === this.a ? HOME.to : 0);
     if (rnd() < pTo) {
@@ -1136,7 +1181,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
             + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex : 0);
           if (this.short(D, i) < 2 && rnd() < pEx) this.exclude(D, 1 - ai, d, i);
         }
-        if (rnd() < (0.22 + (this.avg(A, i, 'duel') - 12) * 0.01) * (hasMod(A.team, 'arbitrage+') ? (A.tac.jeu === 'individuel' ? 1.9 : 1.6) : 1)) return this.shoot(A, D, ai, i, '7m');
+        if (rnd() < (0.22 + (this.avg(A, i, 'duel') - 12) * 0.01 + this.backMix(A, i).contact * 0.05) * (hasMod(A.team, 'arbitrage+') ? (A.tac.jeu === 'individuel' ? 1.9 : 1.6) : 1)) return this.shoot(A, D, ai, i, '7m');
       }
     }
     return this.shoot(A, D, ai, i, null);
@@ -1162,7 +1207,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       const base = { loin: 0.36, aile: 0.26, pivot: 0.13, percee: 0.25 };
       if (A.tac.cons.includes('pivot')) zw.pivot *= 1.7;
       if (A.tac.cons.includes('ailes')) zw.aile *= 1.7;
-      if (A.tac.cons.includes('loin')) zw.loin *= 1.7;
+      const mix = this.backMix(A, i);
+      zw.loin *= 1 + 0.7 * mix.loin - 0.45 * mix.contact;
+      zw.percee *= 1 + 0.7 * mix.contact - 0.45 * mix.loin;
       const zones = ['loin', 'aile', 'pivot', 'percee'];
       zone = wpick(zones, z => base[z] * zw[z]);
       const byPos = (list) => onA.filter(x => list.includes(x.pos));
@@ -1176,8 +1223,22 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
         : zone === 'pivot' ? e(pl, 'tirPres') * 0.7 + e(pl, 'position') * 0.3 : e(pl, 'tirPres') * 0.5 + e(pl, 'duel') * 0.5;
       const jw = (pl) => A.tac.jeu === 'collectif' ? Math.pow(sk(pl), 0.8) * ((pl.a.collectif || 11) / 11)
         : A.tac.jeu === 'individuel' ? Math.pow(sk(pl), 2) * ((21 - (pl.a.collectif || 11)) / 10) : Math.pow(sk(pl), 1.2);
-      p = wpick(cands, x => jw(x.p)).p;
+      const sw = (x) => !BACK_POS.includes(x.pos) ? 1 : zone === 'loin' ? { loin: 1.8, equilibre: 1, contact: 0.5 }[backStyle(x.p)] : zone === 'percee' ? { loin: 0.5, equilibre: 1, contact: 1.8 }[backStyle(x.p)] : 1;
+      p = wpick(cands, x => jw(x.p) * sw(x)).p;
       skill = sk(p);
+      // Percée : le duel défensif peut provoquer un passage en force
+      if (zone === 'percee') {
+        const dd = this.defAvg(D, i, 'duelDef');
+        const pf = clamp(0.05 + (dd - e(p, 'duel')) * 0.008 + (backStyle(p) === 'contact' ? 0.015 : 0), 0.01, 0.14);
+        if (rnd() < pf) {
+          A.st.to++;
+          this.ps(A, p.id).to++;
+          this.last = { by: ai, kind: 'to' };
+          const blk = wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'duelDef'), 2)).p;
+          this.push('to', ai, `Passage en force de ${p.name}, bien stoppé par ${blk.name}`, false, { att: ai, pid: p.id, zone: 'percee' });
+          return;
+        }
+      }
     }
     const gk = D.lineup.GB;
     const gkSkill = kind === '7m' ? this.eff(D, gk, 'gk7m') : (this.eff(D, gk, 'reflexes') + this.eff(D, gk, 'placement')) / 2;
@@ -1188,6 +1249,13 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       const dc = onA.find(x => x.pos === 'DC');
       const vm = A.tac.jeu === 'collectif' ? 2 : A.tac.jeu === 'individuel' ? 0.5 : 1;
       if (dc) pr += (e(dc.p, 'vision') - 12) * 0.004 * vm;
+      // Un arrière est à l'aise dans son registre naturel, et force à contre-emploi
+      if (BACK_POS.includes(A.at[p.id] || p.pos) && (zone === 'loin' || zone === 'percee')) {
+        const nat = autoStyle(p);
+        if (nat !== 'equilibre') pr += zone === (nat === 'loin' ? 'loin' : 'percee') ? 0.03 : -0.025;
+      }
+      if (zone === 'loin') pr -= (this.defAvg(D, i, 'contre') - 12) * 0.012;
+      if (zone === 'percee') pr -= (this.defAvg(D, i, 'duelDef') - 12) * 0.018;
       if (D.tac.dstyle === 'homme') {
         if (zone === 'percee') {
           const backs = onA.filter(x => ['ArG', 'ArD', 'DC'].includes(x.pos));
@@ -1266,7 +1334,13 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       this.push('but', ai, geste ? `${geste} de ${p.name} : but ${ZONE_TXT[zone]} !` : `But de ${p.name} ${ZONE_TXT[zone]}`, key, { pid: p.id, geste: !!geste, att: ai, pos: atPos, zone, shot: 'but' });
     } else {
       this.last = { by: ai, kind: 'miss' };
-      if (kind === 'vide' || rnd() < 0.36) {
+      const cpb = !kind && zone === 'loin' ? clamp(0.3 + (this.defAvg(D, i, 'contre') - 12) * 0.04, 0.1, 0.6) : 0;
+      if (cpb && rnd() < cpb) {
+        const blk = wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'contre'), 2)).p;
+        D.st.blocks = (D.st.blocks || 0) + 1;
+        this.ps(D, blk.id).bl = (this.ps(D, blk.id).bl || 0) + 1;
+        this.push('contre', 1 - ai, `Tir de ${p.name} contré par ${blk.name}`, false, { geste: !!geste, att: ai, pid: p.id, zone, shot: 'contre' });
+      } else if (kind === 'vide' || rnd() < 0.36) {
         this.push('rate', ai, geste ? `${geste} manqué par ${p.name}` : `${p.name} manque le cadre ${ZONE_TXT[zone]}`, kind === '7m', { geste: !!geste, att: ai, pid: p.id, pos: atPos, zone, shot: 'rate' });
       } else {
         D.st.saves++;
@@ -1388,7 +1462,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     tir: { label: 'Tir', attrs: ['tirLoin', 'tirPres', 'tirAile', 'penalty'] },
     collectif: { label: 'Jeu collectif', attrs: ['passes', 'vision', 'position'] },
     physique: { label: 'Physique', attrs: ['vitesse', 'endurance', 'duel'] },
-    defense: { label: 'Défense', attrs: ['defense', 'discipline', 'sangfroid'] }
+    defense: { label: 'Défense', attrs: ['contre', 'duelDef', 'discipline', 'sangfroid'] }
   };
   const INTENSITY = {
     legere: { label: 'Légère', mult: 0.5, rec: 10 },
@@ -1473,7 +1547,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, autoStyle, backStyle, BACK_POS, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -1613,7 +1687,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return `<div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="pstitle">
       <div class="shead"><div><div class="row" style="gap:8px"><span class="pos${gk ? ' gb' : ''}">${p.pos}</span><span class="muted">${esc(H.POS_LABEL[p.pos])}</span>${p.age < 23 ? '<span title="Moins de 23 ans">🌱</span>' : ''}${p.youth ? '<span class="yt" title="Formé au club">J</span>' : ''}</div>
         <h2 id="pstitle">${esc(p.name)}</h2>
-        <div class="row" style="gap:10px">${badge(t, true)}<span>${esc(t.name)}</span><span class="muted">${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'}${H.SECONDARY[p.pos].length ? ' · dépanne en ' + H.SECONDARY[p.pos].join(', ') : ''}</span></div></div>
+        <div class="row" style="gap:10px">${badge(t, true)}<span>${esc(t.name)}</span><span class="muted">${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'}${H.SECONDARY[p.pos].length ? ' · dépanne en ' + H.SECONDARY[p.pos].join(', ') : ''}${H.BACK_POS.includes(p.pos) ? ' · jeu ' + H.BACK_STYLES[H.backStyle(p)].toLowerCase() : ''}</span></div></div>
         <div class="sovr"><span class="label">Note / potentiel</span><b class="num">${p.ovr.toFixed(1)}<span class="pot">/${(p.pot ?? p.ovr).toFixed(1)}</span></b><span class="${d >= 0.05 ? 'dlt' : d <= -0.05 ? 'dlt neg' : 'muted'}">${d >= 0.05 ? '+' : ''}${Math.abs(d) < 0.05 ? 'stable' : d.toFixed(1)} cette saison</span></div>
         <button class="btn sclose" data-act="psclose" aria-label="Fermer la fiche">✕</button></div>
       <div class="stiles">${tiles.join('')}</div>
@@ -1853,7 +1927,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   function evHtml(e, teams) {
     const cls = e.side === -1 ? 'neutral' : e.side === U.side ? 'mine' : 'them';
     const tm = teams && e.side >= 0 ? teams[e.side] : null;
-    const tag = e.type === 'excl' ? '<span class="tag excl">2 min</span>' : e.type === 'rouge' ? '<span class="tag rouge">Rouge</span>' : e.type === 'tm' ? '<span class="tag tm">TM</span>' : e.type === 'sys' ? '<span class="tag sys">Déf.</span>' : e.type === 'coach' || (e.type === 'tm' && e.ai && e.side !== U.side) ? '<span class="tag coach">Coach</span>' : e.geste ? '<span class="tag geste">Geste</span>' : '';
+    const tag = e.type === 'excl' ? '<span class="tag excl">2 min</span>' : e.type === 'rouge' ? '<span class="tag rouge">Rouge</span>' : e.type === 'tm' ? '<span class="tag tm">TM</span>' : e.type === 'sys' ? '<span class="tag sys">Déf.</span>' : e.type === 'contre' ? '<span class="tag sys">Contre</span>' : e.type === 'coach' || (e.type === 'tm' && e.ai && e.side !== U.side) ? '<span class="tag coach">Coach</span>' : e.geste ? '<span class="tag geste">Geste</span>' : '';
     const sc = e.type === 'but' ? `${e.sc[0]}–${e.sc[1]}` : '';
     return `<div class="ev ${cls}${e.key ? ' key' : ''}"${tm ? ` style="--tc:${tm.color}"` : ''}><span class="m">${e.m}'</span><span class="t">${tm ? `<span class="evteam" style="background:${tm.color}">${tm.id}</span>` : ''}${tag}${esc(e.text)}</span><span class="s">${sc}</span></div>`;
   }
@@ -1862,7 +1936,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const rows = [
       ['Buts', a.goals, b.goals], ['Tirs', a.shots, b.shots], ['Efficacité', pct(a), pct(b)], ['Arrêts du gardien', a.saves, b.saves],
       ['Exclusions 2 min', a.excl, b.excl], ['7 m marqués / obtenus', `${a.sevenG}/${a.seven}`, `${b.sevenG}/${b.seven}`],
-      ['Pertes de balle', a.to, b.to], ['Contre-attaques', a.ca, b.ca], ['Gestes réussis / tentés', `${a.gestOk || 0}/${a.gest || 0}`, `${b.gestOk || 0}/${b.gest || 0}`]
+      ['Pertes de balle', a.to, b.to], ['Tirs contrés en défense', a.blocks || 0, b.blocks || 0], ['Contre-attaques', a.ca, b.ca], ['Gestes réussis / tentés', `${a.gestOk || 0}/${a.gest || 0}`, `${b.gestOk || 0}/${b.gest || 0}`]
     ];
     return `<div class="statcmp">${rows.map(([l, x, y]) => `<div class="sr"><span class="l">${x}</span><span class="c">${l}</span><span class="rr">${y}</span></div>`).join('')}</div>`;
   }
@@ -2101,7 +2175,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     ['Tir', [['tirLoin', '9 m'], ['tirPres', '6 m'], ['tirAile', 'Aile'], ['penalty', '7 m']]],
     ['Jeu', [['passes', 'Pas.'], ['vision', 'Vis.'], ['position', 'Pos.']]],
     ['Physique', [['duel', 'Duel'], ['vitesse', 'Vit.'], ['endurance', 'End.']]],
-    ['Défense', [['defense', 'Déf.'], ['discipline', 'Disc.']]],
+    ['Défense', [['contre', 'Ctr.'], ['duelDef', 'Duel D'], ['discipline', 'Disc.']]],
     ['Mental', [['sangfroid', 'S-F']]],
     ['Profil', [['excentricite', 'Exc.'], ['collectif', 'Coll.']]]
   ];
@@ -2540,6 +2614,15 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     save();
     render();
   }
+  function backStyleHtml(t) {
+    const backs = t.players.filter((p) => H.BACK_POS.includes(p.pos)).sort((a, b) => H.BACK_POS.indexOf(a.pos) - H.BACK_POS.indexOf(b.pos) || b.ovr - a.ovr);
+    const starters = new Set(Object.values(t.lineup));
+    return `<div class="opt"><span class="label">Jeu des arrières</span>
+      <div class="bstyles">${backs.map((p) => { const nat = H.autoStyle(p), cur = H.backStyle(p);
+        return `<div class="bsrow"><span class="bsname"><span class="pos">${p.pos}</span> ${plink(p, short(p.name))}${starters.has(p.id) ? ' <span class="tit" title="Titulaire">T</span>' : ''}<span class="bsnotes muted num" title="Tir de loin · tir à 6 m · duel">9 m ${p.a.tirLoin} · 6 m ${p.a.tirPres} · duel ${p.a.duel}</span></span>
+          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}" title="${k === nat ? 'Conseillé par le staff selon ses notes' : ''}">${l}${k === nat ? ' <span class="reco" aria-label="conseillé">●</span>' : ''}</button>`).join('')}</span></div>`; }).join('')}</div>
+      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Le point ● marque le jeu conseillé selon ses notes : dans son registre, il gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p></div>`;
+  }
   function renderTactics() {
     if (me().players.length > 14) H.ensureSheet(me());
     const t = me(), tac = t.tactic, r = tac.rules, fi = fitInfo(t);
@@ -2560,6 +2643,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
           <div class="opt"><span class="label">Rythme</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="att" data-id="${x}" aria-pressed="${tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div><p>${ATT_TXT[tac.att][1]}.</p></div>
           <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="jeu" data-id="${k}" aria-pressed="${tac.jeu === k}">${l}</button>`).join('')}</div>
             <p>${JEU_TXT[tac.jeu]} Ton équipe est <b style="color:var(--fg)">${fi.id.label.toLowerCase()}</b> (esprit collectif moyen ${fi.id.v.toFixed(1)}) : <span class="${fi.cls}">${fi.txt}</span>.</p></div>
+          ${backStyleHtml(t)}
         </div>
         <div class="tsec"><span class="tsech">Défense</span>
           <div class="opt"><span class="label">Style</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="dstyle" data-id="${k}" aria-pressed="${tac.dstyle === k}">${l}</button>`).join('')}</div>
@@ -2615,6 +2699,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const ms = U.m ? U.m.S[U.side] : null;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
+      case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
       case 'psclose': closeSheet(); return;
       case 'step2': U.homeStep = 2; render(); window.scrollTo(0, 0); return;
