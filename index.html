@@ -472,18 +472,14 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .bsnotes { font-size: 0.78rem; flex-basis: 100%; }
 .seg.sm button { padding: 5px 9px; font-size: 0.8rem; }
 .reco { color: var(--gold); font-size: 0.6rem; vertical-align: 2px; }
-/* Easter eggs */
-.city .egg { cursor: pointer; }
-.city .egg:hover { filter: brightness(1.25) drop-shadow(0 0 2px var(--zone)); }
+/* Détails de la ville et bouton bonus/malus */
 .city .blink { animation: blink 1.6s steps(2, start) infinite; }
 @keyframes blink { to { opacity: 0.25; } }
-#toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); max-width: min(520px, calc(100% - 32px)); background: var(--board); color: var(--board-fg); border: 1px solid var(--zone); border-radius: 10px; padding: 12px 16px; font-size: 0.92rem; line-height: 1.45; box-shadow: 0 12px 30px rgba(0,0,0,0.3); opacity: 0; pointer-events: none; transition: opacity 200ms, transform 200ms; z-index: 80; }
-#toast b { color: var(--digit); }
-#toast.show { opacity: 1; transform: translate(-50%, 0); }
-.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 90; overflow: hidden; }
-.confetti i { position: absolute; top: -40px; font-style: normal; font-size: 1.6rem; animation: fall linear forwards; }
-@keyframes fall { to { transform: translateY(110vh) rotate(540deg); } }
-@media (prefers-reduced-motion: reduce) { .city .blink, .confetti i { animation: none; } .confetti { display: none; } }
+@media (prefers-reduced-motion: reduce) { .city .blink { animation: none; } }
+.modsbtn { display: inline-flex; gap: 3px; vertical-align: 3px; margin-left: 6px; padding: 2px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); cursor: pointer; }
+.modsbtn span { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 800 0.75rem/1 var(--f-body); color: #fff; }
+.modsbtn .mp { background: var(--good); } .modsbtn .mm { background: var(--bad); }
+.modsbtn:hover { border-color: var(--accent); }
 </style>
 </head>
 <body>
@@ -1797,7 +1793,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '');
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '');
     if (U.youthModal && G.youth) { const f = document.querySelector('.modal button'); if (f) f.focus(); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
@@ -1844,7 +1840,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const pos = G.results.length ? `${ord(rank())} du championnat` : 'Avant la 1re journée';
     const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-    return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
+    return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
       <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
   }
 
@@ -2483,44 +2479,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     { key: 'infirmerie', label: 'Infirmerie', sub: 'Blessures et soins · bientôt', at: [3.85, 10.25, 26] },
     { key: 'boutique', label: 'Boutique du club', sub: 'Supporters et recettes · bientôt', at: [8, 11.4, 18] }
   ];
-  // ---------- Easter eggs ----------
-  const EGGS = {
-    chat: "Le chat du vestiaire. Personne ne sait à qui il est, mais il n'a jamais raté une causerie d'avant-match.",
-    resine: 'Un pot de résine oublié devant le gymnase. Interdite dans certaines salles, vénérée dans toutes. Tes ailiers en ont jusqu\'aux coudes.',
-    pigeon: "Un pigeon sur le kiosque. Il fait « rrou-rrou », ou peut-être « roucoulette ». Il a tout compris au handball.",
-    b9m: 'Beyond9M : le handball au-delà des 9 mètres. Si tu lis ça, tu sais déjà où suivre les vraies histoires du hand.',
-    barjots: "Une vieille affiche de 1995. L'année où les Barjots ont décroché le premier titre mondial du hand français. Le début de tout.",
-    experts: 'Le voyant du bureau clignote encore à 2 h du matin : le coach revoit des matchs des Experts. Pour la dixième fois. Pour « l\'analyse ».',
-    kempa: 'Deux gamins tentent un kempa sur le terrain du quartier. Raté. Ils recommencent. Encore raté. Un futur pivot est né.',
-    sept: 'Sept clics sur ton logo : 7 contre 6 ! Ton gardien est parti chercher un café, la cage est vide.',
-    konami: 'Haut, haut, bas, bas, gauche, droite, gauche, droite, B, A… Mode Barjots activé ! Tes joueurs se sentent pousser des ailes (surtout dans leur tête).'
-  };
-  function eggsFound() { try { return JSON.parse(localStorage.getItem('hbm-eggs') || '[]'); } catch (e) { return []; } }
-  function findEgg(id) {
-    if (!EGGS[id]) return;
-    const f = eggsFound(), isNew = !f.includes(id);
-    if (isNew) { f.push(id); try { localStorage.setItem('hbm-eggs', JSON.stringify(f)); } catch (e) {} }
-    toast(`<b>${isNew ? 'Secret trouvé' : 'Déjà trouvé'} · ${f.length}/${Object.keys(EGGS).length}</b><br>${esc(EGGS[id])}`);
-    const c = document.getElementById('eggcount');
-    if (c) c.textContent = `${f.length}/${Object.keys(EGGS).length} secrets trouvés`;
-    if (id === 'konami' || f.length === Object.keys(EGGS).length) confetti();
-  }
-  function toast(html) {
-    let el = document.getElementById('toast');
-    if (!el) { el = document.createElement('div'); el.id = 'toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
-    el.innerHTML = html;
-    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-    clearTimeout(U.toastT); U.toastT = setTimeout(() => el.classList.remove('show'), 6500);
-  }
-  function confetti() {
-    const box = document.createElement('div');
-    box.className = 'confetti';
-    box.setAttribute('aria-hidden', 'true');
-    for (let k = 0; k < 28; k++) box.insertAdjacentHTML('beforeend', `<i style="left:${Math.random() * 100}%;animation-delay:${(Math.random() * 0.8).toFixed(2)}s;animation-duration:${(2 + Math.random() * 1.5).toFixed(2)}s">${['🤾', '🏆', '⭐', '🥅'][k % 4]}</i>`);
-    document.body.appendChild(box);
-    setTimeout(() => box.remove(), 4200);
-  }
-  const egg = (id, svg, label) => `<g class="egg" role="button" data-act="egg" data-id="${id}" aria-label="${label}">${svg}</g>`;
+  // Détails décoratifs de la ville (clins d'œil, purement visuels)
+  const prop = (svg) => `<g class="deco">${svg}</g>`;
 
   function renderCityMap() {
     const t = me();
@@ -2656,17 +2616,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (const [x, y] of [[1.0, 5.8], [2.1, 5.8], [8.2, 3.95]]) add(x, y, `<g class="deco">${bench(x, y)}</g>`);
     const cols = ['#c0392b', '#2e86c1', '#f1c40f', '#ecf0f1', '#34495e', '#16a085', '#8e44ad'];
     for (const [x, y, a, c] of [[5.12, 2.2, 'y', 0], [5.62, 8.9, 'y', 1], [2.8, 6.12, 'x', 2], [8.6, 6.62, 'x', 3], [9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6], [5.62, 0.6, 'y', 3]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
-    // Secrets cachés dans la ville
+    // Clins d'œil : chat, pigeon, résine, panneau Beyond9M, affiche 1995, voyant du bureau
     { const [cx, cy] = P(11.05, 8.7, 22);
-      objs.push({ d: 20.3, svg: egg('chat', `<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2.6" rx="3.6" ry="2.3" fill="#2a2a2a"/><circle cx="3.2" cy="-5" r="1.9" fill="#2a2a2a"/><path d="M2 -6.3 L2.4 -8.4 L3.4 -6.7 Z M3.6 -6.7 L4.6 -8.4 L4.9 -6.2 Z" fill="#2a2a2a"/><path d="M-3.4 -2.6 C -6 -3, -6.2 -6.5, -4.8 -7.4" stroke="#2a2a2a" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="3.9" cy="-5.2" r="0.35" fill="#f6c453"/></g>`, 'Un chat sur le toit du vestiaire') }); }
+      objs.push({ d: 20.3, svg: prop(`<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2.6" rx="3.6" ry="2.3" fill="#2a2a2a"/><circle cx="3.2" cy="-5" r="1.9" fill="#2a2a2a"/><path d="M2 -6.3 L2.4 -8.4 L3.4 -6.7 Z M3.6 -6.7 L4.6 -8.4 L4.9 -6.2 Z" fill="#2a2a2a"/><path d="M-3.4 -2.6 C -6 -3, -6.2 -6.5, -4.8 -7.4" stroke="#2a2a2a" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="3.9" cy="-5.2" r="0.35" fill="#f6c453"/></g>`) }); }
     { const [cx, cy] = P(2.15, 8.8, 25);
-      objs.push({ d: 11, svg: egg('pigeon', `<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="2.6" ry="1.7" fill="#8f98a3"/><circle cx="2.2" cy="-3.6" r="1.2" fill="#6f7882"/><path d="M3.2 -3.6 L4.4 -3.3 L3.2 -3.1 Z" fill="#e0a34a"/><path d="M-2.4 -2 L-4.2 -1.2 L-2.4 -1.3 Z" fill="#6f7882"/></g>`, 'Un pigeon sur le kiosque') }); }
-    objs.push({ d: 12.7, svg: egg('resine', isoBox({ x: 9.0, y: 3.45, w: 0.16, d: 0.16, h: 2.4, c: '#e8c547' }) + isoBox({ x: 8.99, y: 3.44, w: 0.18, d: 0.18, h: 0.5, z: 2.4, c: '#c94f3d' }), 'Un pot de résine devant le gymnase') });
-    objs.push({ d: 8.7, svg: egg('b9m', poly([P(3.48, 5.2, 25), P(4.52, 5.2, 25), P(4.52, 5.2, 46), P(3.48, 5.2, 46)], '#121417', EDGE) + skewText(3.55, 5.2, 37.5, 'BEYOND', 7, '#ffffff') + skewText(3.75, 5.2, 28.5, '9M', 8, '#e8c547'), 'Un panneau publicitaire') });
-    objs.push({ d: 11.9, svg: egg('barjots', poly([P(3.55, 8.3, 3.5), P(3.68, 8.3, 3.5), P(3.68, 8.3, 9), P(3.55, 8.3, 9)], '#2b4fa0') + poly([P(3.68, 8.3, 3.5), P(3.81, 8.3, 3.5), P(3.81, 8.3, 9), P(3.68, 8.3, 9)], '#f4f4f4') + poly([P(3.81, 8.3, 3.5), P(3.94, 8.3, 3.5), P(3.94, 8.3, 9), P(3.81, 8.3, 9)], '#c8453b') + skewText(3.57, 8.3, 7.4, '95', 3.2, '#111'), 'Une vieille affiche') });
+      objs.push({ d: 11, svg: prop(`<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="2.6" ry="1.7" fill="#8f98a3"/><circle cx="2.2" cy="-3.6" r="1.2" fill="#6f7882"/><path d="M3.2 -3.6 L4.4 -3.3 L3.2 -3.1 Z" fill="#e0a34a"/><path d="M-2.4 -2 L-4.2 -1.2 L-2.4 -1.3 Z" fill="#6f7882"/></g>`) }); }
+    objs.push({ d: 12.7, svg: prop(isoBox({ x: 9.0, y: 3.45, w: 0.16, d: 0.16, h: 2.4, c: '#e8c547' }) + isoBox({ x: 8.99, y: 3.44, w: 0.18, d: 0.18, h: 0.5, z: 2.4, c: '#c94f3d' })) });
+    objs.push({ d: 8.7, svg: prop(poly([P(3.48, 5.2, 25), P(4.52, 5.2, 25), P(4.52, 5.2, 46), P(3.48, 5.2, 46)], '#121417', EDGE) + skewText(3.55, 5.2, 37.5, 'BEYOND', 7, '#ffffff') + skewText(3.75, 5.2, 28.5, '9M', 8, '#e8c547')) });
+    objs.push({ d: 11.9, svg: prop(poly([P(3.55, 8.3, 3.5), P(3.68, 8.3, 3.5), P(3.68, 8.3, 9), P(3.55, 8.3, 9)], '#2b4fa0') + poly([P(3.68, 8.3, 3.5), P(3.81, 8.3, 3.5), P(3.81, 8.3, 9), P(3.68, 8.3, 9)], '#f4f4f4') + poly([P(3.81, 8.3, 3.5), P(3.94, 8.3, 3.5), P(3.94, 8.3, 9), P(3.81, 8.3, 9)], '#c8453b') + skewText(3.57, 8.3, 7.4, '95', 3.2, '#111')) });
     { const [lx, ly] = P(11.25, 1.45, 72);
-      objs.push({ d: 12.9, svg: egg('experts', `<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="5" fill="transparent"/><circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`, 'Le voyant du bureau du coach') }); }
-    flatLayer.push(egg('kempa', flat(0.4, 9.7, 2.2, 1.9, 'transparent'), 'Le terrain du quartier'));
+      objs.push({ d: 12.9, svg: prop(`<circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`) }); }
     objs.sort((a, b) => a.d - b.d);
 
     const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
@@ -2675,7 +2634,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function renderCity() {
     const t = me();
-    return `<section class="panel citypanel"><div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(t.city)} · la Cité du hand</h3><span class="legend">Clique sur un bâtiment pour y entrer. Les bâtiments gris arriveront plus tard. Quelques secrets se cachent dans la ville…${eggsFound().length ? ` <b id="eggcount">${eggsFound().length}/${Object.keys(EGGS).length} secrets trouvés</b>` : ' <b id="eggcount"></b>'}</span></div>${(t.mods || []).length ? `<div class="row" style="gap:8px;margin-top:10px">${t.mods.map((k) => modChip(k)).join('')}</div>` : ''}${renderCityMap()}</section>`;
+    return `<section class="panel citypanel"><div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(t.city)} · la Cité du hand</h3><span class="legend">Clique sur un bâtiment pour y entrer. Les bâtiments gris arriveront plus tard.</span></div>${renderCityMap()}</section>`;
   }
 
   // ---------- Tactique ----------
@@ -2732,6 +2691,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     H.ensureSheet(t);
     save();
     render();
+  }
+  function modsHtml() {
+    const t = me();
+    return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="modstitle" style="margin:0">Bonus et malus du club</h2><button class="btn" data-act="modsclose" aria-label="Fermer">✕</button></div>
+      <p class="muted" style="margin:6px 0 14px">Choisis au lancement de la saison, ils restent jusqu'au bout. Le staff t'en reparle dans ses conseils quand ils comptent pour ta tactique ou ton entraînement.</p>
+      <div style="display:grid;gap:12px">${(t.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="modsclose">Fermer</button></div>`;
   }
   function backStyleSummary(t) {
     const st = H.BACK_POS.map((pos) => ({ pos, p: t.players.find((x) => x.id === t.lineup[pos]) })).filter((x) => x.p);
@@ -2820,11 +2786,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
 
   // ---------- Événements ----------
   document.addEventListener('click', (e) => {
-    if (G && e.target.closest && e.target.closest('.clubbar .badge')) {
-      U.badgeN = (Date.now() - (U.badgeT || 0) < 1500 ? (U.badgeN || 0) : 0) + 1; U.badgeT = Date.now();
-      if (U.badgeN >= 7) { U.badgeN = 0; findEgg('sept'); }
-    }
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
+    if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
     const act = b.dataset.act, id = b.dataset.id;
@@ -2832,7 +2795,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const ms = U.m ? U.m.S[U.side] : null;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
-      case 'egg': findEgg(id); return;
+      case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
+      case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
       case 'bsclose': U.bsModal = false; render(); { const o = document.querySelector('[data-act=bsopen]'); if (o) o.focus(); } return;
       case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
@@ -2914,12 +2878,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'replay': { const club = G.userId; const mods = (me().mods || []).slice(); G = H.newGame(club, undefined, mods); me().tactic.rules = H.defaultRules(); U.view = 'pre'; U.post = null; U.tab = 'ville'; save(); render(); window.scrollTo(0, 0); return; }
     }
   });
-  const KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
   document.addEventListener('keydown', (e) => {
-    U.kseq = (U.kseq || []).concat(e.key.length === 1 ? e.key.toLowerCase() : e.key).slice(-10);
-    if (G && U.kseq.join() === KONAMI.join()) { U.kseq = []; findEgg('konami'); }
     if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
     if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
+    if (e.key === 'Escape' && U.modsModal) { U.modsModal = false; render(); return; }
     if (document.getElementById('psheet')) return;
     if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
       e.preventDefault();
