@@ -563,7 +563,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20' },
     { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b' },
     { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a' },
-    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c' }
+    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c' },
+    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b' }
   ];
   const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Mikkel', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Malo', 'Gaël', 'Erwan', 'Yann', 'Corentin', 'Killian', 'Mehdi', 'Ibrahima', 'Lars', 'Marko', 'Tiago', 'Florian', 'Arthur', 'Samuel', 'Loïc', 'Elias', 'Raphaël', 'Ewen'];
   const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Muller', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Le Goff', 'Le Bihan', 'Kervella', 'Tanguy', 'Riou', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Petrović', 'Jensen', 'Larsen', 'Nilsson', 'Kovač', 'Ferreira', 'Santos', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun', 'Le Gall', 'Quéméner'];
@@ -1671,7 +1672,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   }
   function renderHome() {
     return `<section class="hero"><span class="label">Prototype · saison 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
-      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 15 clubs en aller-retour (28 matchs) simulé possession par possession.</p></section>
+      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
       ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="step2">Continuer avec ${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} →</button><span class="muted">La réputation fixe le niveau moyen de l'effectif généré.</span></div></section>`}`;
@@ -1973,7 +1974,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const games = G.sched[G.round];
     return `<section class="board"><div class="teams"><div class="team">${badge(me())}<span class="tn">${esc(me().name)}</span></div><div class="score"><span style="font-size:0.55em">Repos</span></div><div class="team away"><span class="tn">Journée ${G.round + 1}</span></div></div><div class="meta"><span>Pas de match pour toi cette semaine</span><span>${games.length} matchs au programme</span></div></section>
       <div class="grid2"><section class="panel"><h3>Semaine de repos</h3><div style="display:grid;gap:12px">
-        <p style="margin:0">Avec 15 clubs, chaque équipe est au repos une journée par phase. Tes joueurs récupèrent 20 points de fatigue en plus, et l'entraînement de la semaine a lieu normalement, sans pénalité de temps de jeu.</p>
+        <p style="margin:0">Avec un nombre impair de clubs, chaque équipe est au repos une journée par phase. Tes joueurs récupèrent 20 points de fatigue en plus, et l'entraînement de la semaine a lieu normalement, sans pénalité de temps de jeu.</p>
         <div class="row"><button class="btn primary big" data-act="rest">Passer la journée</button><button class="btn" data-act="tab" data-id="entrainement">Régler l'entraînement</button></div></div></section>
         <section class="panel"><h3>Au programme</h3><div class="scroll"><table><tbody>${games.map(([h, a]) => `<tr><td>${badge(T(h), true)} ${esc(T(h).name)}</td><td class="r">${badge(T(a), true)} ${esc(T(a).name)}</td></tr>`).join('')}</tbody></table></div></section></div>`;
   }
