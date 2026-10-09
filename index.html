@@ -1674,7 +1674,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return `<section class="hero"><span class="label">Prototype · saison 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
       <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
-      ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
+      ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="step2">Continuer avec ${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} →</button><span class="muted">La réputation fixe le niveau moyen de l'effectif généré.</span></div></section>`}`;
   }
 
