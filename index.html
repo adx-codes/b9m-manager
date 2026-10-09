@@ -207,13 +207,13 @@ tr.click:hover td { background: var(--sunk); }
 .city .bld:focus-visible .body { filter: drop-shadow(0 0 4px var(--accent)); }
 .city .gbld { outline: none; cursor: help; }
 .city .gbld:hover, .city .gbld:focus-visible { filter: brightness(1.06); }
-.city .sign { cursor: pointer; }
+.city .sign { opacity: 0; pointer-events: none; transition: opacity 0.15s ease; }
 .city .sign.ghost { opacity: 0; pointer-events: none; transition: opacity 0.15s ease; }
 .city .sl1 { font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: 0.03em; fill: var(--fg); }
 .city .sl2 { font-family: var(--f-body); font-size: 11.5px; fill: var(--muted); }
 .city .sign.ghost .sl1 { fill: var(--muted); }
 .city .isotxt { font-family: var(--f-display); letter-spacing: 0.08em; }
-@media (prefers-reduced-motion: reduce) { .city .bld .body, .city .sign.ghost { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .city .bld .body, .city .sign { transition: none; } }
 @media (max-width: 620px) { .city .signs { display: none; } .citywrap { margin-inline: -12px; } }
 .places { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
 .place { display: grid; grid-template-columns: 10px minmax(0, 1fr); grid-template-rows: auto auto; gap: 4px 12px; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
@@ -2449,7 +2449,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const [sx, sy] = P(o.at[0], o.at[1], o.at[2]);
     const lw = o.label.length * 7.6, sw = o.sub.length * 6.2;
     const w = Math.max(lw, sw) + 26, hh = 42, y0 = sy - 18 - (o.lift || 0) - hh, cx = sx + (o.dx || 0);
-    const attrs = ghost ? `data-gsign="${o.key}"` : `data-act="tab" data-id="${o.tab}"`;
+    const attrs = ghost ? `data-gsign="${o.key}"` : `data-psign="${o.key}"`;
     return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs}><line x1="${sx}" y1="${sy}" x2="${sx}" y2="${y0 + hh}" stroke="${ghost ? 'var(--muted)' : o.c}" stroke-width="1.4"/><circle cx="${sx}" cy="${sy}" r="2.6" fill="${ghost ? 'var(--muted)' : o.c}"/>
       <rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="7" fill="var(--surface)" stroke="${ghost ? 'var(--line)' : o.c}" stroke-width="${ghost ? 1 : 1.6}"/>
       ${ghost ? '' : `<rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="5" height="${hh}" rx="2" fill="${o.c}"/>`}
@@ -2522,7 +2522,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const add = (x, y, svg) => objs.push({ d: x + y, svg });
     const places = cityPlaces();
     const pl = Object.fromEntries(places.map((p) => [p.key, p]));
-    const bwrap = (p, svg) => `<g class="bld" role="button" tabindex="0" data-act="tab" data-id="${p.tab}" aria-label="${esc(p.label)} : ${esc(p.sub)}"><g class="body">${svg}</g></g>`;
+ const bwrap = (p, svg) => `<g class="bld" role="button" tabindex="0" data-act="tab" data-id="${p.tab}" data-place="${p.key}" aria-label="${esc(p.label)} : ${esc(p.sub)}"><g class="body">${svg}</g></g>`;
     const gwrap = (g, svg) => `<g class="gbld" data-ghost="${g.key}" tabindex="0" aria-label="${esc(g.label)}, ${esc(g.sub)}">${svg}</g>`;
     const shade = (b) => flatLayer.push(shadowOf(b));
 
@@ -2629,7 +2629,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     objs.sort((a, b) => a.d - b.d);
 
     const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
-    const css = GHOSTS.map((g) => `.city:has([data-ghost="${g.key}"]:hover) [data-gsign="${g.key}"], .city:has([data-ghost="${g.key}"]:focus-visible) [data-gsign="${g.key}"]`).join(',') + '{opacity:1}';
+    const css = GHOSTS.map((g) => `.city:has([data-ghost="${g.key}"]:hover) [data-gsign="${g.key}"], .city:has([data-ghost="${g.key}"]:focus-visible) [data-gsign="${g.key}"]`)
+      .concat(places.map((p) => `.city:has([data-place="${p.key}"]:hover) [data-psign="${p.key}"], .city:has([data-place="${p.key}"]:focus-visible) [data-psign="${p.key}"]`)).join(',') + '{opacity:1}';
     return `<div class="citywrap"><svg class="city" viewBox="40 92 780 448" role="group" aria-label="Plan de la ville du club"><style>${css}</style>${flatLayer.join('')}${objs.map((o) => o.svg).join('')}<g class="signs">${signs}</g></svg></div>`;
   }
   function renderCity() {
