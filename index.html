@@ -509,6 +509,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .flag { font-size: 0.85em; }
 .fpick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; font-size: 0.78rem; }
 .fpick .fl { color: var(--muted); }
+#notif { position: fixed; top: 16px; left: 50%; transform: translate(-50%, -24px); z-index: 85; display: flex; align-items: center; gap: 12px; max-width: min(560px, calc(100% - 32px)); padding: 12px 44px 12px 14px; background: var(--board); color: var(--board-fg); border: 1px solid var(--zone); border-left: 5px solid var(--zone); border-radius: 10px; box-shadow: 0 14px 34px rgba(0,0,0,0.35); font-size: 0.92rem; line-height: 1.4; opacity: 0; pointer-events: none; transition: opacity 180ms, transform 180ms; }
+#notif.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#notif b { color: var(--digit); }
+#notif .nbadge { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; font: 800 0.8rem var(--f-display); color: #fff; }
+#notif .nclose { position: absolute; top: 8px; right: 8px; background: none; border: 0; color: var(--board-dim); font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
+@media (prefers-reduced-motion: reduce) { #notif { transition: none; } }
 </style>
 </head>
 <body>
@@ -2324,11 +2330,29 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const evs = m.step();
     if (m.done) { finishMatch(); return; }
     if (m.halfDone && !U.htDone) { U.htDone = true; U.paused = true; U.tPanel = 'mt'; clearTimeout(U.timer); liveUpdate(evs); return; }
-    if (evs.some((e) => e.type === 'tm' && e.side !== U.side)) { U.paused = true; U.tPanel = 'adv'; clearTimeout(U.timer); liveUpdate(evs); return; }
+    const atm = evs.find((e) => e.type === 'tm' && e.side !== U.side);
+    if (atm) {
+      U.paused = true; U.tPanel = 'adv'; clearTimeout(U.timer); liveUpdate(evs);
+      const why = (atm.text.match(/\(([^)]+)\)/) || [])[1];
+      const opp = m.S[1 - U.side].team;
+      notify(`<span class="nbadge" style="background:${opp.color}">${esc(opp.id)}</span><span><b>Temps mort adverse · ${atm.m}'</b><br>${esc(opp.name)}${why ? ' : ' + esc(why) : ''}. Le match est en pause, profites-en pour ajuster ta tactique.</span>`, true);
+      return;
+    }
     liveUpdate(evs);
     schedule();
   }
+  // Notification en haut de l'écran (temps mort adverse)
+  function notify(html, sticky) {
+    let el = document.getElementById('notif');
+    if (!el) { el = document.createElement('div'); el.id = 'notif'; el.setAttribute('role', 'alert'); document.body.appendChild(el); }
+    el.innerHTML = html + '<button class="nclose" data-act="nclose" aria-label="Fermer la notification">✕</button>';
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(U.notifT);
+    if (!sticky) U.notifT = setTimeout(hideNotify, 6000);
+  }
+  function hideNotify() { const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
   function finishMatch() {
+    hideNotify();
     clearTimeout(U.timer);
     const m = U.m;
     while (!m.done) m.step();
@@ -2998,6 +3022,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const ms = U.m ? U.m.S[U.side] : null;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
+      case 'nclose': hideNotify(); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
@@ -3021,7 +3046,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'speed': U.speed = Number(id); schedule(); liveUpdate([]); return;
       case 'finish': finishMatch(); return;
       case 'timeout': if (U.m.timeout(U.side)) { U.paused = true; U.tPanel = true; clearTimeout(U.timer); liveUpdate(U.m.ev.slice(-1)); } return;
-      case 'resume': U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); return;
+      case 'resume': hideNotify(); U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); return;
       case 'empty': ms.empty = !ms.empty; liveUpdate([]); return;
       case 'mgk': U.m.setGK(U.side, id); liveUpdate([]); return;
       case 'subpick': if (!U.paused) return; U.subSel = U.subSel === id ? null : id; liveUpdate([]); return;
@@ -3090,7 +3115,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (document.getElementById('psheet')) return;
     if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
       e.preventDefault();
-      if (U.tPanel) { U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); }
+      if (U.tPanel) { hideNotify(); U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); }
       else { U.paused = !U.paused; if (!U.paused) U.subSel = null; schedule(); liveUpdate([]); }
       return;
     }
