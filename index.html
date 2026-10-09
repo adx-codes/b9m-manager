@@ -657,7 +657,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       a.excentricite = clamp(Math.round(9 + gauss() * 3.8), 1, 20);
       a.collectif = clamp(Math.round(11 + gauss() * 3.2), 1, 20);
     }
-    const left = (pos === 'ArD' || pos === 'AiD') ? rnd() < 0.8 : rnd() < 0.15;
+    // Côté droit (arrière et ailier droits) : toujours des gauchers ; ailleurs, environ 15 % de gauchers
+    const left = (pos === 'ArD' || pos === 'AiD') ? true : rnd() < 0.15;
     const p = {
       id: teamId + '-' + (++pid) + '-' + Math.floor(rnd() * 1e6),
       name: pick(FIRST) + ' ' + pick(LAST), pos, age, hand: left ? 'G' : 'D',
