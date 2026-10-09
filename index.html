@@ -170,9 +170,9 @@ tr.me td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 /* Terrain */
 .court { position: relative; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; background: var(--court); border-radius: 8px; overflow: hidden; }
 .court svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.slot { position: absolute; transform: translate(-50%, -50%); background: var(--surface); border-radius: 6px; padding: 4px 6px 5px; width: 132px; box-shadow: 0 1px 2px rgba(0,0,0,0.25); display: grid; gap: 1px; }
+.slot { position: absolute; transform: translate(-50%, -50%); background: var(--surface); border-radius: 6px; padding: 5px 8px 6px; width: 156px; box-shadow: 0 1px 2px rgba(0,0,0,0.25); display: grid; gap: 1px; }
 .slot .label { font-size: 0.64rem; color: var(--court); }
-.slot select { width: 100%; border: 0; background: var(--surface); color: var(--fg); font-size: 0.8rem; font-weight: 600; padding: 0; }
+.slot select { width: 100%; border: 0; background: var(--surface); color: var(--fg); font-size: 0.8rem; font-weight: 600; padding: 0; text-overflow: ellipsis; }
 select option, select optgroup { background-color: var(--surface); color: var(--fg); }
 .slot .ovr { font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) {
@@ -1603,7 +1603,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   };
   const CONS = Object.fromEntries(H.CONSIGNES);
   const SLOT = {
-    GB: 'left:50%;top:max(26px,9%)', AiG: 'left:max(52px,13%);top:21%', AiD: 'left:min(calc(100% - 52px),87%);top:21%',
+    GB: 'left:50%;top:max(30px,10%)', AiG: 'left:max(84px,15%);top:24%', AiD: 'left:min(calc(100% - 84px),85%);top:24%',
     Piv: 'left:50%;top:46%', ArG: 'left:22%;top:65%', ArD: 'left:78%;top:65%', DC: 'left:50%;top:85%'
   };
   const ovrAt = (p, pos) => H.ovrAt(p, pos);
@@ -2630,8 +2630,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const opts = t.players.filter((p) => pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB')
       .sort((x, y) => (y.pos === pos) - (x.pos === pos) || ovrAt(y, pos) - ovrAt(x, pos));
     return `<div class="slot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"><span class="label">${H.POS_LABEL[pos]}</span>
-      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} ${p.hand}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''} · ${ovrAt(p, pos).toFixed(1)}</option>`).join('')}</select>
-      <span class="ovr">${cur.hand === 'G' ? 'Gaucher' : 'Droitier'} · fatigue ${cur.fatigue} · forme ${cur.form > 0 ? '+' : ''}${cur.form}${(pos === 'ArD' || pos === 'AiD') && cur.hand === 'D' ? ' · <b style="color:var(--bad)">mauvais côté</b>' : ''}</span></div>`;
+      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${ovrAt(p, pos).toFixed(1)}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
+      <span class="ovr">${cur.hand === 'G' ? 'Gaucher' : 'Droitier'} · fat. ${cur.fatigue} · forme ${cur.form > 0 ? '+' : ''}${cur.form}${(pos === 'ArD' || pos === 'AiD') && cur.hand === 'D' ? ' · <b style="color:var(--bad)">mauvais côté</b>' : ''}</span></div>`;
   }
   function dragChip(p, click, ghost) {
     return `<button class="chip dragchip${ghost ? ' ghostchip' : ''}" draggable="true" data-drag="${p.id}" ${click ? `data-act="tribune" data-id="${p.id}"` : ''}><span class="grip" aria-hidden="true">⋮⋮</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${esc(short(p.name))} <span class="muted num">${p.ovr.toFixed(1)}</span></button>`;
