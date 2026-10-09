@@ -841,6 +841,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       }
     }
     if (!st.youthLog) st.youthLog = [];
+    if (!st.legends) st.legends = [];
     if (st.youth === undefined) st.youth = null;
     for (const t of st.teams) {
       for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
@@ -860,8 +861,28 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return st;
   }
   // ---------- Centre de formation et feuille de match ----------
-  function makeYouth(t) {
-    const pos = pick(POS);
+  // « Regens » : de jeunes pépites aux noms qui rappellent des légendes du hand, au même poste
+  const LEGENDS = [
+    { name: 'Thierry Omeyre', pos: 'GB', hand: 'D' }, { name: 'Arpad Sterbich', pos: 'GB', hand: 'D' }, { name: 'Niklas Landinn', pos: 'GB', hand: 'D' },
+    { name: 'Nicola Karabatik', pos: 'DC', hand: 'D' }, { name: 'Ivano Balicz', pos: 'DC', hand: 'D' }, { name: 'Jackson Richardsonn', pos: 'DC', hand: 'D' }, { name: 'Aron Palmarsonn', pos: 'DC', hand: 'D' }, { name: 'Talant Duchebaev', pos: 'DC', hand: 'D' },
+    { name: 'Mikel Hanssen', pos: 'ArG', hand: 'D' }, { name: 'Daniel Narcis', pos: 'ArG', hand: 'D' },
+    { name: 'Kiril Lazarow', pos: 'ArD', hand: 'G' }, { name: 'Jérôme Fernandès', pos: 'ArD', hand: 'G' },
+    { name: 'Uwe Genshaimer', pos: 'AiG', hand: 'D' }, { name: 'Michel Guigoux', pos: 'AiG', hand: 'D' },
+    { name: 'Luc Abalow', pos: 'AiD', hand: 'G' }, { name: 'Hans Lindbergh', pos: 'AiD', hand: 'G' }, { name: 'Ivan Cupitch', pos: 'AiD', hand: 'G' },
+    { name: 'Bertrand Gile', pos: 'Piv', hand: 'D' }, { name: 'Bjarte Myrol', pos: 'Piv', hand: 'D' }, { name: 'Cédric Sorindo', pos: 'Piv', hand: 'D' }
+  ];
+  function legendize(p, L, st) {
+    p.name = L.name; p.hand = L.hand; delete p.nat;
+    for (const k of Object.keys(WEIGHTS[p.pos])) p.a[k] = Math.max(p.a[k], clamp(p.a[k] + 3, 1, 15));
+    p.ovr = overall(p);
+    p.pot = Math.round(clamp(Math.max(p.ovr + 5, 16.5 + rnd() * 2.5), 1, 19.5) * 10) / 10;
+    p.legend = true;
+    if (st) (st.legends = st.legends || []).push(L.name);
+  }
+  function makeYouth(t, st) {
+    const free = st ? LEGENDS.filter(L => !(st.legends || []).includes(L.name)) : [];
+    const L = free.length && rnd() < 0.18 ? pick(free) : null;
+    const pos = L ? L.pos : pick(POS);
     const p = makePlayer(pos, 10, t.id);
     // Loterie, mais réaliste : attributs autour de 9 (rarement au-dessus de 14), traits de personnalité libres
     for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round(9 + gauss() * 2.4), 2, 16);
@@ -871,6 +892,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     p.ovr = overall(p);
     // Marge de progression : 1,5 à 5,5 points, et une vraie pépite de temps en temps (+3 en plus)
     p.pot = Math.round(clamp(p.ovr + 1.5 + rnd() * 4 + (rnd() < 0.12 ? 3 : 0), 1, 18.5) * 10) / 10;
+    if (L) legendize(p, L, st);
     p.youth = true;
     { let k = 0; while (t.players.some(x => x.name === p.name) && k++ < 20) Object.assign(p, makeName(t.id)); }
     p.ovr0 = p.ovr;
@@ -925,6 +947,15 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     pid = 0;
     const teams = CLUBS.map(makeTeam);
     const pool = Object.keys(MODS).filter(k => k !== 'calendrier');
+    // Trois jeunes « légendes » éparpillées chez les clubs adverses dès le début
+    const legends = [];
+    { const ais = teams.filter(t => t.id !== userId).sort(() => rnd() - 0.5), picks = LEGENDS.slice().sort(() => rnd() - 0.5).slice(0, 3);
+      picks.forEach((L, k) => { const t = ais[k], cands = t.players.filter(p => p.pos === L.pos).sort((a, b) => a.ovr - b.ovr), p = cands[0];
+        if (!p) return;
+        const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[t.rep];
+        const np = makePlayer(L.pos, base - 3.2, t.id); np.age = ri(18, 20); np.pot = 0;
+        legendize(np, L, { legends });
+        t.players[t.players.indexOf(p)] = np; }); }
     for (const t of teams) {
       if (t.id === userId) t.mods = (userMods || []).slice();
       else { const b = pick(pool); const m = pick(pool.filter(k => k !== b)); t.mods = [b + '+', m + '-']; }
@@ -945,7 +976,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, sched, youth: null, youthLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
   }
 
   // ---------- Moteur de match ----------
@@ -2299,7 +2330,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     if (G.round >= G.sched.length) G.ended = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, decision: 'Parti sans réponse' }); G.youth = null; }
-    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me()), round: G.round }; U.youthModal = true; U.yRelease = null; }
+    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
   }
   function restRound() {
     const nf = nextFixture();
