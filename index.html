@@ -8,51 +8,52 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: salle de sport — barre de club en tête, onglets, plan de travail centré ; tableau d'affichage sombre pour le match, terrain vert sapin avec zone dorée pour la tactique ; accent vert sapin, touches dorées */
+/* Layout: salle de sport — barre de club en tête, onglets, plan de travail centré ; tableau d'affichage sombre pour le match, accueil neutre (graphite), puis thème dérivé des couleurs du club choisi (couleur principale adoucie + couleur de contraste) */
 :root {
-  --bg: #f3f5f1;
+  --bg: #f4f4f3;
   --surface: #ffffff;
-  --sunk: #e7ece6;
-  --line: #d4ddd5;
-  --fg: #11201a;
-  --muted: #566a5f;
-  --accent: #1d5c44;
-  --accent-soft: #e0ede5;
-  --court: #1a4a39;
-  --court-soft: #dceae2;
+  --sunk: #e9e9e7;
+  --line: #d9d9d6;
+  --fg: #1a1c1e;
+  --muted: #63676c;
+  --accent: #33373c;
+  --accent-soft: #e9eaeb;
+  --court: #43484e;
+  --court-soft: #e5e6e7;
   --good: #23824f;
   --bad: #c0392b;
   --warn: #b7791f;
-  --board: #0e2219;
+  --board: #1a1c1f;
   --board-fg: #f4f5fb;
-  --board-dim: #8ea79a;
-  --digit: #e8c56a;
+  --board-dim: #9a9ea4;
+  --digit: #f0f0ee;
   --iso-ground: #d9e2d6; --iso-campus: #cfdcc9; --iso-road: #b8c2ca; --iso-mark: #f4f7f9; --iso-grey: #c3cbd2; --iso-roof: #a9b3bc;
   --iso-win: #eef4f8; --iso-tree: #a6b8ab; --iso-trunk: #8a8f86; --iso-edge: rgba(15,30,44,0.35); --iso-door: #2a3540; --iso-pitch: #9fb1c0;
   --iso-gym: #21867a; --iso-youth: #c2557a; --iso-office: #c99a2e; --iso-press: #b8433a;
   --iso-side: #e9eef0; --iso-unit: #b4bdc5; --iso-lamp: #f6c453; --iso-glow: 0; --iso-water: #7fb6d6; --iso-stone: #d6dbdf; --iso-tree2: #8fa597; --iso-turf: #9cc29a; --iso-bed: #c9a7a0; --iso-glass: #bcd5e6; --iso-pole: #6b7781; --iso-gridline: rgba(15,30,44,0.05);
   --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
-  --gold: #b48a1c;
+  --gold: #6f747a;
+  --zone: #a4a8ad;
   --on-accent: #ffffff;
   --r: 6px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a120e; --surface: #111b16; --sunk: #0d1611; --line: #21332a; --fg: #e5eee8; --muted: #90a598;
-    --accent: #4fae84; --accent-soft: #14301f; --court: #2e7d5f; --court-soft: #0f261c;
+    --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
+    --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
     --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-    --board: #06100b; --board-fg: #f4f5fb; --board-dim: #7d978a; --digit: #e8c56a; --gold: #e0bd5a; --on-accent: #06140d; --pos-fg: #7fd1ab;
+    --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0a120e; --surface: #111b16; --sunk: #0d1611; --line: #21332a; --fg: #e5eee8; --muted: #90a598;
-  --accent: #4fae84; --accent-soft: #14301f; --court: #2e7d5f; --court-soft: #0f261c;
+  --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
+  --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
   --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-  --board: #06100b; --board-fg: #f4f5fb; --board-dim: #7d978a; --digit: #e8c56a; --gold: #e0bd5a; --on-accent: #06140d; --pos-fg: #7fd1ab;
+  --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
   color-scheme: dark;
@@ -555,22 +556,22 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     return Math.round(clamp(p.ovr + head, 1, 20) * 10) / 10;
   }
   const CLUBS = [
-    { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f' },
-    { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c' },
-    { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a' },
-    { id: 'TLS', name: 'Toulouse Briques Roses', city: 'Toulouse', rep: 4, color: '#c2185b' },
-    { id: 'NAN', name: 'Les Éléphants de Nantes', city: 'Nantes', rep: 4, color: '#2e7d32' },
-    { id: 'BDX', name: 'Bordeaux Garonne HB', city: 'Bordeaux', rep: 4, color: '#6a1b4d' },
-    { id: 'REN', name: 'Rennes Hermine HB', city: 'Rennes', rep: 3, color: '#111111' },
-    { id: 'MRS', name: 'Marseille Calanques HB', city: 'Marseille', rep: 3, color: '#1b8bb4' },
-    { id: 'LIL', name: 'Lille Beffroi HB', city: 'Lille', rep: 3, color: '#c62828' },
-    { id: 'STR', name: 'Strasbourg Rhin HB', city: 'Strasbourg', rep: 3, color: '#455a9a' },
-    { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100' },
-    { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20' },
-    { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b' },
-    { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a' },
-    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c' },
-    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b' }
+    { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a' },
+    { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b' },
+    { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a', color2: '#d9b45a' },
+    { id: 'TLS', name: 'Toulouse Briques Roses', city: 'Toulouse', rep: 4, color: '#c2185b', color2: '#5fb3a1' },
+    { id: 'NAN', name: 'Les Éléphants de Nantes', city: 'Nantes', rep: 4, color: '#2e7d32', color2: '#e3c35a' },
+    { id: 'BDX', name: 'Bordeaux Garonne HB', city: 'Bordeaux', rep: 4, color: '#6a1b4d', color2: '#d8b46a' },
+    { id: 'REN', name: 'Rennes Hermine HB', city: 'Rennes', rep: 3, color: '#111111', color2: '#c8453b' },
+    { id: 'MRS', name: 'Marseille Calanques HB', city: 'Marseille', rep: 3, color: '#1b8bb4', color2: '#e7b75a' },
+    { id: 'LIL', name: 'Lille Beffroi HB', city: 'Lille', rep: 3, color: '#c62828', color2: '#5b7fa8' },
+    { id: 'STR', name: 'Strasbourg Rhin HB', city: 'Strasbourg', rep: 3, color: '#455a9a', color2: '#e2b45c' },
+    { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100', color2: '#2f5d7c' },
+    { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20', color2: '#e0c060' },
+    { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b', color2: '#3d5a80' },
+    { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f' },
+    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a' },
+    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a' }
   ];
   const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Mikkel', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Malo', 'Gaël', 'Erwan', 'Yann', 'Corentin', 'Killian', 'Mehdi', 'Ibrahima', 'Lars', 'Marko', 'Tiago', 'Florian', 'Arthur', 'Samuel', 'Loïc', 'Elias', 'Raphaël', 'Ewen'];
   const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Muller', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Le Goff', 'Le Bihan', 'Kervella', 'Tanguy', 'Riou', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Petrović', 'Jensen', 'Larsen', 'Nilsson', 'Kovač', 'Ferreira', 'Santos', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun', 'Le Gall', 'Quéméner'];
@@ -1724,9 +1725,62 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   }
   const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>`;
 
+  // ---------- Thème du club ----------
+  // Accueil neutre ; une fois le club choisi, sa couleur (adoucie) devient la base et sa couleur de contraste les touches
+  function hexToHsl(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    let h = 0, s = 0;
+    if (mx !== mn) {
+      const d = mx - mn;
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+  const hsl = (h, s, l) => `hsl(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+  function clubTheme(t) {
+    const base = H.CLUBS.find((c) => c.id === t.id) || t;
+    const [h, s0] = hexToHsl(t.color);
+    const [h2, s2] = hexToHsl(base.color2 || '#c8a24a');
+    const s = Math.min(s0, 0.55), grey = s0 < 0.1;
+    const sc = Math.min(Math.max(s2, 0.35), 0.62);
+    const tint = grey ? 0.02 : 0.1;
+    const light = {
+      bg: hsl(h, tint, 0.962), sunk: hsl(h, tint, 0.915), line: hsl(h, tint, 0.85), muted: hsl(h, grey ? 0.04 : 0.1, 0.42), fg: hsl(h, grey ? 0.05 : 0.25, 0.11),
+      accent: hsl(h, s, clampN(hexToHsl(t.color)[2], 0.24, 0.36)), 'accent-soft': hsl(h, grey ? 0.04 : 0.32, 0.93),
+      court: hsl(h, Math.min(s, 0.45), grey ? 0.2 : 0.24), 'court-soft': hsl(h, grey ? 0.04 : 0.28, 0.91),
+      board: hsl(h, grey ? 0.05 : 0.32, 0.1), 'board-dim': hsl(h, grey ? 0.04 : 0.14, 0.64),
+      digit: hsl(h2, sc, 0.66), gold: hsl(h2, sc, 0.42), zone: hsl(h2, sc * 0.9, 0.55), 'on-accent': '#ffffff'
+    };
+    const dark = {
+      bg: hsl(h, grey ? 0.03 : 0.2, 0.06), surface: hsl(h, grey ? 0.03 : 0.17, 0.09), sunk: hsl(h, grey ? 0.03 : 0.2, 0.07), line: hsl(h, grey ? 0.04 : 0.15, 0.17),
+      fg: hsl(h, 0.1, 0.92), muted: hsl(h, grey ? 0.04 : 0.1, 0.63),
+      accent: hsl(h, grey ? 0 : Math.max(s, 0.35), grey ? 0.85 : 0.66), 'accent-soft': hsl(h, grey ? 0.03 : 0.3, 0.16),
+      court: hsl(h, Math.min(s, 0.42), grey ? 0.26 : 0.33), 'court-soft': hsl(h, grey ? 0.03 : 0.28, 0.13),
+      board: hsl(h, grey ? 0.04 : 0.3, 0.05), 'board-dim': hsl(h, grey ? 0.04 : 0.12, 0.58),
+      digit: hsl(h2, sc, 0.68), gold: hsl(h2, sc, 0.66), zone: hsl(h2, sc * 0.9, 0.5), 'on-accent': hsl(h, 0.3, 0.08), 'pos-fg': hsl(h, grey ? 0 : 0.45, 0.76)
+    };
+    const css = (o) => Object.entries(o).map(([k, v]) => `--${k}: ${v};`).join(' ');
+    return `html:root { ${css(light)} }
+@media (prefers-color-scheme: dark) { html:root:not([data-theme="light"]) { ${css(dark)} } }
+html:root[data-theme="dark"] { ${css(dark)} }`;
+  }
+  function applyTheme() {
+    let el = document.getElementById('clubtheme');
+    const key = G ? me().id : '';
+    if (el && el.dataset.k === key) return;
+    if (!el) { el = document.createElement('style'); el.id = 'clubtheme'; document.head.appendChild(el); }
+    el.dataset.k = key;
+    el.textContent = G ? clubTheme(me()) : '';
+  }
+
   // ---------- Rendu principal ----------
   function render() {
     const app = document.getElementById('app');
+    applyTheme();
     if (!G) { app.innerHTML = renderHome(); return; }
     const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
@@ -2564,7 +2618,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 
   // ---------- Tactique ----------
   const COURT = `<svg viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0 Z" fill="#d6ae3e" fill-opacity="0.92"/>
+    <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0 Z" fill="var(--zone)" fill-opacity="0.92"/>
     <path d="M0 29.6 A90 90 0 0 0 85 90 L115 90 A90 90 0 0 0 200 29.6" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-dasharray="4 3"/>
     <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0" fill="none" stroke="#fff" stroke-width="1.2"/>
     <line x1="95" y1="70" x2="105" y2="70" stroke="#fff" stroke-width="1.2"/>
