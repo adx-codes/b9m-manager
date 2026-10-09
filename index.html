@@ -496,6 +496,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .fadv.far { background: var(--accent-soft); color: var(--accent); }
 .fadv.bad { background: color-mix(in srgb, var(--bad) 16%, var(--surface)); color: var(--bad); }
 .fadv.mid { background: var(--sunk); color: var(--muted); }
+.intrange { width: 100%; accent-color: var(--accent); margin: 6px 0 0; }
+.intlabels { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--muted); }
 </style>
 </head>
 <body>
@@ -669,6 +671,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   }
   const backStyle = (p) => p.style || autoStyle(p);
   const BACK_POS = ['ArG', 'DC', 'ArD'];
+  // Intensité du match, de −2 (gestion) à +2 (tout donner) : pression défensive, contre-attaques et engagement, contre fatigue et exclusions
+  const INTENSITY_LV = { '-2': 'Gestion', '-1': 'Calme', 0: 'Normale', 1: 'Engagée', 2: 'Tout donner' };
+  const intensity = (s) => s.tac.int || 0;
   // Ligne défensive (de la droite à la gauche du défenseur) et vis-à-vis de chaque attaquant
   const DLINE = ['AiD', 'ArD', 'DC', 'Piv', 'ArG', 'AiG'];
   const FACING = { ArG: 'ArD', ArD: 'ArG', DC: 'DC', Piv: 'Piv', AiG: 'AiD', AiD: 'AiG' };
@@ -1099,7 +1104,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       const dm = 60 / this.N;
       const sty = s.tac.jeu === 'collectif' ? 1 : s.tac.jeu === 'individuel' ? -1 : 0;
       for (const id of onIds) { s.mins[id] = (s.mins[id] || 0) + dm; if (sty) s.styleMin[id] = (s.styleMin[id] || 0) + dm * sty; }
-      const mult = (s.tac.att === 'rapide' ? (hasMod(s.team, 'physique+') ? 1.05 : hasMod(s.team, 'physique-') ? 1.25 : 1.15) : 1) * (s.curDef === '4-2' ? 1.12 : 1) * (s.tac.dstyle === 'homme' ? 1.08 : 1) * (hasMod(s.team, 'soins+') ? 0.8 : 1) * (s.tac.cons.includes('agressive') ? 1.05 : 1);
+      const mult = (1 + intensity(s) * 0.16) * (s.tac.att === 'rapide' ? (hasMod(s.team, 'physique+') ? 1.05 : hasMod(s.team, 'physique-') ? 1.25 : 1.15) : 1) * (s.curDef === '4-2' ? 1.12 : 1) * (s.tac.dstyle === 'homme' ? 1.08 : 1) * (hasMod(s.team, 'soins+') ? 0.8 : 1) * (s.tac.cons.includes('agressive') ? 1.05 : 1);
       for (const p of s.team.players) {
         if (onIds.has(p.id)) {
           const base = p.pos === 'GB' ? FAT.gk : FAT.gain;
@@ -1191,7 +1196,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     }
     // Contre-attaque
     if (last && last.by === 1 - ai && last.kind === 'to') {
-      const pca = 0.32 + (A.tac.att === 'rapide' ? 0.12 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * 0.015
+      const pca = 0.32 + intensity(A) * 0.03 + (A.tac.att === 'rapide' ? 0.12 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * 0.015
         + (dsys === '4-2' ? 0.03 : 0) + (dsys === '6-0' ? -0.05 : 0)
         + (A.tac.att === 'rapide' && hasMod(A.team, 'physique+') ? 0.05 : 0) + (A.tac.att === 'rapide' && A === this.h && hasMod(A.team, 'public+') ? 0.04 : 0);
       if (rnd() < pca) { A.st.ca++; return this.shoot(A, D, ai, i, 'ca'); }
@@ -1205,7 +1210,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const pTo = 0.165 + (A.tac.att === 'rapide' ? 0.025 : -0.01) + TO_MATRIX[dsys][A.tac.att] - (this.avg(A, i, 'passes') - 12) * 0.006
       + (D.tac.dstyle === 'homme' ? 0.008 : 0) + (A.tac.jeu === 'collectif' ? -0.01 + perso * 0.007 : 0) - this.fit(A, i) * 0.5 - (A.coh - 50) * 0.0006
       + ((this.avg(D, i, 'contre') + this.avg(D, i, 'duelDef')) / 2 - 12) * 0.005
-      + (man0 < 0 ? 0.03 : man0 > 0 ? -0.02 : 0) + (D.tac.cons.includes('agressive') ? 0.015 : 0) + (A.empty ? 0.02 : 0)
+      + (man0 < 0 ? 0.03 : man0 > 0 ? -0.02 : 0) + (D.tac.cons.includes('agressive') ? 0.015 : 0) + intensity(D) * 0.012 + (A.empty ? 0.02 : 0)
       + (D === this.h && hasMod(D.team, 'public+') ? 0.015 : 0) + (A === this.a ? HOME.to : 0);
     if (rnd() < pTo) {
       const f = this.field(A, i);
@@ -1222,7 +1227,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
         if (df.length) {
           const d = wpick(df, x => 21 - this.eff(D, x.p, 'discipline')).p;
           const aggr = D.tac.cons.includes('agressive'), homme = D.tac.dstyle === 'homme';
-          const pEx = 0.19 + (12 - this.eff(D, d, 'discipline')) * 0.012 + (aggr ? (hasMod(D.team, 'discipline+') ? 0 : 0.05) : 0)
+          const pEx = 0.19 + (intensity(D) > 0 ? 0.03 : 0.015) * intensity(D) + (12 - this.eff(D, d, 'discipline')) * 0.012 + (aggr ? (hasMod(D.team, 'discipline+') ? 0 : 0.05) : 0)
             + (hasMod(D.team, 'discipline-') ? (aggr ? 0.03 : 0) + (homme ? 0.03 : 0) : 0)
             + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex : 0);
           if (this.short(D, i) < 2 && rnd() < pEx) this.exclude(D, 1 - ai, d, i);
@@ -1334,6 +1339,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       if (A === this.h && hasMod(A.team, 'public-')) pr -= 0.03;
       if (!kind && hasMod(A.team, 'spectacle-') && A.tac.jeu !== 'collectif') pr -= 0.015;
       if (A.boost > i) pr += 0.03;
+      pr += intensity(A) * 0.01;
     }
     const man = clamp(this.short(D, i) - this.short(A, i), -2, 2);
     if (kind !== '7m' && kind !== 'vide') pr += man * 0.07;
@@ -1438,12 +1444,14 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       if (alt) { this.swap(s, 'GB', alt); s.gkLock = true; c.gk = true; say(`change de gardien : ${alt.name} entre`); }
     }
     if (diff <= -(4 - b) && min >= 30 && s.tac.att !== 'rapide') { s.tac.att = 'rapide'; say('accélère : passage en jeu rapide pour revenir'); }
-    if (diff <= -(3 - b) && min >= 42 && s.tac.dstyle !== 'homme') { s.tac.dstyle = 'homme'; say('défend désormais en homme à homme'); }
+    if (diff <= -(3 - b) && min >= 42 && s.tac.dstyle !== 'homme') { s.tac.dstyle = 'homme'; s.tac.int = Math.max(intensity(s), 1); say('défend désormais en homme à homme, avec plus d\'engagement'); }
+    if (diff <= -2 && min >= 54 && intensity(s) < 2) { s.tac.int = 2; say('demande à ses joueurs de tout donner'); }
+    if (diff >= 6 && min >= 45 && intensity(s) >= 0) { s.tac.int = -1; }
     if (diff <= -2 && min >= 50 - b * 3 && !s.forceDef) s.forceDef = rnd() < 0.5 ? '5-1' : '4-2';
     if (diff <= -1 && diff >= -3 && min >= 57 - b && !s.empty) { s.empty = true; say('sort son gardien : 7 contre 6'); }
     if (s.empty && diff > 0) { s.empty = false; say('arrête le 7 contre 6'); }
-    if (diff >= 3 && (s.tac.att !== c.orig.att || s.tac.dstyle !== c.orig.dstyle || s.forceDef)) {
-      s.tac.att = c.orig.att; s.tac.dstyle = c.orig.dstyle; s.forceDef = null; s.empty = false;
+    if (diff >= 3 && (s.tac.att !== c.orig.att || s.tac.dstyle !== c.orig.dstyle || s.forceDef || intensity(s) > 0)) {
+      s.tac.att = c.orig.att; s.tac.dstyle = c.orig.dstyle; s.forceDef = null; s.empty = false; s.tac.int = 0;
       say('a repris la main et revient à son plan de jeu');
     }
   };
@@ -1596,7 +1604,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -2061,6 +2069,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="opt"><span class="label">Système défensif</span><div class="seg"><button data-act="mdef" data-id="auto" aria-pressed="${!s.forceDef}">Auto (règles)</button>${H.TACTIC_DEFS.map((d) => `<button data-act="mdef" data-id="${d}" aria-pressed="${s.forceDef === d}">${d} forcé</button>`).join('')}</div></div>
         <div class="opt"><span class="label">Style défensif</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="mds" data-id="${k}" aria-pressed="${s.tac.dstyle === k}">${l}</button>`).join('')}</div></div>
         <div class="opt"><span class="label">Attaque</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="matt" data-id="${x}" aria-pressed="${s.tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div></div>
+        ${intensityHtml(s)}
         <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="mjeu" data-id="${k}" aria-pressed="${s.tac.jeu === k}">${l}</button>`).join('')}</div></div>
         <div class="opt"><span class="label">Consignes (2 maximum)</span><div class="row">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="mcons" data-id="${k}" aria-pressed="${s.tac.cons.includes(k)}">${l}</button>`).join('')}</div></div>
         <div><button class="btn primary" data-act="resume">${ht ? 'Lancer la 2e mi-temps' : 'Reprendre le match'}</button></div></div>`;
@@ -2073,7 +2082,21 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="row"><button class="btn primary" data-act="timeout" ${s.to[h] ? 'disabled' : ''}>${s.to[h] ? 'Temps mort utilisé' : 'Temps mort'}</button>
         <button class="btn" data-act="empty" aria-pressed="${s.empty}" ${late ? '' : 'disabled'}>${s.empty ? 'Arrêter le 7 contre 6' : 'Passer à 7 contre 6'}</button></div>
       <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Un temps mort par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à partir de la 50e minute : bonus en attaque, mais cage vide en cas de perte.</p>
-      <p class="legend" style="margin:0">${tacLine(s.tac)}<br>${s.forceDef ? 'Défense ' + s.forceDef + ' forcée' : rulesLine(s.tac.rules)}</p></div>`;
+      <p class="legend" style="margin:0">${tacLine(s.tac)}${s.tac.int ? ` · intensité ${H.INTENSITY_LV[s.tac.int].toLowerCase()}` : ''}<br>${s.forceDef ? 'Défense ' + s.forceDef + ' forcée' : rulesLine(s.tac.rules)}</p></div>`;
+  }
+  const INT_TXT = {
+    '-2': 'On gère : beaucoup moins de fatigue et d\'exclusions, mais moins de ballons récupérés et de contre-attaques. Idéal pour préserver l\'effectif avec une avance confortable.',
+    '-1': 'Un peu moins d\'engagement : on souffle et on évite les fautes.',
+    0: 'Engagement normal.',
+    1: 'Plus de pression défensive et de contre-attaques, un peu plus de fatigue et de 2 minutes.',
+    2: 'Tout pour revenir ou tuer le match : pression maximale, plus de ballons récupérés, de contre-attaques et de réussite, mais la fatigue grimpe vite et les exclusions pleuvent. À doser sur quelques minutes.'
+  };
+  function intensityHtml(s) {
+    const v = s.tac.int || 0;
+    return `<div class="opt"><span class="label">Intensité · <b style="color:var(--fg)">${H.INTENSITY_LV[v]}</b></span>
+      <input type="range" class="intrange" min="-2" max="2" step="1" value="${v}" data-int aria-label="Intensité" aria-valuetext="${H.INTENSITY_LV[v]}">
+      <div class="intlabels"><span>Gestion</span><span>Calme</span><span>Normale</span><span>Engagée</span><span>Tout donner</span></div>
+      <p style="margin:4px 0 0">${INT_TXT[v]}</p></div>`;
   }
   function courtPanel() {
     const m = U.m, s = m.S[U.side], i = Math.min(m.i, m.N - 1);
@@ -3022,6 +3045,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     else { tac.cons.push(id); if (tac.cons.length > 2) tac.cons.shift(); }
   }
   document.addEventListener('change', (e) => {
+    const ir = e.target.closest && e.target.closest('input[data-int]');
+    if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
     const rs = e.target.closest('select[data-rule]');
     if (rs && G) {
       const v = rs.value;
