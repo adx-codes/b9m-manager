@@ -503,6 +503,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .ipill.i2 { color: #1b1206; background: #ff9f5a; border-color: #ff9f5a; }
 .ipill.im1 { color: #a9d8ff; border-color: rgba(169,216,255,0.45); }
 .ipill.im2 { color: #08131d; background: #8cc8f2; border-color: #8cc8f2; }
+.colpick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 4px; }
+.colpick .label { margin-right: 4px; }
+.colpick .chip { padding: 4px 10px; font-size: 0.8rem; }
+.flag { font-size: 0.85em; }
+.fpick { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; font-size: 0.78rem; }
+.fpick .fl { color: var(--muted); }
 </style>
 </head>
 <body>
@@ -604,8 +610,40 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a' },
     { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a' }
   ];
-  const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Mikkel', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Malo', 'Gaël', 'Erwan', 'Yann', 'Corentin', 'Killian', 'Mehdi', 'Ibrahima', 'Lars', 'Marko', 'Tiago', 'Florian', 'Arthur', 'Samuel', 'Loïc', 'Elias', 'Raphaël', 'Ewen'];
-  const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Muller', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Le Goff', 'Le Bihan', 'Kervella', 'Tanguy', 'Riou', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Petrović', 'Jensen', 'Larsen', 'Nilsson', 'Kovač', 'Ferreira', 'Santos', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun', 'Le Gall', 'Quéméner'];
+  // Noms : un clin d'œil aux régions des clubs, quelques joueurs venus d'ailleurs
+  const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Mehdi', 'Ibrahima', 'Florian', 'Arthur', 'Samuel', 'Elias', 'Raphaël', 'Karim', 'Moussa', 'Nicolas', 'Julien'];
+  const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun'];
+  const REGION_NAMES = {
+    bretagne: { first: ['Erwan', 'Yann', 'Gaël', 'Malo', 'Ewen', 'Loïc', 'Corentin', 'Killian', 'Brieuc', 'Tanguy', 'Goulven', 'Ronan', 'Maël', 'Armel'], last: ['Le Gall', 'Le Goff', 'Kerjean', "Guivarc'h", 'Le Bihan', 'Tanguy', 'Riou', 'Quéméner', 'Le Roux', 'Morvan', 'Kervella', 'Cadiou', 'Le Floch', 'Le Bris', 'Guéguen', 'Le Corre', 'Jézéquel', 'Kerhervé'] },
+    ouest: { first: ['Clément', 'Bastien', 'Mathéo', 'Gaëtan', 'Loïc', 'Maxence'], last: ['Rousseau', 'Chauvin', 'Gaudin', 'Pasquier', 'Tessier', 'Bouchet', 'Guérin', 'Brossard', 'Rabiller', 'Gautreau', 'Retailleau', 'Baudry', 'Boisseau', 'Pineau'] },
+    nord: { first: ['Kévin', 'Dylan', 'Grégory', 'Jordan', 'Mathieu', 'Florian'], last: ['Delattre', 'Lefebvre', 'Vandenberghe', 'Desmet', 'Leclercq', 'Dumortier', 'Vanhoutte', 'Lemaire', 'Deschamps', 'Vercruysse', 'Dewaele', 'Delannoy', 'Wattiez', 'Pruvost'] },
+    alsace: { first: ['Florian', 'Thomas', 'Luc', 'Mathias', 'Frédéric', 'Joël'], last: ['Muller', 'Schmitt', 'Meyer', 'Wolff', 'Klein', 'Weber', 'Hoffmann', 'Koenig', 'Fischer', 'Zimmermann', 'Stoeckel', 'Ehrhart', 'Burckel', 'Wurtz'] },
+    paris: { first: ['Yanis', 'Ilyes', 'Samy', 'Adam', 'Bilal', 'Hugo', 'Paul'], last: ['Martin', 'Dubois', 'Lefèvre', 'Moreau', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Mendy', 'Camara', 'Nguyen', 'Da Silva', 'Lemoine', 'Rivière'] },
+    provence: { first: ['Marius', 'Fabien', 'Olivier', 'Anthony', 'Rémi', 'Lucas'], last: ['Agostini', 'Fabre', 'Giraud', 'Castellani', 'Martini', 'Rossi', 'Santoni', 'Olivieri', 'Bertolini', 'Camoin', 'Roubaud', 'Bianchi', 'Gasparini', 'Mariani'] },
+    sudouest: { first: ['Mathieu', 'Thibault', 'Bixente', 'Peio', 'Hugo', 'Romain'], last: ['Laborde', 'Etcheverry', 'Lafargue', 'Larrieu', 'Dupuy', 'Castaing', 'Bordenave', 'Cazenave', 'Lacoste', 'Fourcade', 'Lacombe', 'Salvat', 'Marty', 'Barthe'] },
+    alpes: { first: ['Baptiste', 'Clément', 'Rémi', 'Jules', 'Valentin', 'Loris'], last: ['Girard', 'Chabert', 'Roux', 'Faure', 'Brun', 'Blanc', 'Gauthier', 'Chambon', 'Fayolle', 'Vidal', 'Rochette', 'Pélissier', 'Rey', 'Juge'] },
+    auvergne: { first: ['Aurélien', 'Damien', 'Cyril', 'Hugo', 'Benjamin'], last: ['Chassaing', 'Vialle', 'Fayolle', 'Bonnefoy', 'Teyssier', 'Rochon', 'Vernet', 'Chambon', 'Delmas', 'Bayle'] },
+    bourgogne: { first: ['Arnaud', 'Guillaume', 'Damien', 'Victor', 'Thomas'], last: ['Bonnot', 'Rameau', 'Guillot', 'Perrot', 'Bourgeois', 'Moreau', 'Morel', 'Perrin', 'Gautheron', 'Bretin'] }
+  };
+  const CLUB_REGION = { PAR: 'paris', MTP: 'sudouest', LYO: 'alpes', TLS: 'sudouest', NAN: 'ouest', BDX: 'sudouest', REN: 'bretagne', MRS: 'provence', LIL: 'nord', STR: 'alsace', NCE: 'provence', STE: 'alpes', GRE: 'alpes', ANG: 'ouest', DIJ: 'bourgogne', CLE: 'auvergne' };
+  const FOREIGN = {
+    DK: { flag: '🇩🇰', first: ['Mads', 'Rasmus', 'Magnus', 'Jesper', 'Emil', 'Frederik'], last: ['Nielsen', 'Pedersen', 'Sørensen', 'Kristensen', 'Mortensen', 'Holm'] },
+    DE: { flag: '🇩🇪', first: ['Lukas', 'Jonas', 'Finn', 'Tobias', 'Niklas', 'Felix'], last: ['Schmidt', 'Becker', 'Wagner', 'Schäfer', 'Krüger', 'Hartmann'] },
+    NO: { flag: '🇳🇴', first: ['Sander', 'Kristian', 'Eirik', 'Henrik', 'Sindre'], last: ['Berg', 'Haugen', 'Bakken', 'Strand', 'Lunde'] },
+    ES: { flag: '🇪🇸', first: ['Jorge', 'Álex', 'Daniel', 'Iker', 'Pablo'], last: ['Fernández', 'Ruiz', 'Navarro', 'Ortega', 'Serrano'] },
+    HR: { flag: '🇭🇷', first: ['Ivan', 'Luka', 'Marin', 'Domagoj', 'Josip'], last: ['Horvat', 'Kovačević', 'Babić', 'Marić', 'Jurić'] },
+    RS: { flag: '🇷🇸', first: ['Nemanja', 'Stefan', 'Miloš', 'Dragan'], last: ['Petrović', 'Jovanović', 'Nikolić', 'Marković'] },
+    SE: { flag: '🇸🇪', first: ['Oscar', 'Viktor', 'Albin', 'Gustav'], last: ['Lindqvist', 'Eriksson', 'Nyström', 'Bergström'] },
+    IS: { flag: '🇮🇸', first: ['Gunnar', 'Bjarki', 'Arnar', 'Ómar'], last: ['Sigurðsson', 'Jónsson', 'Gunnarsson', 'Magnússon'] }
+  };
+  function makeName(teamId) {
+    if (rnd() < 0.12) { const code = pick(Object.keys(FOREIGN)), f = FOREIGN[code]; return { name: pick(f.first) + ' ' + pick(f.last), nat: code }; }
+    const reg = REGION_NAMES[CLUB_REGION[teamId]];
+    const first = reg && rnd() < 0.5 ? pick(reg.first) : pick(FIRST);
+    const last = reg && rnd() < 0.7 ? pick(reg.last) : pick(LAST);
+    return { name: first + ' ' + last };
+  }
+  const flagOf = (p) => (p && p.nat && FOREIGN[p.nat]) ? FOREIGN[p.nat].flag : '';
   const TACTIC_DEFS = ['6-0', '5-1', '4-2'];
   const JEU = { collectif: 'Collectif', equilibre: 'Équilibré', individuel: 'Individuel' };
   const DSTYLE = { zone: 'Défense collective', homme: 'Homme à homme' };
@@ -674,7 +712,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const loin = p.a.tirLoin, near = (p.a.tirPres + p.a.duel) / 2;
     return loin - near >= 2 ? 'loin' : near - loin >= 2 ? 'contact' : 'equilibre';
   }
-  const backStyle = (p) => p.style || autoStyle(p);
+  const backStyle = (p) => p.matchStyle || p.style || autoStyle(p);
   const BACK_POS = ['ArG', 'DC', 'ArD'];
   // Intensité du match, de −2 (gestion) à +2 (tout donner) : pression défensive, contre-attaques et engagement, contre fatigue et exclusions
   const INTENSITY_LV = { '-2': 'Gestion', '-1': 'Calme', 0: 'Normale', 1: 'Engagée', 2: 'Tout donner' };
@@ -721,7 +759,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const left = (pos === 'ArD' || pos === 'AiD') ? true : rnd() < 0.15;
     const p = {
       id: teamId + '-' + (++pid) + '-' + Math.floor(rnd() * 1e6),
-      name: pick(FIRST) + ' ' + pick(LAST), pos, age, hand: left ? 'G' : 'D',
+      ...makeName(teamId), pos, age, hand: left ? 'G' : 'D',
       a, form: 0, fatigue: 0, goals: 0, apps: 0, saves: 0, mins: 0
     };
     p.ovr = overall(p);
@@ -736,6 +774,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       players.push(makePlayer(pos, base + 1, club.id));
       players.push(makePlayer(pos, base - 0.8, club.id));
     }
+    // Pas d'homonymes dans un même effectif
+    const seen = new Set();
+    for (const p of players) { let k = 0; while (seen.has(p.name) && k++ < 20) Object.assign(p, makeName(club.id)); seen.add(p.name); }
     const t = {
       ...club, players,
       tactic: { att: rnd() < 0.5 ? 'place' : 'rapide', dstyle: rnd() < 0.6 ? 'zone' : 'homme', jeu: 'equilibre', cons: [], rules: defaultRules() },
@@ -823,6 +864,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     // Marge de progression : 1,5 à 5,5 points, et une vraie pépite de temps en temps (+3 en plus)
     p.pot = Math.round(clamp(p.ovr + 1.5 + rnd() * 4 + (rnd() < 0.12 ? 3 : 0), 1, 18.5) * 10) / 10;
     p.youth = true;
+    { let k = 0; while (t.players.some(x => x.name === p.name) && k++ < 20) Object.assign(p, makeName(t.id)); }
     p.ovr0 = p.ovr;
     p.a0 = Object.assign({}, p.a);
     p.hist = [];
@@ -902,6 +944,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   // Fatigue : gain par possession sur le terrain, récupération sur le banc, seuil et pente de la perte d'attributs
   // Avantage du terrain : réussite au tir, ballons perdus, sévérité de l'arbitre, fatigue du déplacement
   const HOME = { shot: 0.02, to: 0.007, ex: 0.03, travel: 4 };
+  const MANUAL_MIN = 7;
   const FAT = { gain: 0.9, gk: 0.2, rest: 0.35, ht: 10, thr: 28, k: 0.009, recover: 35, release: 55 };
   const ZONE_BASE = { loin: 0.44, aile: 0.56, pivot: 0.67, percee: 0.58, ca: 0.8, er: 0.68, '7m': 0.74, vide: 0.9 };
   const TO_MATRIX = { '6-0': { place: 0, rapide: 0 }, '5-1': { place: 0.03, rapide: 0 }, '4-2': { place: 0.005, rapide: 0.05 } };
@@ -1050,7 +1093,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     if (!p || s.red.has(p.id) || (pos === 'GB') !== (p.pos === 'GB')) return false;
     if (cur && s.excl.some(e => e.id === cur.id && e.until > i)) return false;
     this.swap(s, pos, p);
-    s.manual[pos] = true;
+    s.manual[pos] = this.i;
     if (pos === 'GB') s.gkLock = true;
     return true;
   };
@@ -1082,7 +1125,6 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       this.h.half = this.h.score; this.a.half = this.a.score;
       for (const s of this.S) for (const id in s.fat) s.fat[id] = Math.max(0, s.fat[id] - FAT.ht);
       this.push('mt', -1, `Mi-temps : ${this.h.score} – ${this.a.score}`, true);
-      for (const s of this.S) for (const pos of Object.keys(s.manual)) if (pos !== 'GB') { delete s.manual[pos]; s.rot[pos].since = this.i; }
       this.S.forEach((s, si) => {
         if (s.gkLock) return;
         const other = s.bench.filter(b => b.pos === 'GB' && !s.red.has(b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id])[0];
@@ -1130,10 +1172,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     for (const pos of POS) {
       if (pos === 'GB') continue;
       const plan = s.rot[pos];
-      // Un poste pris en main par le coach revient au staff dès que son joueur entre dans le rouge (fatigue 55)
-      if (s.manual[pos]) {
-        const mp = s.lineup[pos];
-        if (mp && s.fat[mp.id] >= FAT.release) { delete s.manual[pos]; plan.since = -99; s.released = (s.released || 0) + 1; }
+      // Un poste pris en main par le coach revient au staff au bout de 7 minutes de jeu
+      if (pos in s.manual) {
+        if ((i - s.manual[pos]) * 60 / this.N >= MANUAL_MIN) { delete s.manual[pos]; plan.since = -99; }
         else continue;
       }
       if ((i + plan.off) % 8 !== 0) continue;
@@ -1609,7 +1650,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -1784,7 +1825,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const o = document.getElementById('psheet');
     if (o) { o.remove(); if (U.sheetFrom && document.body.contains(U.sheetFrom)) U.sheetFrom.focus(); }
   }
-  const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>`;
+  const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>${H.flagOf(p) ? ` <span class="flag" title="Joueur étranger">${H.flagOf(p)}</span>` : ''}`;
 
   // ---------- Thème du club ----------
   // Accueil neutre ; une fois le club choisi, sa couleur (adoucie) devient la base et sa couleur de contraste les touches
@@ -1888,6 +1929,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     const live = U.view === 'live' && U.m;
     const btn = live ? `<button class="btn primary nextbtn" data-act="tab" data-id="match">Match en cours →</button>`
+      : U.post && U.view === 'post' && U.tab === 'match' ? `<button class="btn primary nextbtn" data-act="tab" data-id="championnat">Résultats et classement →</button>`
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
     const pos = G.results.length ? `${ord(rank())} du championnat` : 'Avant la 1re journée';
@@ -2119,7 +2161,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const out = exc.has(p.id) || s.red.has(p.id);
       const dis = !paused || out;
       return `<button class="ccard${sel === pos ? ' sel' : ''}${out ? ' out' : ''}" data-act="subpick" data-id="${pos}" ${dis ? 'disabled' : ''} aria-pressed="${sel === pos}">
-        <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${s.manual[pos] ? '<span class="ctag">Coach</span>' : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
+        <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${pos in s.manual ? `<span class="ctag" title="Le staff reprend ce poste dans ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))} min">Coach · ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))}'</span>` : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
         <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, 'Note ')}</button>`;
     }).join('');
     const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos));
@@ -2138,8 +2180,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <span class="legend">${paused ? (sel ? `Choisis qui entre au poste ${H.POS_LABEL[sel].toLowerCase()} : vert même poste, bleu poste secondaire.` : 'Clique sur un joueur du terrain pour le remplacer.') : 'Mets le match en pause pour faire un changement.'}</span></div>
       <span class="label">Sur le terrain</span><div class="cgrid">${onCards}</div>
       <span class="label" style="display:block;margin-top:12px">Banc</span><div class="cgrid">${benchCards || '<span class="muted">Personne sur le banc.</span>'}</div>
-      ${manual.length ? `<div class="row" style="gap:8px;margin-top:12px"><span class="legend">Postes gérés par toi (le staff reprend la main à 55 de fatigue ou à la pause) :</span>${manual.map((pos) => `<button class="chip" data-act="subauto" data-id="${pos}" ${paused ? '' : 'disabled'}>${pos} · rendre au staff</button>`).join('')}</div>` : ''}
-      <p class="legend" style="margin:8px 0 0">Jauge de fatigue : verte sous 28, orange jusqu'à 55, rouge au-delà ; dès 28, les attributs baissent. Les rotations restent automatiques. Dès que tu changes un joueur, le staff ne touche plus à ce poste ; il le reprend tout seul quand ton joueur passe dans le rouge (fatigue 55) et à la mi-temps, ou plus tôt si tu le lui rends. Un joueur exclu ne peut pas être remplacé pendant ses 2 minutes.</p></section>`;
+      ${manual.length ? `<div class="row" style="gap:8px;margin-top:12px"><span class="legend">Postes gérés par toi (le staff reprend la main au bout de ${H.MANUAL_MIN} minutes de jeu) :</span>${manual.map((pos) => `<button class="chip" data-act="subauto" data-id="${pos}" ${paused ? '' : 'disabled'}>${pos} · rendre au staff</button>`).join('')}</div>` : ''}
+      <p class="legend" style="margin:8px 0 0">Jauge de fatigue : verte sous 28, orange jusqu'à 55, rouge au-delà ; dès 28, les attributs baissent. Les rotations restent automatiques. Dès que tu changes un joueur, le staff ne touche plus à ce poste pendant ${H.MANUAL_MIN} minutes de jeu, puis reprend les rotations (ou plus tôt si tu le lui rends). Un joueur exclu ne peut pas être remplacé pendant ses 2 minutes.</p></section>`;
   }
   function liveBar() {
     const m = U.m, i = Math.min(m.i, m.N - 1);
@@ -2210,7 +2252,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="fwho"><span class="pos">${pos}</span> ${plink(me1, short(me1.name))}<span class="muted"> face à </span>${d.who ? plink(d.who, short(d.who.name)) : '–'}</div>
         <div class="fduel"><span class="fl">Percée</span>${bar(me1.a.duel, d.v)}<span class="num muted">${me1.a.duel} / ${d.v.toFixed(0)}</span></div>
         <div class="fduel"><span class="fl">Tir de loin</span>${bar(me1.a.tirLoin, c.v)}<span class="num muted">${me1.a.tirLoin} / ${c.v.toFixed(0)}</span></div>
-        <span class="fadv ${adv[0]}">${adv[1]}</span></div>`;
+        <span class="fadv ${adv[0]}">${adv[1]}</span>
+        <div class="fpick"><span class="fl">Pour ce match</span><span class="seg sm">${[['', 'Habituel'], ['loin', 'De loin'], ['equilibre', 'Équilibré'], ['contact', 'Au contact']].map(([k, l]) => `<button data-act="mstyle" data-id="${me1.id}|${k}" aria-pressed="${(me1.matchStyle || '') === k}" title="${k ? '' : 'Réglage de la tactique : ' + H.BACK_STYLES[me1.style || H.autoStyle(me1)]}">${l}</button>`).join('')}</span></div></div>`;
     }).join('');
     return `<div class="opt"><span class="label">Face-à-face en attaque</span>
       <div class="frows">${rows}</div>
@@ -2237,6 +2280,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       rd.push({ h, a, hs: rr.h.score, as: rr.a.score });
     }
     G.results.push(rd);
+    for (const p of me().players) delete p.matchStyle;
     G.round++;
     H.recover(G);
     for (const t of G.teams) if (!playing.has(t.id)) for (const p of t.players) { p.fatigue = Math.max(0, p.fatigue - 20); p.lastMins = undefined; }
@@ -2309,7 +2353,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const gk = Object.entries(mine.saves).map(([id, n]) => ({ p: t.players.find((x) => x.id === id), n })).filter((x) => x.p);
     const old = p.side === undefined ? '' : '';
     U.side = p.side;
-    return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div></section>${old}
+    return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-act="tab" data-id="championnat">Passer à la suite : résultats et classement →</button></div></section>${old}
       <div class="grid2">
         <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
         <div style="display:grid;gap:20px;min-width:0">
@@ -2348,7 +2393,15 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   const GK_COLS = [['Gardien', [['reflexes', 'Réfl.'], ['placement', 'Plac.'], ['gk7m', '7 m'], ['relance', 'Rel.'], ['endurance', 'End.']]]];
   const ATTR_LABEL = Object.fromEntries(H.FIELD.concat(H.GKA, H.TRAITS));
   const heat = (v) => v >= 16 ? 'h5' : v >= 13 ? 'h4' : v >= 10 ? 'h3' : v >= 7 ? 'h2' : 'h1';
-  function squadTable(t, players, groups, gk) {
+  // Colonnes visibles de l'effectif (choix mémorisé dans ce navigateur)
+  function hiddenCols() { if (!U.hidden) { try { U.hidden = JSON.parse(localStorage.getItem('hbm-cols') || '[]'); } catch (e) { U.hidden = []; } } return U.hidden; }
+  function colPicker() {
+    const h = hiddenCols();
+    return `<div class="colpick"><span class="label">Colonnes</span>${['Suivi'].concat(FIELD_COLS.map(([g]) => g)).map((g) => `<button class="chip" data-act="colt" data-id="${g}" aria-pressed="${!h.includes(g)}">${g === 'Suivi' ? 'Forme, fatigue, minutes' : g}</button>`).join('')}</div>`;
+  }
+  function squadTable(t, players, groupsAll, gk) {
+    const hid = hiddenCols(), suivi = !hid.includes('Suivi');
+    const groups = gk ? groupsAll : groupsAll.filter(([g]) => !hid.includes(g));
     const starters = new Set(Object.values(t.lineup));
     const s = U.sort;
     const val = (p, k) => k === 'pos' ? H.POS.indexOf(p.pos) * 100 - p.ovr : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? p.ovr - (p.ovr0 ?? p.ovr) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
@@ -2363,14 +2416,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const sh = (k, l, cls, title) => `<th class="${cls || ''}${s.k === k ? ' sorted' : ''}"${title ? ` title="${esc(title)}"` : ''}><button class="sortbtn" data-act="sort" data-id="${k}">${l}${s.k === k ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button></th>`;
     const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
     const formTxt = (f) => f > 0 ? `<span class="form" style="color:var(--good)">+${f}</span>` : f < 0 ? `<span class="form" style="color:var(--bad)">${f}</span>` : '<span class="form muted">=</span>';
-    const head1 = `<tr class="grp"><th class="stick" colspan="1"></th><th colspan="8"></th>${groups.map(([g, cols]) => `<th colspan="${cols.length}" class="gh">${g}</th>`).join('')}<th></th></tr>`;
-    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}<th class="r${['ovr', 'pot'].includes(s.k) ? ' sorted' : ''}"><button class="sortbtn" data-act="sort" data-id="ovr">Note</button> / <button class="sortbtn" data-act="sort" data-id="pot">pot.</button></th>${sh('dlt', 'Δ', 'r', 'Progression de la note depuis le début de saison')}${sh('form', 'Forme', 'r')}${sh('fatigue', 'Fatigue')}${sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match')}${sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match')}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
+    const head1 = `<tr class="grp"><th class="stick" colspan="1"></th><th colspan="${suivi ? 8 : 4}"></th>${groups.map(([g, cols]) => `<th colspan="${cols.length}" class="gh">${g}</th>`).join('')}<th></th></tr>`;
+    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}<th class="r${['ovr', 'pot'].includes(s.k) ? ' sorted' : ''}"><button class="sortbtn" data-act="sort" data-id="ovr">Note</button> / <button class="sortbtn" data-act="sort" data-id="pot">pot.</button></th>${sh('dlt', 'Δ', 'r', 'Progression de la note depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
     const rows = sorted.map((p) => {
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
-        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="r nw"><b>${p.ovr.toFixed(1)}</b><span class="pot" title="Potentiel">/${(p.pot ?? p.ovr).toFixed(1)}</span></td><td class="r">${(() => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? `<span class="dlt">+${d.toFixed(1)}</span>` : d <= -0.05 ? `<span class="dlt neg">${d.toFixed(1)}</span>` : '<span class="muted">·</span>'; })()}</td><td class="r">${formTxt(p.form)}</td>
-        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>
+        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="r nw"><b>${p.ovr.toFixed(1)}</b><span class="pot" title="Potentiel">/${(p.pot ?? p.ovr).toFixed(1)}</span></td><td class="r">${(() => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? `<span class="dlt">+${d.toFixed(1)}</span>` : d <= -0.05 ? `<span class="dlt neg">${d.toFixed(1)}</span>` : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
+        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}">${p.a[k]}</td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
@@ -2390,7 +2443,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <h3 class="sub3">Profil de l'équipe</h3>${teamProfile(t)}
         ${G.lastTraining && G.lastTraining.round === G.round && G.lastTraining.log.length ? `<div class="advice" style="margin-top:12px"><span class="label">Progrès à l'entraînement après la journée ${G.lastTraining.round}</span><div class="row" style="gap:6px">${Object.values(G.lastTraining.log.reduce((acc, e) => { (acc[e.id] = acc[e.id] || { name: e.name, n: 0 }).n++; return acc; }, {})).map((x) => `<span class="up">${esc(short(x.name))} +${x.n}</span>`).join('')}</div></div>` : ''}
         ${G.lastStyle && G.lastStyle.round === G.round && G.lastStyle.log.length ? `<div class="advice" style="margin-top:12px"><span class="label">Esprit collectif après la journée ${G.lastStyle.round}</span><div class="row" style="gap:6px">${G.lastStyle.log.map((e) => `<span class="${e.d > 0 ? 'up' : 'up down'}">${esc(short(e.name))} ${e.d > 0 ? '+1' : '−1'} → ${e.v}</span>`).join('')}</div></div>` : ''}
-        <h3 class="sub3">Joueurs de champ</h3>${squadTable(t, field, FIELD_COLS, false)}
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:10px"><h3 class="sub3">Joueurs de champ</h3>${colPicker()}</div>${squadTable(t, field, FIELD_COLS, false)}
         <h3 class="sub3">Gardiens</h3>${squadTable(t, gks, GK_COLS, true)}
         <p class="legend">9 m : tir de loin · 6 m : tir de près · 7 m : pénalty · Pas. : passes · Vis. : vision de jeu · Pos. : prise de position · Vit. : vitesse · End. : endurance · Déf. : défense · Disc. : discipline · S-F : sang-froid · Réfl. : réflexes · Plac. : placement · Rel. : relance. Exc. : excentricité, la propension à tenter des gestes spectaculaires (roucoulette, kung-fu, chabala) : réussis, ils trompent le gardien et lancent l'équipe ; ratés, c'est un ballon perdu. Coll. : esprit collectif, de joueur perso (bas) à joueur collectif (haut), qui évolue avec le temps de jeu dans un style collectif (▲) ou individuel (▼) ; ces deux colonnes décrivent un profil, pas un niveau, d'où leur couleur bleue. Dès 28 de fatigue, les attributs baissent : environ −10 % à 40, −25 % à 55, −45 % au maximum. La jauge monte d'environ 1,7 point par minute sur le terrain et redescend lentement sur le banc ; entre deux journées, chacun récupère 35 points.</p></section>`;
   }
@@ -2950,6 +3003,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
       case 'bsclose': U.bsModal = false; render(); { const o = document.querySelector('[data-act=bsopen]'); if (o) o.focus(); } return;
       case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
+      case 'colt': { const h = hiddenCols(); U.hidden = h.includes(id) ? h.filter((x) => x !== id) : h.concat(id); try { localStorage.setItem('hbm-cols', JSON.stringify(U.hidden)); } catch (e) {} render(); return; }
+      case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
       case 'psclose': closeSheet(); return;
