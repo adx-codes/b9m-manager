@@ -438,7 +438,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             ${faceHtml(t, opp)}
           </div>
         </section>
-        <aside class="side">${betCard(h, a)}</aside>
+        <aside class="side">${betCard(h, a)}${tvCard(h, a)}</aside>
       </div>
       <section class="panel"><h3>Effectif adverse · ${esc(opp.name)}</h3>
         <p class="legend" style="margin:0 0 8px">Les notes de tous leurs joueurs, pour préparer ton plan : repère leurs meilleurs tireurs, leurs ailiers et leurs duellistes. Clique sur un en-tête pour trier.</p>
@@ -958,6 +958,52 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">J${G.round + 1}</span></div>
       <div class="betrow">${cell(0, short3(h), h.name, o && o.ow, share[0])}${cell(1, 'Nul', 'Match nul', o && o.od, share[1])}${cell(2, short3(a), a.name, o && o.ol, share[2])}</div>
       <p class="betnote">Cotes fictives. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
+  }
+  // « Jet de 7 » sur 9M Sports : avant-match satirique par un duo fictif (Basile Tonnerre au micro, Jean-Pierre Dubras consultant).
+  // Texte tiré au sort mais stable pour une journée donnée (graine = journée + affiche).
+  function tvCard(h, a) {
+    let seed = 0;
+    for (const c of `${G.seed}:${G.round}:${h.id}-${a.id}`) seed = (Math.imul(seed ^ c.charCodeAt(0), 2654435761) + 1) | 0;
+    const R = () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const pk = (arr) => arr[Math.floor(R() * arr.length)];
+    const st = H.standings(G), rk = (t) => st.findIndex((r) => r.id === t.id) + 1, played = G.results.length > 0;
+    const form = (t) => { const g = []; G.results.forEach((rd) => rd.forEach((x) => { if (x.h === t.id || x.a === t.id) { const us = x.h === t.id ? x.hs : x.as, th = x.h === t.id ? x.as : x.hs; g.push(us > th ? 'V' : us < th ? 'D' : 'N'); } })); return g; };
+    const streak = (t) => { const f = form(t); let n = 0; const k = f[f.length - 1]; for (let i = f.length - 1; i >= 0 && f[i] === k; i--) n++; return { k, n }; };
+    const star = (t) => t.players.filter((p) => p.pos !== 'GB').sort((x, y) => y.ovr - x.ovr)[0];
+    const gap = h.rep - a.rep, BT = 'Basile Tonnerre', JP = 'Jean-Pierre Dubras';
+    const L = [];
+    // Ouverture
+    L.push([BT, pk([
+      `Bonsoir à tous et bienvenue à ${h.city} ! ${played ? `${rk(h)}e contre ${rk(a)}e` : 'Première journée'} de ${LEAGUE}, ${h.name} reçoit ${a.name}, et je vous le dis d'entrée : ça va sentir la résine !`,
+      `Mesdames et messieurs, accrochez vos ceintures : ${h.name} – ${a.name}, ${Math.abs(gap) >= 2 ? 'un David contre Goliath' : gap === 0 && h.rep >= 4 ? 'un sommet, que dis-je, un Everest' : 'une affiche qui sent bon le handball'} ! La salle de ${h.city} est pleine… enfin, elle va l'être.`,
+      `Quelle soirée ! J${G.round + 1} de ${LEAGUE}, ${h.name} contre ${a.name}. Jean-Pierre, j'ai des frissons, et pourtant le chauffage marche.`
+    ])]);
+    // Forme ou début de saison
+    const sa = streak(a), sh = streak(h);
+    if (!played) L.push([JP, pk([`Début de saison, Basile : personne ne sait rien, donc tout le monde a un avis. Moi le premier.`, `Premier match, c'est toujours piège. Les jambes sont neuves, les gardiens aussi, et les arbitres… on verra.`])]);
+    else if (sa.n >= 3) L.push([JP, sa.k === 'V' ? `${a.name} reste sur ${sa.n} victoires de rang. Moi quand j'étais gardien, la confiance c'était 50 % du match. Et l'autre moitié, c'était la confiance aussi.` : sa.k === 'D' ? `${a.name} a perdu ses ${sa.n} derniers matchs. Une bête blessée, Basile. Et une bête blessée, ça mord. Ou ça boite. Les deux se voient.` : `${sa.n} nuls de suite pour ${a.name}. Ils sont réguliers, il faut leur reconnaître ça.`]);
+    else if (sh.n >= 3) L.push([JP, sh.k === 'V' ? `${h.name} sur une série de ${sh.n} victoires : quand ça roule comme ça, même les poteaux deviennent copains.` : sh.k === 'D' ? `${sh.n} défaites de suite pour ${h.name}. Il va falloir mettre de l'impact. Beaucoup d'impact. Je ne sais pas encore où, mais beaucoup.` : `${h.name} enchaîne les nuls. Ce soir, il faut choisir son camp.`]);
+    else L.push([JP, pk([`Deux équipes en dents de scie, Basile. Ce soir, c'est la scie qui va parler.`, `On a ${rk(h)}e contre ${rk(a)}e, mais vous savez ce qu'on dit : au coup d'envoi, le classement reste au vestiaire. Avec mes lunettes, d'ailleurs.`])]);
+    // Joueur à suivre
+    const ta = star(a), th = star(h), pick = R() < 0.5 ? ta : th, pt = pick && a.players.includes(pick) ? a : h;
+    if (pick) L.push([BT, pk([`Attention à ${pick.name}, ${H.POS_LABEL[pick.pos].toLowerCase()} de ${pt.city}… ${pick.name.split(' ').slice(-1)[0]}, ${pick.name.split(' ').slice(-1)[0]} ! Un joueur capable de tout, et surtout du meilleur !`, `Le joueur à surveiller ce soir : ${pick.name}. Jean-Pierre, si vous deviez le décrire en un mot ? — En deux mots, Basile : un joueur.`, `${pick.name}, ${H.POS_LABEL[pick.pos].toLowerCase()} : quand il prend le ballon, même la mi-temps attend.`])]);
+    // Légende cachée dans un effectif (sans jamais le dire)
+    const leg = h.players.concat(a.players).find((p) => p.legend);
+    if (leg && R() < 0.6) L.push([JP, `Et ce jeune ${leg.name}… Ce nom me dit quelque chose. Non ? Bon. Ça me reviendra à la mi-temps.`]);
+    // Match aller
+    let aller = null;
+    G.results.forEach((rd) => rd.forEach((x) => { if (x.h === a.id && x.a === h.id) aller = x; }));
+    if (aller) L.push([BT, `Au match aller, ${aller.hs}–${aller.as} pour ${aller.hs > aller.as ? a.name : aller.hs < aller.as ? h.name : 'personne'}. ${aller.hs === aller.as ? 'Ce soir on veut un vainqueur, ou au moins un vainqueur.' : 'Ce soir, il y a de la revanche dans l\'air. Et un peu de résine.'}`]);
+    // Cotes Bet9M
+    const o = G.odds && G.odds.key === G.round + ':' + h.id + '-' + a.id ? G.odds : null;
+    if (o && R() < 0.7) { const f = o.ow <= o.ol ? [h, o.ow] : [a, o.ol]; L.push([JP, `Bet9M donne ${f[0].name} favori à ${f[1].toFixed(2).replace('.', ',')}. Moi je ne parie jamais, Basile. Sauf sur une chose : ça va se jouer dans les dix dernières minutes.`]); }
+    // Clôture
+    L.push([BT, pk([`Les deux équipes sont sur le terrain, l'arbitre porte le sifflet à la bouche… on y va ! Restez avec nous, ça va tabasser !`, `C'est l'heure ! Coup d'envoi dans un instant, et ça, Jean-Pierre, c'est du hand !`, `Tout est prêt, la résine est chaude, les supporters aussi. Place au jeu !`])]);
+    const lines = L.slice(0, 1).concat(L.slice(1, -1).slice(0, 3), L.slice(-1));
+    return `<section class="panel tvcard" aria-label="Avant-match, Jet de 7 sur 9M Sports">
+      <div class="tvhead"><span class="tvlogo" aria-hidden="true"><b>9M</b>SPORTS</span><span class="tvshow">Jet de 7</span><span class="tvlive">Avant-match</span></div>
+      <div class="tvlines">${lines.map(([who, txt]) => `<p><b class="${who === BT ? 'bt' : 'jp'}">${who === BT ? 'B. Tonnerre' : 'J.-P. Dubras'}</b> ${esc(txt)}</p>`).join('')}</div>
+      <p class="betnote">Basile Tonnerre au micro, Jean-Pierre Dubras, ancien gardien international (212 sélections, dont 3 sur le terrain), à la consultation.</p></section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));

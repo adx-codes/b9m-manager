@@ -299,6 +299,8 @@ Le coach IA monte d'un cran en homme à homme, demande de tout donner s'il est m
 
 **Cotes Bet9M (préparation du match) :** un bookmaker fictif, clin d'œil à Beyond9M, affiche les cotes victoire, nul, défaite. Elles viennent de 200 matchs simulés sur des copies des deux équipes (effectifs, fatigue et tactiques du moment), le nul lissé vers 7,5 %, avec une marge de bookmaker de 7 %. Sous chaque cote, la part des parieurs (proportionnelle au carré de la probabilité : le public suit le favori). Calculées une fois par journée et gardées dans la sauvegarde ; purement indicatives, sans effet sur le match.
 
+**Avant-match télé « Jet de 7 » (9M Sports) :** dans la colonne de droite de la préparation, sous Bet9M, un duo fictif présente le match sur un ton satirique : Basile Tonnerre au micro (survolté, superlatifs) et Jean-Pierre Dubras, ancien gardien consultant (évidences assumées). Cinq répliques au plus, tirées selon le contexte : classement, séries en cours, joueur à suivre, score du match aller, cote Bet9M, et parfois une allusion à une légende sans jamais la nommer comme telle. Texte stable pour une journée donnée. Chaîne, émission et commentateurs sont inventés.
+
 **Fins de match serrées :** à partir de la 45e, quand l'écart est de 1 à 5 buts, l'équipe qui mène gère (possessions plus longues, jeu passif) : −10 % au tir ; l'équipe menée prend des risques qui paient plus souvent : +8,5 % au tir (hors 7 m et cage vide). Les écarts se resserrent sans changer le score moyen : environ 7 % de nuls, comme en Starligue.
 
 **Journées de repos :** avec un nombre impair de clubs, une équipe est au repos à chaque journée (écran dédié, +20 de récupération). Avec 16 clubs, plus de repos.
@@ -351,7 +353,7 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 
 | Bâtiment | Écran | Enseigne | Contenu |
 | --- | --- | --- | --- |
-| Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, forme de l'adversaire sur ses 5 derniers matchs avec son rang, cotes du bookmaker fictif Bet9M, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |
+| Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, forme de l'adversaire sur ses 5 derniers matchs avec son rang, cotes du bookmaker fictif Bet9M et avant-match télé fictif dans une colonne étroite, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |
 | Vestiaire | Effectif | Titulaires fatigués | Profil d'équipe, tableau des notes avec code couleur, tri et colonnes au choix, fiche joueur, gardiens à part |
 | Gymnase | Entraînement | Focus et intensité | Programme de la semaine, progrès de la dernière journée |
 | Bureau du coach | Tactique | Style défensif et jeu | Composition sur le terrain (glisser-déposer), rythme, jeu, jeu des arrières, style, bascules, consignes |

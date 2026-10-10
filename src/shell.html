@@ -90,9 +90,9 @@ main { padding-block: 22px 0; display: grid; gap: 20px; }
 .panel > h3 { margin-bottom: 12px; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
 /* Préparation du match : plan, adversaire, et une colonne étroite pour les petits encarts (Bet9M…) */
-.grid3 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px; gap: 20px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 270px; gap: 20px; align-items: start; }
 .grid3 .side { display: grid; gap: 14px; align-content: start; position: sticky; top: 130px; }
-@media (max-width: 1100px) { .grid3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .grid3 .side { grid-column: 1 / -1; position: static; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); } }
+@media (max-width: 1100px) { .grid3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .grid3 .side { grid-column: 1 / -1; position: static; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); } }
 @media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 .btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 9px 14px; font-weight: 600; font-size: 0.92rem; }
 .btn:hover { border-color: var(--muted); }
@@ -483,6 +483,18 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .betcell b { font-family: var(--f-display); font-size: 1.05rem; line-height: 1.1; }
 .betcell.fav { border-color: var(--star); }
 .betnote { margin: 6px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.35; }
+/* 9M Sports, « Jet de 7 » : avant-match fictif façon plateau télé */
+.tvcard { padding: 0; overflow: hidden; }
+.tvhead { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--board); color: var(--board-fg); }
+.tvlogo { white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; font-family: var(--f-display); font-weight: 700; font-size: 0.62rem; letter-spacing: 0.12em; }
+.tvlogo b { background: var(--board-fg); color: var(--board); border-radius: 3px; padding: 1px 4px; font-size: 0.78rem; letter-spacing: 0; }
+.tvshow { white-space: nowrap; font-family: var(--f-display); font-weight: 800; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tvlive { white-space: nowrap; margin-left: auto; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--board-dim); border: 1px solid var(--board-dim); border-radius: 3px; padding: 1px 5px; }
+.tvlines { padding: 10px 12px 0; display: grid; gap: 7px; }
+.tvlines p { margin: 0; font-size: 0.78rem; line-height: 1.4; }
+.tvlines b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.tvlines b.bt { color: var(--fg); } .tvlines b.jp { color: var(--muted); }
+.tvcard .betnote { padding: 0 12px 10px; }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
 .fline .nw { overflow: hidden; text-overflow: ellipsis; }
