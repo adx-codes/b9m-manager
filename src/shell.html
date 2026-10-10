@@ -589,9 +589,58 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .trait { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
 .fansname { font-weight: 600; width: 100%; }
 .banner { border-top: 4px solid; border-bottom: 4px solid; border-radius: 4px; padding: 14px 16px; text-align: center; color: #fff; font-family: var(--f-display); font-size: 1.35rem; letter-spacing: 0.04em; text-transform: uppercase; }
+/* Accès protégé : page floutée tant que le mot de passe n'a pas été saisi sur ce navigateur */
+html.locked #app { filter: blur(9px); pointer-events: none; user-select: none; }
+#gate { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(6,12,18,0.35); place-items: center; padding: 16px; }
+html.locked #gate { display: grid; }
+#gate form { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px; width: 100%; max-width: 360px; display: grid; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+#gate h2 { margin: 0; font-family: var(--f-display); }
+#gate input { font: inherit; padding: 9px 11px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); }
+#gate .err { color: var(--bad); font-size: 0.85rem; min-height: 1.2em; margin: 0; }
 </style>
 
 <div class="wrap" id="app"></div>
+<div id="gate" role="dialog" aria-modal="true" aria-labelledby="gatetitle">
+  <form id="gateform" autocomplete="on">
+    <h2 id="gatetitle">B9M Manager</h2>
+    <p class="muted" style="margin:0">Accès réservé : entre le mot de passe. Il ne te sera plus demandé sur ce navigateur.</p>
+    <input id="gatepw" type="password" name="password" autocomplete="current-password" aria-label="Mot de passe" placeholder="Mot de passe" required>
+    <p class="err" id="gateerr" aria-live="polite"></p>
+    <button class="btn primary" type="submit">Entrer</button>
+  </form>
+</div>
+<script>
+// Protection légère côté navigateur (pas une vraie sécurité) : empreinte SHA-256 du mot de passe, mémorisée un an en cookie
+(function () {
+  var H = '40ea12306e9d61ab558d51e5dd9e650482fedf791e8d88eb93ca0634ba62ac84', K = 'b9m-auth';
+  function ok() {
+    if (document.cookie.split('; ').indexOf(K + '=' + H) >= 0) return true;
+    try { return localStorage.getItem(K) === H; } catch (e) { return false; }
+  }
+  if (ok()) return;
+  var root = document.documentElement;
+  root.classList.add('locked');
+  function sha(txt) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)).then(function (b) {
+      return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function init() {
+    var f = document.getElementById('gateform'), pw = document.getElementById('gatepw'), err = document.getElementById('gateerr');
+    pw.focus();
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      sha(pw.value.trim()).then(function (h) {
+        if (h !== H) { err.textContent = 'Mot de passe incorrect.'; pw.select(); return; }
+        document.cookie = K + '=' + H + '; max-age=31536000; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+        try { localStorage.setItem(K, H); } catch (x) {}
+        root.classList.remove('locked');
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 
 <script>
 /*ENGINE*/

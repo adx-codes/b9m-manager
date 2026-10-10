@@ -491,6 +491,8 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 
 Le jeu est en ligne sur https://adx-codes.github.io/b9m-manager/ : un seul fichier HTML, sauvegarde dans le navigateur de chaque joueur. Chaque nouvelle version est poussée sur le dépôt GitHub adx-codes/b9m-manager.
 
+**Accès :** à la première visite, la page est floutée et une fenêtre demande un mot de passe. Une fois saisi, il est mémorisé un an sur ce navigateur (cookie, doublé du stockage local). C'est une protection légère contre les visites par hasard, pas une vraie sécurité : le dépôt ne contient que l'empreinte SHA-256 du mot de passe.
+
 | Fichier du dépôt | Contenu |
 | --- | --- |
 | index.html | Le jeu publié (fichier assemblé) |
