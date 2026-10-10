@@ -959,8 +959,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="betrow">${cell(0, short3(h), h.name, o && o.ow, share[0])}${cell(1, 'Nul', 'Match nul', o && o.od, share[1])}${cell(2, short3(a), a.name, o && o.ol, share[2])}</div>
       <p class="betnote">Cotes fictives. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
   }
-  // « Jet de 7 » sur 9M Sports : avant-match satirique par un duo fictif (Basile Tonnerre au micro, Jean-Pierre Dubras consultant).
-  // Texte tiré au sort mais stable pour une journée donnée (graine = journée + affiche).
+  // « HandXtra » sur MeIn Sport : une réplique d'avant-match chacun, contextuelle, par Tom Villetable (au micro)
+  // et François-Tablier Houla (consultant). Tirée au sort mais stable pour une journée donnée.
   function tvCard(h, a) {
     let seed = 0;
     for (const c of `${G.seed}:${G.round}:${h.id}-${a.id}`) seed = (Math.imul(seed ^ c.charCodeAt(0), 2654435761) + 1) | 0;
@@ -969,41 +969,49 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const st = H.standings(G), rk = (t) => st.findIndex((r) => r.id === t.id) + 1, played = G.results.length > 0;
     const form = (t) => { const g = []; G.results.forEach((rd) => rd.forEach((x) => { if (x.h === t.id || x.a === t.id) { const us = x.h === t.id ? x.hs : x.as, th = x.h === t.id ? x.as : x.hs; g.push(us > th ? 'V' : us < th ? 'D' : 'N'); } })); return g; };
     const streak = (t) => { const f = form(t); let n = 0; const k = f[f.length - 1]; for (let i = f.length - 1; i >= 0 && f[i] === k; i--) n++; return { k, n }; };
-    const star = (t) => t.players.filter((p) => p.pos !== 'GB').sort((x, y) => y.ovr - x.ovr)[0];
-    const gap = h.rep - a.rep, BT = 'Basile Tonnerre', JP = 'Jean-Pierre Dubras';
-    const L = [];
-    // Ouverture
-    L.push([BT, pk([
-      `Bonsoir à tous et bienvenue à ${h.city} ! ${played ? `${rk(h)}e contre ${rk(a)}e` : 'Première journée'} de ${LEAGUE}, ${h.name} reçoit ${a.name}, et je vous le dis d'entrée : ça va sentir la résine !`,
-      `Mesdames et messieurs, accrochez vos ceintures : ${h.name} – ${a.name}, ${Math.abs(gap) >= 2 ? 'un David contre Goliath' : gap === 0 && h.rep >= 4 ? 'un sommet, que dis-je, un Everest' : 'une affiche qui sent bon le handball'} ! La salle de ${h.city} est pleine… enfin, elle va l'être.`,
-      `Quelle soirée ! J${G.round + 1} de ${LEAGUE}, ${h.name} contre ${a.name}. Jean-Pierre, j'ai des frissons, et pourtant le chauffage marche.`
-    ])]);
-    // Forme ou début de saison
-    const sa = streak(a), sh = streak(h);
-    if (!played) L.push([JP, pk([`Début de saison, Basile : personne ne sait rien, donc tout le monde a un avis. Moi le premier.`, `Premier match, c'est toujours piège. Les jambes sont neuves, les gardiens aussi, et les arbitres… on verra.`])]);
-    else if (sa.n >= 3) L.push([JP, sa.k === 'V' ? `${a.name} reste sur ${sa.n} victoires de rang. Moi quand j'étais gardien, la confiance c'était 50 % du match. Et l'autre moitié, c'était la confiance aussi.` : sa.k === 'D' ? `${a.name} a perdu ses ${sa.n} derniers matchs. Une bête blessée, Basile. Et une bête blessée, ça mord. Ou ça boite. Les deux se voient.` : `${sa.n} nuls de suite pour ${a.name}. Ils sont réguliers, il faut leur reconnaître ça.`]);
-    else if (sh.n >= 3) L.push([JP, sh.k === 'V' ? `${h.name} sur une série de ${sh.n} victoires : quand ça roule comme ça, même les poteaux deviennent copains.` : sh.k === 'D' ? `${sh.n} défaites de suite pour ${h.name}. Il va falloir mettre de l'impact. Beaucoup d'impact. Je ne sais pas encore où, mais beaucoup.` : `${h.name} enchaîne les nuls. Ce soir, il faut choisir son camp.`]);
-    else L.push([JP, pk([`Deux équipes en dents de scie, Basile. Ce soir, c'est la scie qui va parler.`, `On a ${rk(h)}e contre ${rk(a)}e, mais vous savez ce qu'on dit : au coup d'envoi, le classement reste au vestiaire. Avec mes lunettes, d'ailleurs.`])]);
-    // Joueur à suivre
-    const ta = star(a), th = star(h), pick = R() < 0.5 ? ta : th, pt = pick && a.players.includes(pick) ? a : h;
-    if (pick) L.push([BT, pk([`Attention à ${pick.name}, ${H.POS_LABEL[pick.pos].toLowerCase()} de ${pt.city}… ${pick.name.split(' ').slice(-1)[0]}, ${pick.name.split(' ').slice(-1)[0]} ! Un joueur capable de tout, et surtout du meilleur !`, `Le joueur à surveiller ce soir : ${pick.name}. Jean-Pierre, si vous deviez le décrire en un mot ? — En deux mots, Basile : un joueur.`, `${pick.name}, ${H.POS_LABEL[pick.pos].toLowerCase()} : quand il prend le ballon, même la mi-temps attend.`])]);
-    // Légende cachée dans un effectif (sans jamais le dire)
-    const leg = h.players.concat(a.players).find((p) => p.legend);
-    if (leg && R() < 0.6) L.push([JP, `Et ce jeune ${leg.name}… Ce nom me dit quelque chose. Non ? Bon. Ça me reviendra à la mi-temps.`]);
-    // Match aller
+        const last = (p) => p.name.split(' ').slice(-1)[0];
+    const deN = (n) => /^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : 'de ' + n;
+    const gap = rk(h) - rk(a), rgap = h.rep - a.rep;
     let aller = null;
     G.results.forEach((rd) => rd.forEach((x) => { if (x.h === a.id && x.a === h.id) aller = x; }));
-    if (aller) L.push([BT, `Au match aller, ${aller.hs}–${aller.as} pour ${aller.hs > aller.as ? a.name : aller.hs < aller.as ? h.name : 'personne'}. ${aller.hs === aller.as ? 'Ce soir on veut un vainqueur, ou au moins un vainqueur.' : 'Ce soir, il y a de la revanche dans l\'air. Et un peu de résine.'}`]);
-    // Cotes Bet9M
     const o = G.odds && G.odds.key === G.round + ':' + h.id + '-' + a.id ? G.odds : null;
-    if (o && R() < 0.7) { const f = o.ow <= o.ol ? [h, o.ow] : [a, o.ol]; L.push([JP, `Bet9M donne ${f[0].name} favori à ${f[1].toFixed(2).replace('.', ',')}. Moi je ne parie jamais, Basile. Sauf sur une chose : ça va se jouer dans les dix dernières minutes.`]); }
-    // Clôture
-    L.push([BT, pk([`Les deux équipes sont sur le terrain, l'arbitre porte le sifflet à la bouche… on y va ! Restez avec nous, ça va tabasser !`, `C'est l'heure ! Coup d'envoi dans un instant, et ça, Jean-Pierre, c'est du hand !`, `Tout est prêt, la résine est chaude, les supporters aussi. Place au jeu !`])]);
-    const lines = L.slice(0, 1).concat(L.slice(1, -1).slice(0, 3), L.slice(-1));
-    return `<section class="panel tvcard" aria-label="Avant-match, Jet de 7 sur 9M Sports">
-      <div class="tvhead"><span class="tvlogo" aria-hidden="true"><b>9M</b>SPORTS</span><span class="tvshow">Jet de 7</span><span class="tvlive">Avant-match</span></div>
-      <div class="tvlines">${lines.map(([who, txt]) => `<p><b class="${who === BT ? 'bt' : 'jp'}">${who === BT ? 'B. Tonnerre' : 'J.-P. Dubras'}</b> ${esc(txt)}</p>`).join('')}</div>
-      <p class="betnote">Basile Tonnerre au micro, Jean-Pierre Dubras, ancien gardien international (212 sélections, dont 3 sur le terrain), à la consultation.</p></section>`;
+    // Tom Villetable : l'affiche, avec un angle tiré du contexte
+    const tom = [];
+    if (!played) tom.push(`Bonsoir à tous et bienvenue à ${h.city} pour l'ouverture de la ${LEAGUE} ! ${h.name} – ${a.name}, la saison commence, et je vous le dis : ça va sentir la résine !`);
+    else {
+      if (aller) tom.push(`Bonsoir et bienvenue à ${h.city} ! Au match aller, ${aller.hs === aller.as ? `match nul ${aller.hs}–${aller.as}, personne n'avait voulu gagner` : `victoire ${deN(aller.hs > aller.as ? a.name : h.name)} ${Math.max(aller.hs, aller.as)}–${Math.min(aller.hs, aller.as)}`}. Ce soir, c'est la revanche, et ça va secouer !`);
+      if (rk(h) <= 3 && rk(a) <= 3) tom.push(`Mesdames et messieurs, le sommet de la J${G.round + 1} : ${rk(h)}e contre ${rk(a)}e ! ${h.name} reçoit ${a.name}, c'est l'Everest du handball ce soir, et on a oublié les crampons !`);
+      if (Math.abs(gap) >= 8) tom.push(`${h.name}, ${rk(h)}e, contre ${a.name}, ${rk(a)}e : sur le papier, il n'y a pas match. Mais le papier, au handball, ça se déchire en sept secondes !`);
+      if (rk(h) >= 14 || rk(a) >= 14) tom.push(`Soirée à haute tension à ${h.city} : ${rk(h) >= 14 ? h.name : a.name} est ${rk(h) >= 14 ? rk(h) : rk(a)}e, ça sent le bas de tableau, et le bas de tableau, ça mord !`);
+      if (!tom.length || R() < 0.25) tom.push(pk([
+        `Quelle affiche pour cette J${G.round + 1} de ${LEAGUE} ! ${h.name} contre ${a.name}, j'ai des frissons, et pourtant le chauffage marche à ${h.city} !`,
+        `Bonsoir à tous ! ${h.name}, ${rk(h)}e, reçoit ${a.name}, ${rk(a)}e. Deux points en jeu, soixante minutes, et sûrement un bras cassé… de rire, rassurez-vous !`,
+        `On est à ${h.city}, la résine colle aux doigts, les tribunes collent aux sièges : ${h.name} – ${a.name}, c'est parti pour une soirée de feu !`,
+        `Bienvenue dans HandXtra ! Ce soir ${a.name} se déplace à ${h.city}, et quand ${a.name} se déplace, Tom Villetable se déplace aussi. Enfin, moi.`
+      ]));
+    }
+    // François-Tablier Houla : l'analyse du consultant, sur l'élément le plus parlant
+    const hasModC = (t, k) => (t.mods || []).includes(k);
+    const fx = [], sa = streak(a), sh = streak(h), hot = sa.n >= sh.n ? [a, sa] : [h, sh];
+    if (played && hot[1].n >= 3) fx.push(hot[1].k === 'V' ? `${hot[0].name} reste sur ${hot[1].n} victoires. Quand tu es en confiance comme ça, Tom, même le poteau rentre. La confiance, c'est 50 % du match, et l'autre moitié… c'est la confiance aussi.` : hot[1].k === 'D' ? `${hot[1].n} défaites de suite pour ${hot[0].name}. Il va falloir mettre de l'impact, Tom. Beaucoup d'impact. Je ne sais pas encore où, mais beaucoup.` : `${hot[1].n} nuls d'affilée pour ${hot[0].name} : ils ne perdent pas, ils ne gagnent pas, ils sont… là. Ce soir, il faut choisir son camp.`);
+    const oppT = h.id === G.userId ? a : a.id === G.userId ? h : (R() < 0.5 ? a : h);
+    const tops = oppT.players.filter((p) => p.pos !== 'GB').sort((x, y) => y.ovr - x.ovr).slice(0, 3), sp = tops[Math.floor(R() * tops.length)];
+    if (sp) fx.push(pk([
+      `Le joueur à surveiller côté ${oppT.city}, c'est ${sp.name}. ${H.POS_LABEL[sp.pos]}, gros volume, il peut faire basculer le match à lui tout seul. ${last(sp)} dans un bon soir, je ne donne pas cher de la défense en face.`,
+      `Moi je regarde ${sp.name}. Quand ${last(sp)} prend le ballon, Tom, tu sens que quelque chose va se passer. Ou pas. Mais tu le sens.`,
+      `La clé, c'est de museler ${sp.name}. Si tu lui laisses deux mètres, il te met un but ; si tu lui en laisses trois, il te met un but plus beau.`
+    ]));
+    if (o) { const fav = o.ow <= o.ol ? [h, o.ow] : [a, o.ol]; fx.push(`Bet9M donne ${fav[0].name} favori à ${fav[1].toFixed(2).replace('.', ',')}. Moi je ne parie jamais, Tom. Sauf sur une chose : ça va se jouer dans les dix dernières minutes.`); }
+    if (Math.abs(rgap) >= 2) { const big = rgap > 0 ? h : a, small = rgap > 0 ? a : h; fx.unshift(`${big.name} a plus de banc, plus de talent, plus de tout. Mais attention : ${small.name} n'a rien à perdre, et une équipe qui n'a rien à perdre, ça peut tout gagner. Ou rien. On va voir.`); }
+    if (hasModC(h, 'public+')) fx.push(`À ${h.city}, le public pousse fort, Tom. Ici, tu marques un but, la salle t'en donne un deuxième dans la tête.`);
+    const leg = h.players.concat(a.players).find((p) => p.legend);
+    if (leg && R() < 0.4) fx.unshift(`Et ce jeune ${leg.name}… ce nom me dit quelque chose, Tom. Non ? Bon. Ça me reviendra à la mi-temps.`);
+    if (!fx.length || !played) fx.push(pk([`Début de saison, Tom : personne ne sait rien, donc tout le monde a un avis. Moi le premier.`, `Premier match, c'est toujours piège. Les jambes sont neuves, les gardiens aussi, et les arbitres… on verra.`]));
+    const lines = [['tom', 'Tom Villetable', pk(tom)], ['fx', 'François-Tablier Houla', pk(fx.slice(0, 2))]];
+    return `<section class="panel tvcard" aria-label="Avant-match HandXtra sur MeIn Sport">
+      <div class="tvhead"><span class="tvlogo" aria-hidden="true"><b>MeIn</b>SPORT</span><span class="tvshow">HandXtra</span><span class="tvlive">Avant-match</span></div>
+      <div class="tvlines">${lines.map(([k, who, txt]) => `<p><b class="${k}">${who}</b> ${esc(txt)}</p>`).join('')}</div>
+      <p class="betnote">Tom Villetable au micro, François-Tablier Houla à la consultation.</p></section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
