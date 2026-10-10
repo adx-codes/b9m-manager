@@ -244,30 +244,31 @@ tr.click:hover td { background: var(--sunk); }
 /* Tableau d'effectif */
 .sub3 { font-size: 0.95rem; margin: 18px 0 6px; color: var(--muted); }
 table.sq { font-size: 0.85rem; width: auto; min-width: 0; }
-table.sq th, table.sq td { padding: 6px 4px; }
+table.sq th, table.sq td { padding: 9px 6px; }
+table.sq td { border-bottom-color: color-mix(in srgb, var(--line) 60%, transparent); }
 table.sq .fatbar { width: 34px; }
-table.sq th.ac, table.sq td.ac { text-align: center; min-width: 31px; font-variant-numeric: tabular-nums; }
+table.sq th.ac, table.sq td.ac { text-align: center; min-width: 34px; padding-inline: 3px; font-variant-numeric: tabular-nums; }
 table.sq td.ac { font-weight: 600; }
 table.sq .gs { border-left: 1px solid var(--line); }
 table.sq tr.grp th { border-bottom: 0; padding-bottom: 0; }
 table.sq th.gh { text-align: center; color: var(--fg); border-left: 1px solid var(--line); font-size: 0.7rem; }
-table.sq .stick { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 178px; }
+table.sq .stick { position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 166px; }
 table.sq tbody tr:hover td { background: var(--sunk); }
-table.sq tbody tr:hover td.ac { filter: brightness(0.97); }
+/* Attributs façon PCM : chiffre dans une petite pastille, colorée seulement aux extrêmes */
+table.sq td.ac .v { display: inline-block; min-width: 28px; padding: 3px 0; border-radius: 4px; line-height: 1.15; }
+table.sq td.ac.key .v { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--fg) 70%, transparent); }
 .sortbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
 th.sorted { color: var(--accent); }
-td.h5 { background: color-mix(in srgb, var(--good) 42%, var(--surface)); }
-td.h4 { background: color-mix(in srgb, var(--good) 18%, var(--surface)); }
-td.h3 { background: transparent; }
-td.h2 { background: color-mix(in srgb, var(--warn) 20%, var(--surface)); }
-td.h1 { background: color-mix(in srgb, var(--bad) 30%, var(--surface)); }
-td.ac.key { box-shadow: inset 0 0 0 1.5px var(--fg); }
+td.h5 .v { background: color-mix(in srgb, var(--good) 42%, var(--surface)); }
+td.h4 .v { background: color-mix(in srgb, var(--good) 18%, var(--surface)); }
+td.h2 .v { color: var(--muted); }
+td.h1 .v { background: color-mix(in srgb, var(--bad) 24%, var(--surface)); }
 .heatkey { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.78rem; margin-bottom: 4px; }
 .heatkey span[class^="h"] { padding: 2px 8px; border-radius: 4px; font-weight: 600; border: 1px solid var(--line); }
 .heatkey .h5 { background: color-mix(in srgb, var(--good) 42%, var(--surface)); }
 .heatkey .h4 { background: color-mix(in srgb, var(--good) 18%, var(--surface)); }
 .heatkey .h3 { background: var(--surface); }
-.heatkey .h2 { background: color-mix(in srgb, var(--warn) 20%, var(--surface)); }
+.heatkey .h2 { background: var(--surface); color: var(--muted); }
 .heatkey .h1 { background: color-mix(in srgb, var(--bad) 30%, var(--surface)); }
 .hand, .tit { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 4px; font-size: 0.66rem; font-weight: 800; vertical-align: 1px; }
 .hand { border: 1px solid var(--line); color: var(--muted); }
@@ -302,11 +303,11 @@ td.ac.key { box-shadow: inset 0 0 0 1.5px var(--fg); }
 .rsel { border: 1px solid var(--line); border-radius: 4px; background: var(--surface); padding: 1px 4px; font-size: 0.84rem; font-weight: 600; color: var(--fg); }
 .tag.sys { background: var(--sunk); color: var(--fg); border: 1px solid var(--line); }
 .tag.geste { background: var(--iso-office); color: #111; }
-td.tr1 { background: color-mix(in srgb, var(--court) 4%, var(--surface)); }
-td.tr2 { background: color-mix(in srgb, var(--court) 12%, var(--surface)); }
-td.tr3 { background: color-mix(in srgb, var(--court) 22%, var(--surface)); }
-td.tr4 { background: color-mix(in srgb, var(--court) 34%, var(--surface)); }
-td.tr5 { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
+td.tr1 .v { background: color-mix(in srgb, var(--court) 4%, var(--surface)); }
+td.tr2 .v { background: color-mix(in srgb, var(--court) 12%, var(--surface)); }
+td.tr3 .v { background: color-mix(in srgb, var(--court) 22%, var(--surface)); }
+td.tr4 .v { background: color-mix(in srgb, var(--court) 34%, var(--surface)); }
+td.tr5 .v { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
 
 /* Bonus et malus */
 .modgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
@@ -2583,7 +2584,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
         <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
         <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
-        ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}">${p.a[k]}</td>`).join('')).join('')}
+        ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
     return `<div class="scroll"><table class="sq"><thead>${head1}${head2}</thead><tbody>${rows}</tbody></table></div>`;
