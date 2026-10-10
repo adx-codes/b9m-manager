@@ -467,6 +467,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .mnote.nt3 { background: var(--sunk); }
 .mnote.nt1 { background: color-mix(in srgb, var(--bad) 28%, var(--surface)); }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; color: #fff; }
+.flist { display: grid; gap: 4px; margin-top: 4px; }
+.fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
+.fline .nw { overflow: hidden; text-overflow: ellipsis; }
 .res.w { background: var(--good); } .res.l { background: var(--bad); } .res.d { background: var(--muted); }
 /* Accueil et glisser-déposer */
 .homebtn { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; flex: none; }

@@ -349,7 +349,7 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 
 | Bâtiment | Écran | Enseigne | Contenu |
 | --- | --- | --- | --- |
-| Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |
+| Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, forme de l'adversaire sur ses 5 derniers matchs avec son rang, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |
 | Vestiaire | Effectif | Titulaires fatigués | Profil d'équipe, tableau des notes avec code couleur, tri et colonnes au choix, fiche joueur, gardiens à part |
 | Gymnase | Entraînement | Focus et intensité | Programme de la semaine, progrès de la dernière journée |
 | Bureau du coach | Tactique | Style défensif et jeu | Composition sur le terrain (glisser-déposer), rythme, jeu, jeu des arrières, style, bascules, consignes |

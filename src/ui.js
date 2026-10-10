@@ -429,6 +429,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <section class="panel"><h3>L'adversaire</h3>
           <div style="display:grid;gap:12px">
             <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
+            ${oppForm(opp)}
             <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
             <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             <div class="opt"><span class="label">Joueurs à surveiller</span>
@@ -925,6 +926,21 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       </div></div>${leagueYouthPanel()}`;
   }
   // Recrues des centres de formation de toute la SparLigue (IA et joueur), de la plus récente à la plus ancienne
+  // Forme de l'adversaire : ses 5 derniers matchs, du plus récent au plus ancien
+  function oppForm(opp) {
+    const games = [];
+    (G.results || []).forEach((rd, k) => rd.forEach((g) => { if (g.h === opp.id || g.a === opp.id) games.push({ ...g, j: k + 1 }); }));
+    const last = games.slice(-5).reverse();
+    const pos = H.standings(G).findIndex((r) => r.id === opp.id) + 1;
+    if (!last.length) return `<div class="opt"><span class="label">Derniers résultats</span><p class="muted" style="margin:0">Pas encore de match joué cette saison.</p></div>`;
+    const cnt = { w: 0, d: 0, l: 0 };
+    const rows = last.map((g) => {
+      const home = g.h === opp.id, us = home ? g.hs : g.as, them = home ? g.as : g.hs, o = T(home ? g.a : g.h);
+      const r = us > them ? 'w' : us < them ? 'l' : 'd'; cnt[r]++;
+      return `<div class="fline"><span class="res ${r}">${{ w: 'V', d: 'N', l: 'D' }[r]}</span><span class="muted num">J${g.j}</span><span class="muted">${home ? 'dom.' : 'ext.'}</span><span class="nw">${badge(o, true)} ${esc(o.name)}${o.id === G.userId ? ' <span class="muted">(toi)</span>' : ''}</span><b class="num">${us}–${them}</b></div>`;
+    }).join('');
+    return `<div class="opt"><span class="label">Derniers résultats · ${ord(pos)} de la ${LEAGUE} · ${cnt.w} V, ${cnt.d} N, ${cnt.l} D sur ${last.length}</span><div class="flist">${rows}</div></div>`;
+  }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
     const all = (G.leagueYouth || []).filter((l) => l.ok).concat(mine).sort((a, b) => b.round - a.round || a.team.localeCompare(b.team));
