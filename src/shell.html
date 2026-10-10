@@ -498,6 +498,11 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .tvlines b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .tvlines b.tom, .tvlines b.fx { color: var(--tv); }
 .tvcard .betnote { padding: 0 12px 10px; }
+/* Championnat : buteurs et MVP côte à côte */
+.duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.duo .panel { padding: 16px 14px; }
+.duo table td { padding-inline: 4px; }
+.duo table td:nth-child(2) { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* MVP */
 .crown { width: 18px; height: 14px; display: inline-block; vertical-align: -2px; }
 .mvpcard { border-color: color-mix(in srgb, var(--star) 55%, var(--line)); background: color-mix(in srgb, var(--star) 7%, var(--surface)); }
