@@ -490,9 +490,11 @@
   // ---------- Moteur de match ----------
   // Fatigue : gain par possession sur le terrain, récupération sur le banc, seuil et pente de la perte d'attributs
   // Avantage du terrain : réussite au tir, ballons perdus, sévérité de l'arbitre, fatigue du déplacement
-  const HOME = { shot: 0.02, to: 0.007, ex: 0.03, travel: 4 };
+  const HOME = { shot: 0.035, to: 0.007, ex: 0.03, travel: 4 };
   const MANUAL_MIN = 7;
   const FAT = { gain: 0.9, gk: 0.2, rest: 0.35, ht: 10, thr: 28, k: 0.009, recover: 35, release: 55 };
+  // Fin de match (dès la 45e, écart de 1 à 5 buts) : malus au tir pour qui mène, bonus pour qui est mené
+  const CLUTCH = { from: 45, gap: 5, lead: 0.10, trail: 0.085 };
   const ZONE_BASE = { loin: 0.44, aile: 0.56, pivot: 0.67, percee: 0.58, ca: 0.8, er: 0.68, '7m': 0.74, vide: 0.9 };
   const TO_MATRIX = { '6-0': { place: 0, rapide: 0 }, '5-1': { place: 0.03, rapide: 0 }, '4-2': { place: 0.005, rapide: 0.05 } };
   const ER_PROB = { '6-0': 0.08, '5-1': 0.22, '4-2': 0.16 };
@@ -939,6 +941,10 @@
     const min = this.minute(i);
     if (min >= 50 && Math.abs(A.score - D.score) <= 2) pr += (e(p, 'sangfroid') - 12) * 0.005 + (A.exp - 45) * 0.0006 + (hasMod(A.team, 'mental+') ? 0.03 : 0) - (hasMod(A.team, 'mental-') ? 0.03 : 0);
     if (A.empty && !kind) pr += 0.05;
+    // Fins de match serrées : qui mène gère (possessions longues, jeu passif), qui est mené prend des risques payants.
+    // Resserre les écarts sans toucher au score moyen : environ 7,5 % de nuls comme en Starligue.
+    { const lead = A.score - D.score;
+      if (kind !== '7m' && kind !== 'vide' && min >= CLUTCH.from && lead !== 0 && Math.abs(lead) <= CLUTCH.gap) pr += lead > 0 ? -CLUTCH.lead : CLUTCH.trail; }
     pr = clamp(pr, 0.05, 0.95);
     // Geste spectaculaire (excentricité)
     let geste = null;

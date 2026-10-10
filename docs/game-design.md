@@ -295,7 +295,9 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 Le coach IA monte d'un cran en homme à homme, demande de tout donner s'il est mené en fin de match, et lève le pied avec 6 buts d'avance.
 
-**Avantage du terrain :** l'équipe qui reçoit a +2 % de réussite au tir ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus. Le bonus ou malus Public s'ajoute.
+**Avantage du terrain :** l'équipe qui reçoit a +3,5 % de réussite au tir ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus. Le bonus ou malus Public s'ajoute.
+
+**Fins de match serrées :** à partir de la 45e, quand l'écart est de 1 à 5 buts, l'équipe qui mène gère (possessions plus longues, jeu passif) : −10 % au tir ; l'équipe menée prend des risques qui paient plus souvent : +8,5 % au tir (hors 7 m et cage vide). Les écarts se resserrent sans changer le score moyen : environ 7 % de nuls, comme en Starligue.
 
 **Journées de repos :** avec un nombre impair de clubs, une équipe est au repos à chaque journée (écran dédié, +20 de récupération). Avec 16 clubs, plus de repos.
 
@@ -386,20 +388,22 @@ Le moteur est validé quand 1 000 matchs simulés retombent dans ces fourchettes
 | Exclusions de 2 min | 3 à 5 |
 | Jets de 7 m obtenus | 3 à 5 |
 | Pertes de balle | 9 à 13 |
-| Matchs nuls (sur la saison) | 5 à 10 % |
+| Matchs nuls (sur la saison) | environ 7,5 % (Starligue : 20, 15 et 19 nuls sur 240 matchs de 2023-24 à 2025-26) |
 
-**Résultats mesurés sur le prototype (1 200 matchs simulés) :** tous les tests de base passent.
+**Résultats mesurés sur le prototype (60 saisons simulées, 14 400 matchs, octobre 2026) :**
 
 | Indicateur | Cible | Mesuré |
 | --- | --- | --- |
-| Buts par équipe | 27 à 32 | 29,3 |
-| Efficacité au tir | 58 à 65 % | 61 % |
+| Buts par équipe | 27 à 32 | 29,1 |
+| Efficacité au tir | 58 à 65 % | 63,7 % |
 | Arrêts du gardien | 10 à 14 | 11,8 |
-| Exclusions de 2 min | 3 à 5 | 3,5 |
-| Jets de 7 m obtenus | 3 à 5 | 3,8 |
-| Pertes de balle | 9 à 13 | 10,2 |
-| Matchs nuls | 5 à 10 % | 5,3 % |
-| Victoires du favori (réputation 4 contre 2) | 70 à 80 % | 70 % |
+| Exclusions de 2 min | 3 à 5 | 4,0 |
+| Jets de 7 m obtenus | 3 à 5 | 4,0 |
+| Pertes de balle | 9 à 13 | 10,4 |
+| Matchs nuls | environ 7,5 % | 7,0 % (3,6 % avant le réglage des fins de match) |
+| Matchs gagnés d'un but | — | 12,5 % |
+| Points pris à domicile | 58 à 60 % | 58,1 % |
+| Points du favori (réputation 4 contre 2) | 75 à 80 % | 86,6 % (déjà 86 % avant ce réglage : à revoir) |
 | Gestes tentés / réussis par équipe | — | 3,1 / 1,6 |
 | Buts encaissés face à de bons duellistes | Homme à homme > collective | 30,1 contre 29,2 |
 | Buts encaissés face à de bons ailiers | Collective > homme à homme | 30,5 contre 29,3 |
