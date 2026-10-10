@@ -672,6 +672,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     if (G.round >= G.sched.length) G.ended = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
+    H.youthRound(G);
     if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
   }
   function restRound() {
@@ -921,7 +922,25 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
           <p class="legend">Effectif : ${t.players.length}/16 joueurs.</p></section>
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
-      </div></div>`;
+      </div></div>${leagueYouthPanel()}`;
+  }
+  // Recrues des centres de formation de toute la SparLigue (IA et joueur), de la plus récente à la plus ancienne
+  function leagueYouthPanel() {
+    const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
+    const all = (G.leagueYouth || []).filter((l) => l.ok).concat(mine).sort((a, b) => b.round - a.round || a.team.localeCompare(b.team));
+    const prop = (G.leagueYouth || []).length;
+    const rows = all.map((l) => {
+      const t = T(l.team), f = l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
+      const q = p || { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
+      const who = p ? plink(p) : `<span class="muted" title="N'est plus dans le championnat">${esc(l.name)}</span>`;
+      return `<tr class="${l.team === G.userId ? 'me' : ''}"><td class="r">J${l.round}</td><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${who}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${l.out ? esc(l.out) + ' libéré' : '—'}</td></tr>`;
+    }).join('');
+    const byClub = all.reduce((a, l) => (a[l.team] = (a[l.team] || 0) + 1, a), {});
+    const top = Object.entries(byClub).sort((a, b) => b[1] - a[1])[0];
+    return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Recrues des centres de formation · ${LEAGUE}</h3>
+        <span class="muted">${all.length} jeune${all.length > 1 ? 's' : ''} recruté${all.length > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
+      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est prometteur ; à 16 joueurs, il libère le plus faible du poste seulement si le jeune vaut nettement mieux.${prop ? ` ${prop - (all.length - mine.length)} jeune${prop - (all.length - mine.length) > 1 ? 's' : ''} refusé${prop - (all.length - mine.length) > 1 ? 's' : ''} par les clubs adverses.` : ''} Niveau et potentiel : étoiles par rapport à ton club, valeurs actuelles.</p>
+      ${all.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Départ</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted" style="margin:0">Aucun jeune recruté pour l'instant : les premiers sortent des centres après la journée 5.</p>`}</section>`;
   }
 
   // ---------- Ville ----------

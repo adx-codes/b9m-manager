@@ -370,6 +370,9 @@ td.tr5 .v { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
 .sectors { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
 .sectors b { color: var(--fg); font-variant-numeric: tabular-nums; }
 table.pt { font-size: 0.82rem; }
+table.ly { width: auto; min-width: 70%; }
+table.ly th, table.ly td { padding-inline: 12px; }
+table.ly thead th { position: sticky; top: 0; background: var(--surface); z-index: 1; }
 table.pt th, table.pt td { padding: 5px 5px; }
 table.pt tr.gkrow td { background: var(--sunk); }
 .ptag { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 1px 6px; border-radius: 3px; }
@@ -889,6 +892,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       }
     }
     if (!st.youthLog) st.youthLog = [];
+    if (!st.leagueYouth) st.leagueYouth = [];
     if (!st.legends) st.legends = [];
     // Anciens noms de légendes, trop proches des vrais : renommés
     const LEG_OLD = { 'Thierry Omeyre': 'Thomas Omeyrac', 'Arpad Sterbich': 'Árpi Sterbán', 'Niklas Landinn': 'Nils Landström', 'Nicola Karabatik': 'Nikolaï Karabatov', 'Ivano Balicz': 'Ivo Balinović', 'Jackson Richardsonn': 'Jason Richardin', 'Aron Palmarsonn': 'Aric Palmarsen', 'Talant Duchebaev': 'Talan Dujshenko', 'Mikel Hanssen': 'Mikael Hanstrup', 'Daniel Narcis': 'Danny Narcissot', 'Kiril Lazarow': 'Kyrill Lazarević', 'Jérôme Fernandès': 'Jérémy Fernandini', 'Uwe Genshaimer': 'Uli Gensmeier', 'Michel Guigoux': 'Mickaël Guigard', 'Luc Abalow': 'Luca Abalone', 'Hans Lindbergh': 'Hans Lindhorst', 'Ivan Cupitch': 'Ivo Čupovac', 'Bertrand Gile': 'Bertrand Gillot', 'Bjarte Myrol': 'Bjørn Myrvold', 'Cédric Sorindo': 'Cédric Sorhandier' };
@@ -952,6 +956,32 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     p.a0 = Object.assign({}, p.a);
     p.hist = [];
     return p;
+  }
+  // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…), même plafond de 16.
+  // Le staff IA recrute un jeune prometteur, et à 16 ne libère le plus faible du poste que si le jeune vaut nettement mieux.
+  // Les légendes restent réservées aux 3 placées en début de partie et au centre du joueur.
+  function aiYouth(st, t) {
+    const y = makeYouth(t, null);
+    const same = t.players.filter(p => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr || b.age - a.age);
+    const worst = same[0];
+    const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
+    const yv = y.pot - 1 + (rnd() - 0.5) * 2;
+    let out = null, ok = false;
+    if (t.players.length < 16) ok = !worst || yv >= worst.ovr - 0.5;
+    else if (worst && yv > proj(worst) + 1) { ok = true; out = worst; }
+    if (ok) {
+      if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
+      t.players.push(y);
+      autoLineup(t);
+      ensureSheet(t);
+    }
+    (st.leagueYouth = st.leagueYouth || []).push({ round: st.round, team: t.id, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, ok, out: out ? out.name : null });
+    return ok;
+  }
+  function youthRound(st) {
+    if (st.round % 5 !== 0 || st.round === 0 || st.round >= st.sched.length) return false;
+    for (const t of st.teams) if (t.id !== st.userId) aiYouth(st, t);
+    return true;
   }
   function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
   function ensureSheet(t) {
@@ -1029,7 +1059,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
   }
 
   // ---------- Moteur de match ----------
@@ -1704,6 +1734,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 
   function aiPrepare(t) {
     autoLineup(t);
+    ensureSheet(t);
     aiStyle(t);
   }
   function standings(st) {
@@ -1748,7 +1779,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -2430,6 +2461,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     if (G.round >= G.sched.length) G.ended = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
+    H.youthRound(G);
     if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
   }
   function restRound() {
@@ -2679,7 +2711,25 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
           <p class="legend">Effectif : ${t.players.length}/16 joueurs.</p></section>
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
-      </div></div>`;
+      </div></div>${leagueYouthPanel()}`;
+  }
+  // Recrues des centres de formation de toute la SparLigue (IA et joueur), de la plus récente à la plus ancienne
+  function leagueYouthPanel() {
+    const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
+    const all = (G.leagueYouth || []).filter((l) => l.ok).concat(mine).sort((a, b) => b.round - a.round || a.team.localeCompare(b.team));
+    const prop = (G.leagueYouth || []).length;
+    const rows = all.map((l) => {
+      const t = T(l.team), f = l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
+      const q = p || { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
+      const who = p ? plink(p) : `<span class="muted" title="N'est plus dans le championnat">${esc(l.name)}</span>`;
+      return `<tr class="${l.team === G.userId ? 'me' : ''}"><td class="r">J${l.round}</td><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${who}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${l.out ? esc(l.out) + ' libéré' : '—'}</td></tr>`;
+    }).join('');
+    const byClub = all.reduce((a, l) => (a[l.team] = (a[l.team] || 0) + 1, a), {});
+    const top = Object.entries(byClub).sort((a, b) => b[1] - a[1])[0];
+    return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Recrues des centres de formation · ${LEAGUE}</h3>
+        <span class="muted">${all.length} jeune${all.length > 1 ? 's' : ''} recruté${all.length > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
+      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est prometteur ; à 16 joueurs, il libère le plus faible du poste seulement si le jeune vaut nettement mieux.${prop ? ` ${prop - (all.length - mine.length)} jeune${prop - (all.length - mine.length) > 1 ? 's' : ''} refusé${prop - (all.length - mine.length) > 1 ? 's' : ''} par les clubs adverses.` : ''} Niveau et potentiel : étoiles par rapport à ton club, valeurs actuelles.</p>
+      ${all.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Départ</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted" style="margin:0">Aucun jeune recruté pour l'instant : les premiers sortent des centres après la journée 5.</p>`}</section>`;
   }
 
   // ---------- Ville ----------

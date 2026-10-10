@@ -344,6 +344,7 @@
       }
     }
     if (!st.youthLog) st.youthLog = [];
+    if (!st.leagueYouth) st.leagueYouth = [];
     if (!st.legends) st.legends = [];
     // Anciens noms de légendes, trop proches des vrais : renommés
     const LEG_OLD = { 'Thierry Omeyre': 'Thomas Omeyrac', 'Arpad Sterbich': 'Árpi Sterbán', 'Niklas Landinn': 'Nils Landström', 'Nicola Karabatik': 'Nikolaï Karabatov', 'Ivano Balicz': 'Ivo Balinović', 'Jackson Richardsonn': 'Jason Richardin', 'Aron Palmarsonn': 'Aric Palmarsen', 'Talant Duchebaev': 'Talan Dujshenko', 'Mikel Hanssen': 'Mikael Hanstrup', 'Daniel Narcis': 'Danny Narcissot', 'Kiril Lazarow': 'Kyrill Lazarević', 'Jérôme Fernandès': 'Jérémy Fernandini', 'Uwe Genshaimer': 'Uli Gensmeier', 'Michel Guigoux': 'Mickaël Guigard', 'Luc Abalow': 'Luca Abalone', 'Hans Lindbergh': 'Hans Lindhorst', 'Ivan Cupitch': 'Ivo Čupovac', 'Bertrand Gile': 'Bertrand Gillot', 'Bjarte Myrol': 'Bjørn Myrvold', 'Cédric Sorindo': 'Cédric Sorhandier' };
@@ -407,6 +408,32 @@
     p.a0 = Object.assign({}, p.a);
     p.hist = [];
     return p;
+  }
+  // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…), même plafond de 16.
+  // Le staff IA recrute un jeune prometteur, et à 16 ne libère le plus faible du poste que si le jeune vaut nettement mieux.
+  // Les légendes restent réservées aux 3 placées en début de partie et au centre du joueur.
+  function aiYouth(st, t) {
+    const y = makeYouth(t, null);
+    const same = t.players.filter(p => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr || b.age - a.age);
+    const worst = same[0];
+    const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
+    const yv = y.pot - 1 + (rnd() - 0.5) * 2;
+    let out = null, ok = false;
+    if (t.players.length < 16) ok = !worst || yv >= worst.ovr - 0.5;
+    else if (worst && yv > proj(worst) + 1) { ok = true; out = worst; }
+    if (ok) {
+      if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
+      t.players.push(y);
+      autoLineup(t);
+      ensureSheet(t);
+    }
+    (st.leagueYouth = st.leagueYouth || []).push({ round: st.round, team: t.id, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, ok, out: out ? out.name : null });
+    return ok;
+  }
+  function youthRound(st) {
+    if (st.round % 5 !== 0 || st.round === 0 || st.round >= st.sched.length) return false;
+    for (const t of st.teams) if (t.id !== st.userId) aiYouth(st, t);
+    return true;
   }
   function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
   function ensureSheet(t) {
@@ -484,7 +511,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
   }
 
   // ---------- Moteur de match ----------
@@ -1159,6 +1186,7 @@
 
   function aiPrepare(t) {
     autoLineup(t);
+    ensureSheet(t);
     aiStyle(t);
   }
   function standings(st) {
@@ -1203,7 +1231,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
