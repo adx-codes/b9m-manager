@@ -526,7 +526,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const info = (p) => { const f = Math.round(s.fat[p.id] || 0), st = s.ps[p.id] || { g: 0, sh: 0, sv: 0, fa: 0 };
       return `<span class="cfat"><span style="width:${Math.min(100, f)}%;background:${fatCol(f)}"></span></span><span class="cline"><span class="lat ${p.hand === 'G' ? 'g' : 'd'}">${p.hand}</span><span class="num">${p.pos === 'GB' ? `${st.sv}/${st.fa} arr.` : `${st.g}/${st.sh} buts`}</span><span class="num muted">${f}</span></span>`; };
     const effNote = (p, pos) => { const n = ovrAt(p, pos), f = s.fat[p.id] || 0; const k = f > H.FAT.thr ? Math.max(0.55, 1 - (f - H.FAT.thr) * H.FAT.k) : 1; return { n, e: n * k, tired: k < 0.995 }; };
-    const noteLine = (p, pos, lab) => { const x = effNote(p, pos), sn = H.stars(x.n, sref()), se = H.stars(x.e, sref()); return `<span class="cnote">${lab}${vstars(x.n, { sm: true, title: `${lab}${sfmt(sn)}` })}${x.tired && se < sn ? ` <span class="ctired">→ ${vstars(x.e, { sm: true, red: true, title: `Niveau réel avec la fatigue : ${sfmt(se)}` })}</span>` : ''}</span>`; };
+    // Fatigue : pas de niveau chiffré ni d'étoiles, juste une courbe qui plonge, de l'orange au rouge selon la baisse
+    const dropCurve = (drop) => {
+      const t = Math.max(0, Math.min(1, drop / 0.3)), y = (4 + t * 9).toFixed(1), c = `color-mix(in srgb, var(--bad) ${Math.round(t * 100)}%, var(--warn))`;
+      const lvl = t < 0.35 ? 'légère' : t < 0.7 ? 'nette' : 'forte';
+      return `<svg class="cdrop" viewBox="0 0 30 16" width="30" height="16" role="img" aria-label="Baisse ${lvl} due à la fatigue"><title>Baisse de niveau ${lvl} due à la fatigue</title><path d="M1 3 L9 3 C 16 3, 20 ${y}, 29 ${y}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M26 ${(+y - 2.5).toFixed(1)} L29 ${y} L26 ${(+y + 2.5).toFixed(1)}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    };
+    const noteLine = (p, pos, lab) => { const x = effNote(p, pos), sn = H.stars(x.n, sref()); return `<span class="cnote">${lab}${vstars(x.n, { sm: true, title: `${lab}${sfmt(sn)}` })}${x.tired ? dropCurve(1 - x.e / Math.max(0.1, x.n)) : ''}</span>`; };
     const onCards = H.POS.map((pos) => {
       const p = s.lineup[pos];
       if (!p) return '';

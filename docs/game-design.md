@@ -270,7 +270,7 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 **Rotations automatiques :** le staff fait tourner chaque poste selon son propre plan, décalé et aléatoire : le demi-centre souffle d'abord, puis un ailier, puis le pivot, jamais tous ensemble. Chaque titulaire vise 35 à 45 minutes. Dans les fins serrées (écart de 3 buts ou moins après la 50e), les titulaires restent. Un joueur au-dessus de 70 de fatigue sort en urgence. Les gardiens se partagent les mi-temps par défaut.
 
-**Changements manuels :** uniquement en pause. On clique un joueur du terrain, puis un remplaçant : vert au même poste, bleu à un poste secondaire. Chaque carte affiche le niveau au poste en étoiles et, si le joueur est fatigué, son niveau réel en étoiles rouges. Dès qu'on change un joueur, le staff ne touche plus à ce poste pendant 7 minutes de jeu (compte à rebours sur la carte), puis reprend les rotations ; on peut lui rendre la main plus tôt. Pas de message dans le fil du match pour les changements.
+**Changements manuels :** uniquement en pause. On clique un joueur du terrain, puis un remplaçant : vert au même poste, bleu à un poste secondaire. Chaque carte affiche le niveau au poste en étoiles et, si le joueur est fatigué, une petite courbe qui plonge : orange quand la baisse commence, puis de plus en plus rouge et pentue. Le niveau réel reste calculé par le moteur mais n'est pas affiché ; au survol, la baisse est seulement qualifiée (légère, nette ou forte). Dès qu'on change un joueur, le staff ne touche plus à ce poste pendant 7 minutes de jeu (compte à rebours sur la carte), puis reprend les rotations ; on peut lui rendre la main plus tôt. Pas de message dans le fil du match pour les changements.
 
 **Coach IA adverse :**
 

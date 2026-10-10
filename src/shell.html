@@ -404,6 +404,8 @@ td.ac.upw::after { content: "▲"; position: absolute; top: 1px; right: 2px; fon
 .cnote { font-size: 0.74rem; font-weight: 700; color: var(--fg); }
 .cyouth { font-size: 0.85rem; line-height: 1; }
 .ctired { color: var(--bad); font-weight: 600; }
+.cnote { display: inline-flex; align-items: center; gap: 6px; }
+.cdrop { flex: none; cursor: help; }
 
 .livebar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 40; display: flex; align-items: center; gap: 12px; background: var(--board); color: var(--board-fg); border-radius: 999px; padding: 8px 10px 8px 18px; box-shadow: 0 8px 26px rgba(0,0,0,0.35); max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: center; }
 .livebar .lbscore { font-family: var(--f-display); font-size: 1.05rem; white-space: nowrap; }
