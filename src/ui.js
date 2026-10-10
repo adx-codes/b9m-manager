@@ -817,20 +817,20 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const s = U.sort;
     const ref = sref(), stv = (p) => H.stars(p.ovr, ref), ptv = (p) => { const r = H.potRange(p, ref); return (r.lo + r.hi) / 2; };
     const dsign = (p) => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? 1 : d <= -0.05 ? -1 : 0; };
-    const val = (p, k) => k === 'pos' ? H.POS.indexOf(p.pos) * 100 - stv(p) : k === 'ovr' ? stv(p) : k === 'pot' ? ptv(p) : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? dsign(p) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
+    const val = (p, k) => k === 'tit' ? (starters.has(p.id) ? 2 : (t.out || []).includes(p.id) ? 0 : 1) : k === 'pos' ? H.POS.indexOf(p.pos) * 100 - stv(p) : k === 'ovr' ? stv(p) : k === 'pot' ? ptv(p) : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? dsign(p) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
     const sty = new Map(t.id === G.userId && G.lastStyle && G.lastStyle.round === G.round ? G.lastStyle.log.map((e) => [e.id, e.d]) : []);
     const wk = new Set(t.id === G.userId && G.lastTraining && G.lastTraining.round === G.round ? G.lastTraining.log.map((e) => e.id + ':' + e.k) : []);
     const sorted = players.slice().sort((x, y) => {
       const a = val(x, s.k), b = val(y, s.k);
       if (a === undefined || b === undefined) return H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos) || stv(y) - stv(x);
-      const c = typeof a === 'string' ? a.localeCompare(b) : a - b || x.name.localeCompare(y.name);
+      const c = typeof a === 'string' ? a.localeCompare(b) : a - b || (s.k === 'tit' ? (H.POS.indexOf(y.pos) - H.POS.indexOf(x.pos)) * s.dir : 0) || x.name.localeCompare(y.name);
       return (s.k === 'pos' || s.k === 'name' ? c : -c) * s.dir;
     });
     const sh = (k, l, cls, title) => `<th class="${cls || ''}${s.k === k ? ' sorted' : ''}"${title ? ` title="${esc(title)}"` : ''}><button class="sortbtn" data-act="sort" data-id="${k}">${l}${s.k === k ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button></th>`;
     const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
     const formTxt = (f) => f > 0 ? `<span class="form" style="color:var(--good)">+${f}</span>` : f < 0 ? `<span class="form" style="color:var(--bad)">${f}</span>` : '<span class="form muted">=</span>';
     const head1 = `<tr class="grp"><th class="stick" colspan="1"></th><th colspan="${suivi ? 9 : 5}"></th>${groups.map(([g, cols]) => `<th colspan="${cols.length}" class="gh">${g}</th>`).join('')}<th></th></tr>`;
-    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}${sh('ovr', 'Niveau', '', 'Niveau actuel, par rapport à ton club')}${sh('pot', 'Potentiel', '', 'Niveau que le joueur peut atteindre selon le staff ; partie pâle : incertitude (moins de 24 ans)')}${sh('dlt', 'Δ', 'r', 'Progression depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
+    const head2 = `<tr><th class="stick${s.k === 'pos' || s.k === 'tit' ? ' sorted' : ''}"><button class="sortbtn" data-act="sort" data-id="pos">Joueur${s.k === 'pos' ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button> · <button class="sortbtn" data-act="sort" data-id="tit" title="Titulaires d'abord, puis remplaçants, puis joueurs en tribune">Titulaires${s.k === 'tit' ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button></th>${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}${sh('ovr', 'Niveau', '', 'Niveau actuel, par rapport à ton club')}${sh('pot', 'Potentiel', '', 'Niveau que le joueur peut atteindre selon le staff ; partie pâle : incertitude (moins de 24 ans)')}${sh('dlt', 'Δ', 'r', 'Progression depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
     const rows = sorted.map((p) => {
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
