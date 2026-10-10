@@ -35,6 +35,7 @@
   --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --gold: #6f747a;
   --star: #a3852f;
+  --tv: #4a3a72; --tv-soft: #efebf6; --bet: #b3322b; --bet-soft: #f8e9e7;
   --zone: #a4a8ad;
   --on-accent: #ffffff;
   --r: 6px;
@@ -44,7 +45,7 @@
     --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
     --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
     --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-    --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
+    --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --tv: #6a58a0; --tv-soft: #221d2e; --bet: #d0564c; --bet-soft: #2c1b1a; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
     color-scheme: dark;
@@ -54,7 +55,7 @@
   --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
   --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
   --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-  --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
+  --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --tv: #6a58a0; --tv-soft: #221d2e; --bet: #d0564c; --bet-soft: #2c1b1a; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
   color-scheme: dark;
@@ -477,28 +478,30 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .mnote.nt1 { background: color-mix(in srgb, var(--bad) 28%, var(--surface)); }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; color: #fff; }
 /* Bet9M : bookmaker fictif, petit encart clin d'œil dans la colonne de droite */
-.betlogo { display: inline-flex; align-items: baseline; justify-content: center; width: 22px; height: 22px; padding-top: 3px; box-sizing: border-box; border-radius: 6px; background: var(--board); color: var(--board-fg); font-family: var(--f-display); font-weight: 800; font-size: 0.78rem; letter-spacing: -0.02em; }
-.betlogo i { font-style: normal; color: var(--star); font-size: 0.56rem; margin-left: 1px; }
-.betcard { padding: 12px 14px; }
+.betlogo { display: inline-flex; align-items: baseline; justify-content: center; width: 22px; height: 22px; padding-top: 3px; box-sizing: border-box; border-radius: 6px; background: var(--bet); color: #fff; font-family: var(--f-display); font-weight: 800; font-size: 0.78rem; letter-spacing: -0.02em; }
+.betlogo i { font-style: normal; color: #fff; opacity: 0.8; font-size: 0.56rem; margin-left: 1px; }
+.betcard { padding: 12px 14px; border-color: color-mix(in srgb, var(--bet) 45%, var(--line)); background: var(--bet-soft); }
 .bethead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; }
-.bethead b { font-family: var(--f-display); font-size: 0.95rem; letter-spacing: 0.02em; }
+.bethead b { font-family: var(--f-display); font-size: 0.95rem; letter-spacing: 0.02em; color: var(--bet); }
 .betrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.betcell { display: grid; justify-items: center; gap: 1px; padding: 5px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--sunk); cursor: help; }
+.betcell { display: grid; justify-items: center; gap: 1px; padding: 5px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); cursor: help; }
 .betcell .bl { font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 0.03em; }
 .betcell b { font-family: var(--f-display); font-size: 1.05rem; line-height: 1.1; }
-.betcell.fav { border-color: var(--star); }
+.betcell.fav { border-color: var(--bet); box-shadow: inset 0 0 0 1px var(--bet); }
+.betcell b { color: var(--bet); }
 .betnote { margin: 6px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.35; }
 /* MeIn Sport, « HandXtra » : avant-match parodique façon plateau télé */
 .tvcard { padding: 0; overflow: hidden; }
-.tvhead { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: var(--board); color: var(--board-fg); }
-.tvlogo { white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; font-family: var(--f-display); font-weight: 700; font-size: 0.62rem; letter-spacing: 0.12em; }
-.tvlogo b { background: var(--board-fg); color: var(--board); border-radius: 3px; padding: 1px 4px; font-size: 0.78rem; letter-spacing: 0; }
-.tvshow { white-space: nowrap; font-family: var(--f-display); font-weight: 800; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.tvlive { white-space: nowrap; margin-left: auto; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--board-dim); border: 1px solid var(--board-dim); border-radius: 3px; padding: 1px 5px; }
+.tvcard { border-color: color-mix(in srgb, var(--tv) 45%, var(--line)); background: var(--tv-soft); }
+.tvhead { display: flex; align-items: center; gap: 7px; padding: 9px 10px; background: var(--tv); color: #fff; }
+.tvlogo { white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; font-family: var(--f-display); font-weight: 700; font-size: 0.56rem; letter-spacing: 0.06em; }
+.tvlogo b { background: #fff; color: var(--tv); border-radius: 3px; padding: 1px 4px; font-size: 0.78rem; letter-spacing: 0; }
+.tvshow { white-space: nowrap; font-family: var(--f-display); font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tvlive { white-space: nowrap; margin-left: auto; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.5); border-radius: 3px; padding: 1px 5px; }
 .tvlines { padding: 10px 12px 0; display: grid; gap: 7px; }
 .tvlines p { margin: 0; font-size: 0.78rem; line-height: 1.4; }
 .tvlines b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.tvlines b.tom { color: var(--fg); } .tvlines b.fx { color: var(--muted); }
+.tvlines b.tom, .tvlines b.fx { color: var(--tv); }
 .tvcard .betnote { padding: 0 12px 10px; }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
