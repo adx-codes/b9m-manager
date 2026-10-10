@@ -2093,9 +2093,9 @@ html.locked #gate { display: grid; }
     const g = G.sched[G.round].find(([h, a]) => h === G.userId || a === G.userId);
     return g ? { h: g[0], a: g[1] } : { rest: true };
   }
-  function rank() {
+  function rank(id) {
     const s = H.standings(G);
-    return s.findIndex((r) => r.id === G.userId) + 1;
+    return s.findIndex((r) => r.id === (id || G.userId)) + 1;
   }
   const ord = (n) => n + (n === 1 ? 'er' : 'e');
   function modChip(key, withDesc) {
@@ -2319,7 +2319,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     else if (nf) {
       const home = nf.h === t.id;
       const o = T(home ? nf.a : nf.h);
-      next = `Prochain match<br><b>${home ? 'contre' : 'à'} ${esc(o.name)}</b>`;
+      next = `Prochain match<br><b>${home ? 'contre' : 'à'} ${esc(o.name)}</b>${G.results.length ? ` (${ord(rank(o.id))})` : ''}`;
     }
     const live = U.view === 'live' && U.m;
     const btn = live ? `<button class="btn primary nextbtn" data-act="tab" data-id="match">Match en cours →</button>`
