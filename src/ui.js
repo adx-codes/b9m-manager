@@ -1,0 +1,1546 @@
+(function () {
+  'use strict';
+  const H = window.HB;
+  const KEY = 'hbm-save-v1';
+  let G = null;
+  const U = { tab: 'ville', view: 'pre', m: null, side: 0, timer: null, speed: 1, paused: false, tPanel: false, post: null, sort: { k: 'pos', dir: 1 }, confirmReset: false, newClub: 'REN', ctlSig: '' };
+
+  // ---------- Utilitaires ----------
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(G)); } catch (e) { /* stockage indisponible */ } }
+  function load() {
+    try { const s = localStorage.getItem(KEY); if (s) { const g = JSON.parse(s); if (g && g.v === 1 && g.teams) { if (!g.training) g.training = { focus: 'equilibre', intensity: 'normale' }; H.migrate(g); return g; } } } catch (e) { /* ignore */ }
+    return null;
+  }
+  function clearSave() { try { localStorage.removeItem(KEY); } catch (e) { /* ignore */ } }
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const T = (id) => H.team(G, id);
+  const me = () => T(G.userId);
+  const badge = (t, sm) => `<span class="badge${sm ? ' sm' : ''}" style="background:${t.color}" aria-hidden="true">${t.id}</span>`;
+  const stars = (n) => `<span class="stars" aria-label="Réputation ${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
+  const short = (name) => { const p = name.split(' '); return p[0][0] + '. ' + p.slice(1).join(' '); };
+  const DEF_TXT = {
+    '6-0': ['Protège la zone, limite les tirs de près', 'Laisse tirer de loin'],
+    '5-1': ['Gêne la circulation et les tirs de 9 m', 'Ouvre des espaces au pivot et aux changements de secteur'],
+    '4-2': ['Provoque des pertes de balle', 'Ouvre les espaces à 6 m, fatigue accrue']
+  };
+  const DSTYLE_TXT = {
+    zone: ['Aide défensive permanente : solide contre les duels et les percées', 'Fragile face à de bons ailiers'],
+    homme: ['Pression sur chaque porteur, ailes étouffées, plus de ballons récupérés', 'Fragile face à des arrières forts en duel, fatigue accrue']
+  };
+  const JEU_TXT = {
+    collectif: 'Circulation, vision de jeu et tirs répartis. Les joueurs perso (esprit collectif de 7 ou moins) perdent plus de ballons. Match après match, l\'esprit collectif des joueurs qui jouent monte doucement.',
+    equilibre: 'Ni bonus ni malus : chacun joue selon son profil, et l\'esprit collectif ne bouge pas.',
+    individuel: 'Duels et un-contre-un : les meilleurs tireurs prennent leurs responsabilités et tentent plus de gestes. Match après match, l\'esprit collectif des joueurs qui jouent baisse doucement.'
+  };
+  const rulesLine = (r) => {
+    const out = [];
+    if (r.sup.on) out.push(`${r.sup.sys} en supériorité`);
+    if (r.mene.on) out.push(`${r.mene.sys} si mené de ${r.mene.ecart} après la ${r.mene.min}e`);
+    if (r.tireur.on) out.push(`${r.tireur.sys} contre un tireur à 16+`);
+    return out.length ? 'Base 6-0 · ' + out.join(' · ') : 'Toujours en 6-0';
+  };
+  const ATT_TXT = {
+    place: ['Jeu placé', 'Moins de pertes de balle, possessions plus longues, peu de contre-attaques'],
+    rapide: ['Jeu rapide', 'Contre-attaques et engagements rapides, plus de pertes de balle, fatigue accrue']
+  };
+  const CONS = Object.fromEntries(H.CONSIGNES);
+  const SLOT = {
+    GB: 'left:50%;top:max(30px,10%)', AiG: 'left:max(84px,15%);top:24%', AiD: 'left:min(calc(100% - 84px),85%);top:24%',
+    Piv: 'left:50%;top:46%', ArG: 'left:22%;top:65%', ArD: 'left:78%;top:65%', DC: 'left:50%;top:85%'
+  };
+  const ovrAt = (p, pos) => H.ovrAt(p, pos);
+  function nextFixture() {
+    if (!G || G.round >= G.sched.length) return null;
+    const g = G.sched[G.round].find(([h, a]) => h === G.userId || a === G.userId);
+    return g ? { h: g[0], a: g[1] } : { rest: true };
+  }
+  function rank() {
+    const s = H.standings(G);
+    return s.findIndex((r) => r.id === G.userId) + 1;
+  }
+  const ord = (n) => n + (n === 1 ? 'er' : 'e');
+  function modChip(key, withDesc) {
+    const m = H.modInfo(key);
+    if (!m) return '';
+    return `<span class="modchip ${m.bonus ? 'plus' : 'minus'}" title="${esc(m.desc)}"><b>${m.bonus ? '+' : '−'}</b> ${esc(m.name)}</span>${withDesc ? `<span class="moddesc">${esc(m.desc)}</span>` : ''}`;
+  }
+  function ensureDraft() {
+    if (U.draft) return U.draft;
+    const d = Object.keys(H.MODS);
+    for (let i = d.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [d[i], d[j]] = [d[j], d[i]]; }
+    U.draft = { bonus: d.slice(0, 3), malus: d.slice(3, 6), b: null, m: null };
+    return U.draft;
+  }
+
+  // ---------- Fiche joueur ----------
+  function findPlayer(id) {
+    for (const t of G.teams) { const p = t.players.find((x) => x.id === id); if (p) return { p, t }; }
+    if (G.youth && G.youth.p.id === id) return { p: G.youth.p, t: me() };
+    return null;
+  }
+  function matchNote(p, h) {
+    const [, , min, g, sh, sv, fa, to, ex] = h;
+    if (min < 3) return null;
+    const r = p.pos === 'GB' ? 6 + (sv - 0.33 * fa) * 0.35 + (min >= 25 ? 0.2 : 0) : 6 + 0.55 * g - 0.3 * (sh - g) - 0.45 * to - 0.5 * ex + (min >= 40 ? 0.3 : 0);
+    return Math.max(2, Math.min(10, Math.round(r * 10) / 10));
+  }
+  const noteCls = (n) => n === null ? 'muted' : n >= 7.5 ? 'nt5' : n >= 6.5 ? 'nt4' : n >= 5.5 ? 'nt3' : 'nt1';
+  function sheetChart(p) {
+    const hs = p.hist || [];
+    const W = 900, Hh = 128, L = 34, R = 12, T = 12, B = 22;
+    const pts = [[0, p.ovr0 ?? p.ovr]].concat(hs.map((h) => [h[0], h[1]]));
+    const nR = Math.max(G.sched.length, 1);
+    const vals = pts.map((x) => x[1]).concat([p.pot ?? p.ovr]);
+    const lo = Math.floor(Math.min(...vals) - 0.3), hi = Math.ceil(Math.max(...vals) + 0.3);
+    const X = (r) => L + (r / nR) * (W - L - R), Y = (v) => T + (1 - (v - lo) / Math.max(0.5, hi - lo)) * (Hh - T - B);
+    const grid = [];
+    for (let v = lo; v <= hi; v += (hi - lo > 4 ? 2 : 1)) grid.push(`<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="cg"/><text x="${L - 6}" y="${Y(v) + 3.5}" class="ct" text-anchor="end">${v}</text>`);
+    const xt = [];
+    for (let r = 0; r <= nR; r += nR > 12 ? 4 : 2) xt.push(`<text x="${X(r)}" y="${Hh - 6}" class="ct" text-anchor="middle">${r === 0 ? 'Début' : 'J' + r}</text>`);
+    const line = pts.map((x, k) => `${k ? 'L' : 'M'}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join('');
+    const pot = p.pot ?? p.ovr;
+    const mins = hs.map((h) => { const bh = (h[2] / 60) * 34; return `<rect x="${(X(h[0]) - 5).toFixed(1)}" y="${(Hh + 40 - bh).toFixed(1)}" width="10" height="${bh.toFixed(1)}" rx="1.5" class="${h[2] > 0 ? 'cb' : 'cb0'}"><title>J${h[0]} : ${h[2]} min</title></rect>${(p.pos === 'GB' ? h[5] : h[3]) ? `<text x="${X(h[0]).toFixed(1)}" y="${(Hh + 40 - bh - 3).toFixed(1)}" class="ct cv" text-anchor="middle">${p.pos === 'GB' ? h[5] : h[3]}</text>` : ''}`; }).join('');
+    return `<svg viewBox="0 0 ${W} ${Hh + 46}" class="schart" role="img" aria-label="Évolution de la note et minutes jouées par journée">
+      ${grid.join('')}${xt.join('')}
+      <line x1="${L}" x2="${W - R}" y1="${Y(pot)}" y2="${Y(pot)}" class="cpot"/><text x="${W - R}" y="${Y(pot) - 4}" class="ct" text-anchor="end">Potentiel ${pot.toFixed(1)}</text>
+      <path d="${line}" class="cl"/>${pts.map((x) => `<circle cx="${X(x[0]).toFixed(1)}" cy="${Y(x[1]).toFixed(1)}" r="2.6" class="cpt"><title>${x[0] ? 'Après J' + x[0] : 'Début de saison'} : ${x[1].toFixed(1)}</title></circle>`).join('')}
+      <line x1="${L}" x2="${W - R}" y1="${Hh + 40}" y2="${Hh + 40}" class="cg"/><text x="${L - 6}" y="${Hh + 30}" class="ct" text-anchor="end">Min</text>${mins}</svg>`;
+  }
+  function sheetHtml(p, t) {
+    const hs = p.hist || [];
+    const gk = p.pos === 'GB';
+    const sum = (k) => hs.reduce((a, h) => a + h[k], 0);
+    const played = hs.filter((h) => h[2] >= 1);
+    const notes = hs.map((h) => matchNote(p, h)).filter((n) => n !== null);
+    const avgN = notes.length ? notes.reduce((a, n) => a + n, 0) / notes.length : null;
+    const pct = (a, b) => b ? Math.round((a / b) * 100) + ' %' : '–';
+    const d = p.ovr - (p.ovr0 ?? p.ovr);
+    const tile = (l, v, sub) => `<div class="stile"><span class="label">${l}</span><b class="num">${v}</b>${sub ? `<span class="muted">${sub}</span>` : ''}</div>`;
+    const tiles = [tile('Matchs joués', played.length || p.apps || 0, `${hs.length} journée${hs.length > 1 ? 's' : ''}`), tile('Min / match', played.length ? Math.round(sum(2) / played.length) : '–', `${Math.round(sum(2))} min au total`)]
+      .concat(gk ? [tile('Arrêts', sum(5), pct(sum(5), sum(6)) + ' des tirs'), tile('Tirs subis', sum(6))] : [tile('Buts', sum(3), `${sum(4)} tirs · ${pct(sum(3), sum(4))}`), tile('Pertes de balle', sum(7)), tile('Exclusions', sum(8))])
+      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10')]);
+    const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
+    const a0 = p.a0 || p.a;
+    const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
+    const allK = gk ? H.GKA.map((x) => x[0]) : H.FIELD.map((x) => x[0]);
+    const gained = allK.concat(traits).reduce((a, k) => a + Math.max(0, p.a[k] - (a0[k] ?? p.a[k])), 0);
+    const teamName = (id) => { const x = G.teams.find((tt) => tt.id === id); return x ? x.id : id; };
+    const rows = hs.slice().reverse().map((h) => { const n = matchNote(p, h); return `<tr><td>J${h[0]}</td><td>${esc(teamName(h[9]))}</td><td><span class="res ${h[10] > 0 ? 'w' : h[10] < 0 ? 'l' : 'd'}">${h[10] > 0 ? 'V' : h[10] < 0 ? 'D' : 'N'}</span></td><td class="r num">${h[2] || '–'}</td><td class="r num">${h[2] < 1 ? '' : gk ? `${h[5]}/${h[6]}` : `${h[3]}/${h[4]}`}</td>${gk ? '' : `<td class="r num">${h[2] < 1 ? '' : h[7]}</td><td class="r num">${h[8] || ''}</td>`}<td class="r"><span class="mnote ${noteCls(n)}">${n === null ? '–' : n.toFixed(1).replace('.', ',')}</span></td></tr>`; }).join('');
+    const mine = t.id === G.userId;
+    return `<div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="pstitle">
+      <div class="shead"><div><div class="row" style="gap:8px"><span class="pos${gk ? ' gb' : ''}">${p.pos}</span><span class="muted">${esc(H.POS_LABEL[p.pos])}</span>${p.age < 23 ? '<span title="Moins de 23 ans">🌱</span>' : ''}${p.youth ? '<span class="yt" title="Formé au club">J</span>' : ''}</div>
+        <h2 id="pstitle">${esc(p.name)}</h2>
+        <div class="row" style="gap:10px">${badge(t, true)}<span>${esc(t.name)}</span><span class="muted">${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'}${H.SECONDARY[p.pos].length ? ' · dépanne en ' + H.SECONDARY[p.pos].join(', ') : ''}${H.BACK_POS.includes(p.pos) ? ' · jeu ' + H.BACK_STYLES[H.backStyle(p)].toLowerCase() : ''}</span></div></div>
+        <div class="sovr"><span class="label">Note / potentiel</span><b class="num">${p.ovr.toFixed(1)}<span class="pot">/${(p.pot ?? p.ovr).toFixed(1)}</span></b><span class="${d >= 0.05 ? 'dlt' : d <= -0.05 ? 'dlt neg' : 'muted'}">${d >= 0.05 ? '+' : ''}${Math.abs(d) < 0.05 ? 'stable' : d.toFixed(1)} cette saison</span></div>
+        <button class="btn sclose" data-act="psclose" aria-label="Fermer la fiche">✕</button></div>
+      <div class="stiles">${tiles.join('')}</div>
+      <h3 class="sub3">Évolution de la note</h3>
+      ${hs.length ? sheetChart(p) : '<p class="muted">Pas encore de match joué cette saison.</p>'}
+      <p class="legend" style="margin:4px 0 0">Courbe : note après chaque journée (entraînement compris). Barres : minutes jouées${gk ? ', chiffre : arrêts' : ', chiffre : buts'}.</p>
+      <div class="grid2" style="margin-top:14px">
+        <div style="min-width:0"><h3 class="sub3" style="margin-top:0">Attributs <span class="muted" style="font-weight:400">· ${gained ? `+${gained} point${gained > 1 ? 's' : ''} gagné${gained > 1 ? 's' : ''} cette saison` : 'aucun gain cette saison'}</span></h3>
+          <div class="sattrs">${allK.map(attr).join('')}</div>
+          ${traits.length ? `<h3 class="sub3">Profil</h3><div class="sattrs">${traits.map(attr).join('')}</div>` : ''}
+          <p class="legend">Encadrés : attributs du poste, les seuls travaillés à l'entraînement. Chiffre coloré : évolution depuis le début de saison.${mine ? ` Multiplicateur d'expérience actuel ×${H.matchXP(p).toFixed(1).replace('.', ',')}.` : ''}</p></div>
+        <div style="min-width:0"><h3 class="sub3" style="margin-top:0">Match par match</h3>
+          ${hs.length ? `<div class="scroll"><table class="pt"><thead><tr><th>J.</th><th>Adv.</th><th>Rés.</th><th class="r">Min</th><th class="r">${gk ? 'Arr./tirs' : 'Buts/tirs'}</th>${gk ? '' : '<th class="r">Pertes</th><th class="r">2 min</th>'}<th class="r" title="Note du match sur 10">Note</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">Rien à afficher pour l\'instant.</p>'}
+          <p class="legend">Note : performance du match sur 10 (buts, tirs manqués, pertes, exclusions ; arrêts pour un gardien).</p></div>
+      </div></div>`;
+  }
+  function openSheet(id) {
+    const f = findPlayer(id);
+    if (!f) return;
+    closeSheet();
+    const o = document.createElement('div');
+    o.className = 'overlay';
+    o.id = 'psheet';
+    o.innerHTML = sheetHtml(f.p, f.t);
+    o.addEventListener('click', (ev) => { if (ev.target === o) closeSheet(); });
+    U.sheetFrom = document.activeElement;
+    document.body.appendChild(o);
+    const c = o.querySelector('.sclose');
+    if (c) c.focus();
+  }
+  function closeSheet() {
+    const o = document.getElementById('psheet');
+    if (o) { o.remove(); if (U.sheetFrom && document.body.contains(U.sheetFrom)) U.sheetFrom.focus(); }
+  }
+  const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>${H.flagOf(p) ? ` <span class="flag" title="Joueur étranger">${H.flagOf(p)}</span>` : ''}`;
+
+  // ---------- Thème du club ----------
+  // Accueil neutre ; une fois le club choisi, sa couleur (adoucie) devient la base et sa couleur de contraste les touches
+  function hexToHsl(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255, g = parseInt(hex.slice(3, 5), 16) / 255, b = parseInt(hex.slice(5, 7), 16) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    let h = 0, s = 0;
+    if (mx !== mn) {
+      const d = mx - mn;
+      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+      h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      h *= 60;
+    }
+    return [h, s, l];
+  }
+  const hsl = (h, s, l) => `hsl(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+  function clubTheme(t) {
+    const base = H.CLUBS.find((c) => c.id === t.id) || t;
+    const [h, s0, l0] = hexToHsl(t.color);
+    const [h2, s2] = hexToHsl(base.color2 || '#c8a24a');
+    // Couleurs du club volontairement atténuées : la base reste sobre, le contraste n'est qu'une touche
+    const grey = s0 < 0.1, s = Math.min(s0, 0.38);
+    const sc = Math.min(Math.max(s2, 0.25), 0.45);
+    const tint = grey ? 0.01 : 0.04;
+    const light = {
+      bg: hsl(h, tint, 0.962), sunk: hsl(h, tint, 0.918), line: hsl(h, tint, 0.85), muted: hsl(h, 0.05, 0.42), fg: hsl(h, grey ? 0.04 : 0.12, 0.12),
+      accent: hsl(h, s, clampN(l0, 0.26, 0.36)), 'accent-soft': hsl(h, grey ? 0.03 : 0.16, 0.935),
+      court: hsl(h, Math.min(s, 0.3), grey ? 0.22 : 0.27), 'court-soft': hsl(h, grey ? 0.03 : 0.14, 0.915),
+      board: hsl(h, grey ? 0.04 : 0.16, 0.11), 'board-dim': hsl(h, 0.06, 0.64),
+      digit: hsl(h2, sc, 0.7), gold: hsl(h2, sc, 0.42), zone: hsl(h2, sc * 0.7, 0.58), 'on-accent': '#ffffff'
+    };
+    const dark = {
+      bg: hsl(h, grey ? 0.02 : 0.1, 0.065), surface: hsl(h, grey ? 0.02 : 0.08, 0.095), sunk: hsl(h, grey ? 0.02 : 0.1, 0.075), line: hsl(h, grey ? 0.03 : 0.08, 0.18),
+      fg: hsl(h, 0.06, 0.92), muted: hsl(h, 0.05, 0.63),
+      accent: hsl(h, grey ? 0 : Math.max(s, 0.28), grey ? 0.84 : 0.68), 'accent-soft': hsl(h, grey ? 0.02 : 0.16, 0.16),
+      court: hsl(h, Math.min(s, 0.28), grey ? 0.27 : 0.33), 'court-soft': hsl(h, grey ? 0.02 : 0.14, 0.13),
+      board: hsl(h, grey ? 0.03 : 0.14, 0.055), 'board-dim': hsl(h, 0.06, 0.58),
+      digit: hsl(h2, sc, 0.7), gold: hsl(h2, sc, 0.66), zone: hsl(h2, sc * 0.7, 0.5), 'on-accent': hsl(h, 0.2, 0.08), 'pos-fg': hsl(h, grey ? 0 : 0.3, 0.76)
+    };
+    const css = (o) => Object.entries(o).map(([k, v]) => `--${k}: ${v};`).join(' ');
+    return `html:root { ${css(light)} }
+@media (prefers-color-scheme: dark) { html:root:not([data-theme="light"]) { ${css(dark)} } }
+html:root[data-theme="dark"] { ${css(dark)} }`;
+  }
+  function applyTheme() {
+    let el = document.getElementById('clubtheme');
+    const key = G ? me().id : '';
+    if (el && el.dataset.k === key) return;
+    if (!el) { el = document.createElement('style'); el.id = 'clubtheme'; document.head.appendChild(el); }
+    el.dataset.k = key;
+    el.textContent = G ? clubTheme(me()) : '';
+  }
+
+  // ---------- Rendu principal ----------
+  function render() {
+    const app = document.getElementById('app');
+    applyTheme();
+    if (!G) { app.innerHTML = renderHome(); return; }
+    const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
+    if (!views[U.tab]) U.tab = 'ville';
+    const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '');
+    if (U.youthModal && G.youth) { const f = document.querySelector('.modal button'); if (f) f.focus(); }
+    const nm = document.querySelector('#bsov .modal');
+    if (nm && oscroll) nm.scrollTop = oscroll;
+    U.ctlSig = ctlSig();
+  }
+
+  function modsPicker() {
+    const d = ensureDraft();
+    const card = (dom, sign, act, cur) => {
+      const m = H.modInfo(dom + sign);
+      return `<button class="modcard ${sign === '+' ? 'plus' : 'minus'}" data-act="${act}" data-id="${dom}" aria-pressed="${cur === dom}"><span class="label">${esc(m.label)}</span><b>${esc(m.name)}</b><span>${esc(m.desc)}</span></button>`;
+    };
+    const ready = d.b && d.m;
+    const club = H.CLUBS.find((c) => c.id === U.newClub);
+    return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="row">${badge(club)}<div><b style="font-family:var(--f-display);font-size:1.25rem">${esc(club.name)}</b><br><span class="muted">${esc(club.city)} · ${stars(club.rep)}</span></div></div><button class="btn" data-act="step1">← Changer de club</button></div>
+      <h3>Bonus et malus du club</h3>
+      <p class="muted" style="margin:0 0 14px">Le hasard t'en propose trois de chaque : choisis un bonus et un malus. Ils durent toute la saison. Les clubs adverses reçoivent chacun un bonus ou un malus au hasard.</p>
+      <div class="modgrid"><div class="modcol"><span class="label good">Ton bonus</span>${d.bonus.map((k) => card(k, '+', 'pickb', d.b)).join('')}</div>
+        <div class="modcol"><span class="label bad">Ton malus</span>${d.malus.map((k) => card(k, '-', 'pickm', d.m)).join('')}</div></div>
+      <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="start" ${ready ? '' : 'disabled'}>Lancer la saison</button><span class="muted">${ready ? `${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} · ${esc(H.modInfo(d.b + '+').name)} · ${esc(H.modInfo(d.m + '-').name)}` : 'Choisis un bonus et un malus pour lancer la saison.'}</span></div></section>`;
+  }
+  function renderHome() {
+    return `<section class="hero"><span class="label">Prototype · saison 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
+      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p></section>
+      <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
+      ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
+      <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="step2">Continuer avec ${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} →</button><span class="muted">La réputation fixe le niveau moyen de l'effectif généré.</span></div></section>`}`;
+  }
+
+  function renderTop() {
+    const t = me();
+    const nf = nextFixture();
+    let next = '<b>Saison terminée</b>';
+    if (nf && nf.rest) next = `Journée ${G.round + 1}<br><b>Repos</b>`;
+    else if (nf) {
+      const home = nf.h === t.id;
+      const o = T(home ? nf.a : nf.h);
+      next = `Prochain match<br><b>${home ? 'contre' : 'à'} ${esc(o.name)}</b>`;
+    }
+    const live = U.view === 'live' && U.m;
+    const btn = live ? `<button class="btn primary nextbtn" data-act="tab" data-id="match">Match en cours →</button>`
+      : U.post && U.view === 'post' && U.tab === 'match' ? `<button class="btn primary nextbtn" data-act="tab" data-id="championnat">Résultats et classement →</button>`
+      : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
+      : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
+    const pos = G.results.length ? `${ord(rank())} du championnat` : 'Avant la 1re journée';
+    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
+    const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
+    return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
+      <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
+  }
+
+  function renderFooter() {
+    const reset = U.confirmReset
+      ? `<span>Effacer la sauvegarde et revenir au choix du club ? <button class="btn" data-act="resetYes">Oui, recommencer</button> <button class="btn" data-act="resetNo">Annuler</button></span>`
+      : `<button class="linkbtn" data-act="reset">Recommencer une partie</button>`;
+    return `<footer class="footer"><span>Sauvegarde automatique dans ce navigateur après chaque journée.</span>${reset}</footer>`;
+  }
+
+  // ---------- Match ----------
+  function boardTeams(h, a, hs, as) {
+    return `<div class="teams"><div class="team">${badge(h)}<span class="tn">${esc(h.name)}</span></div><div class="score"><span>${hs}</span><span class="sep">:</span><span>${as}</span></div><div class="team away"><span class="tn">${esc(a.name)}</span>${badge(a)}</div></div>`;
+  }
+  function tacLine(t) {
+    return `${ATT_TXT[t.att][0]} · jeu ${H.JEU[t.jeu].toLowerCase()} · ${H.DSTYLE[t.dstyle].toLowerCase()}${t.cons.length ? ' · ' + t.cons.map((c) => CONS[c].toLowerCase()).join(', ') : ''}`;
+  }
+  function fitInfo(t) {
+    const id = H.identity(t);
+    const j = t.tactic.jeu;
+    const f = j === 'collectif' ? id.v - 11 : j === 'individuel' ? 11 - id.v : 0;
+    const txt = j === 'equilibre' ? 'neutre' : f >= 1 ? 'bonus' : f <= -1 ? 'malus' : 'effet faible';
+    return { id, f, txt, cls: j === 'equilibre' ? 'muted' : f >= 1 ? 'good' : f <= -1 ? 'bad' : 'muted' };
+  }
+  function meter(v, max, col) { return `<span class="meter"><span style="width:${Math.round((v / max) * 100)}%;background:${col}"></span></span>`; }
+  function teamProfile(t) {
+    const fi = fitInfo(t), exp = H.experience(t), coh = t.cohesion || 50;
+    return `<div class="tprof">
+      <div class="tp"><span class="label">Identité de jeu</span><b>${fi.id.label} <span class="num muted">${fi.id.v.toFixed(1)}/20</span></b>${meter(fi.id.v, 20, 'var(--court)')}<span class="legend">Moyenne de l'esprit collectif des 6 joueurs de champ titulaires. Elle évolue avec le style joué : le jeu collectif la fait monter, le jeu individuel baisser. Style choisi : ${H.JEU[t.tactic.jeu].toLowerCase()}, <span class="${fi.cls}">${fi.txt}</span>.</span></div>
+      <div class="tp"><span class="label">Cohésion</span><b class="num">${coh}/100</b>${meter(coh, 100, 'var(--iso-gym)')}<span class="legend">Monte quand les mêmes titulaires enchaînent les matchs, baisse quand tu changes beaucoup. Joue sur les passes et la réussite.</span></div>
+      <div class="tp"><span class="label">Particularités du club</span>${(t.mods || []).length ? t.mods.map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('') : '<span class="legend">Aucune (partie commencée avant les bonus et malus).</span>'}</div>
+      <div class="tp"><span class="label">Expérience</span><b class="num">${exp}/100</b>${meter(exp, 100, 'var(--iso-office)')}<span class="legend">Âge et matchs joués des titulaires. Aide dans les fins de match serrées et limite les exclusions.</span></div>
+    </div>`;
+  }
+  function staffAdvice(t, where) {
+    const tac = t.tactic, tr = G.training, out = [];
+    const add = (mod, st, text, w) => { if (H.hasMod(t, mod) && (where === 'match' || w.includes(where))) out.push({ mod, st, text }); };
+    const aggr = tac.cons.includes('agressive'), homme = tac.dstyle === 'homme';
+    add('public+', tac.att === 'rapide' ? 'good' : 'info', tac.att === 'rapide' ? 'À domicile, ton jeu rapide profite du chaudron : +4 % de contre-attaques.' : 'Passe en jeu rapide à domicile : le public pousse les contre-attaques (+4 %).', ['tactique']);
+    add('public-', 'info', 'À domicile, le public ne te portera pas : un jeu placé limite les pertes de balle.', ['tactique']);
+    add('staff+', tr.focus !== 'equilibre' ? 'good' : 'info', tr.focus !== 'equilibre' ? 'Ton staff bac+12 est encore meilleur sur un focus ciblé (×1,1 en plus).' : 'Choisis un focus ciblé : ton staff y est encore meilleur (×1,1 en plus).', ['training']);
+    add('staff-', 'info', 'Avec un staff qui joue à Fortnite, les jeunes sous leur potentiel restent ta meilleure source de progrès.', ['training']);
+    add('formation+', 'info', 'Fais jouer tes jeunes : tant qu\'ils sont sous leur potentiel, ils progressent jusqu\'à 3 fois plus vite.', ['training', 'tactique']);
+    add('formation-', 'info', 'Tes jeunes partent de plus bas : compte sur tes cadres et sur le centre de formation.', ['training']);
+    add('vestiaire+', tac.jeu === 'collectif' ? 'good' : 'info', tac.jeu === 'collectif' ? 'Groupe soudé + jeu collectif : +1 % au tir.' : 'Ton groupe soudé gagne +1 % au tir en jeu collectif.', ['tactique']);
+    add('vestiaire-', tac.jeu === 'collectif' ? 'bad' : 'info', tac.jeu === 'collectif' ? 'Deux groupes WhatsApp et jeu collectif : −1 % au tir. Garde un 7 stable pour remonter la cohésion.' : 'Évite le jeu collectif (−1 % au tir) et garde un 7 stable pour remonter la cohésion.', ['tactique']);
+    add('soins+', tr.intensity === 'intense' ? 'good' : 'info', tr.intensity === 'intense' ? 'Ton kiné encaisse la semaine intense : fatigue supplémentaire divisée par deux.' : 'Tu peux te permettre l\'intensité intense : ton kiné divise la fatigue en plus par deux.', ['training']);
+    add('soins-', tr.intensity === 'intense' ? 'bad' : 'info', tr.intensity === 'intense' ? 'Semaine intense sans kiné : 18 points de fatigue en plus au prochain match.' : 'Évite l\'intensité intense : sans kiné, elle coûte 18 points de fatigue.', ['training']);
+    add('cage+', homme ? 'info' : 'good', homme ? 'Ton gardien brille derrière une défense collective (−1,5 % de réussite adverse).' : 'Défense collective + gardien en forme : −1,5 % de réussite adverse.', ['tactique']);
+    add('cage-', homme ? 'bad' : 'info', homme ? 'En homme à homme, ton gardien est exposé : +2 % de réussite adverse.' : 'Reste en défense collective pour protéger ton gardien.', ['tactique']);
+    add('discipline+', aggr ? 'good' : 'info', aggr ? 'Défense agressive sans risque : tes enfants de chœur ne prennent pas d\'exclusions en plus.' : 'Tu peux activer la défense agressive : elle ne te coûtera pas d\'exclusions en plus.', ['tactique']);
+    add('discipline-', aggr || homme ? 'bad' : 'info', aggr || homme ? 'Sang chaud + ' + (aggr ? 'défense agressive' : 'homme à homme') + ' : encore plus d\'exclusions.' : 'Évite la défense agressive et l\'homme à homme : chacun ajoute des exclusions.', ['tactique']);
+    add('spectacle+', tac.jeu === 'individuel' ? 'good' : 'info', tac.jeu === 'individuel' ? 'Jeu individuel : tes artistes tentent encore plus de gestes, mieux exécutés.' : 'Passe en jeu individuel pour libérer tes artistes (plus de gestes).', ['tactique']);
+    add('spectacle-', tac.jeu === 'collectif' ? 'good' : 'bad', tac.jeu === 'collectif' ? 'Le jeu collectif compense ton jeu prévisible : plus de malus au tir.' : 'Ton attaque placée est prévisible (−1,5 %) : le jeu collectif annule ce malus.', ['tactique']);
+    add('mental+', 'info', 'Tes joueurs gèrent bien les fins serrées : le 7 contre 6 est une vraie arme.', ['tactique']);
+    add('mental-', 'info', 'Tes joueurs tremblent dans les fins serrées : cherche à creuser l\'écart tôt et évite le 7 contre 6.', ['tactique']);
+    add('physique+', tac.att === 'rapide' ? 'good' : 'info', tac.att === 'rapide' ? 'Jeu rapide : +5 % de contre-attaques et presque pas de fatigue en plus.' : 'Passe en jeu rapide : tes joueurs encaissent la fatigue et contre-attaquent plus.', ['tactique']);
+    add('physique-', tac.att === 'rapide' ? 'bad' : 'info', tac.att === 'rapide' ? 'Jeu rapide après la raclette : fatigue ×1,25.' : 'Évite le jeu rapide, il épuise ton équipe (fatigue ×1,25).', ['tactique', 'training']);
+    add('arbitrage+', tac.jeu === 'individuel' ? 'good' : 'info', tac.jeu === 'individuel' ? 'Jeu individuel : les duels provoquent encore plus de 7 m (×1,9).' : 'Le jeu individuel provoque encore plus de 7 m avec ces arbitres (×1,9 au lieu de ×1,6).', ['tactique']);
+    add('arbitrage-', aggr || homme ? 'bad' : 'info', aggr || homme ? 'L\'arbitre a l\'œil sur ta défense ' + (aggr ? 'agressive' : 'en homme à homme') + ' : exclusions en plus.' : 'Évite la défense agressive et l\'homme à homme : l\'arbitre les sanctionne plus.', ['tactique']);
+    add('calendrier+', 'info', 'Début de saison facile : profites-en pour faire tourner et lancer les jeunes.', ['tactique', 'training']);
+    add('calendrier-', 'info', 'Début de saison difficile : garde un 7 stable pour faire monter la cohésion.', ['tactique', 'training']);
+    return out;
+  }
+  function adviceHtml(t, where) {
+    const a = staffAdvice(t, where);
+    if (!a.length) return '';
+    return `<div class="advice"><span class="label">Conseils du staff</span>${a.map((x) => `<div class="adv ${x.st}"><span class="advmod">${esc(H.modInfo(x.mod).name)}</span><span>${esc(x.text)}</span></div>`).join('')}</div>`;
+  }
+  function perfBlock(team, side, title) {
+    const rows = team.players.filter((p) => ((side.mins || {})[p.id] || 0) > 0.5).map((p) => ({ p, s: (side.ps || {})[p.id] || { sh: 0, g: 0, to: 0, ex: 0, sv: 0, fa: 0 }, m: side.mins[p.id] }));
+    const field = rows.filter((r) => r.p.pos !== 'GB').sort((a, b) => b.s.g - a.s.g || b.s.sh - a.s.sh || b.m - a.m);
+    const gks = rows.filter((r) => r.p.pos === 'GB');
+    const pct = (a, b) => b ? Math.round((a / b) * 100) + ' %' : '–';
+    const tag = (r) => r.s.g >= 4 && r.s.g / r.s.sh >= 0.7 ? '<span class="ptag hot">En feu</span>' : r.s.sh >= 4 && r.s.g / r.s.sh <= 0.34 ? '<span class="ptag cold">Maladroit</span>' : r.s.to >= 3 ? '<span class="ptag cold">Perd des ballons</span>' : '';
+    const gtag = (r) => r.s.fa >= 8 && r.s.sv / r.s.fa >= 0.4 ? '<span class="ptag hot">Un mur</span>' : r.s.fa >= 8 && r.s.sv / r.s.fa <= 0.2 ? '<span class="ptag cold">En difficulté</span>' : '';
+    const sector = (list) => { const x = field.filter((r) => list.includes(r.p.pos)); const g = x.reduce((a, r) => a + r.s.g, 0), sh = x.reduce((a, r) => a + r.s.sh, 0); return `${g}/${sh} (${pct(g, sh)})`; };
+    return `<div class="perf" style="min-width:0"><div class="row" style="gap:8px;margin-bottom:6px">${badge(team, true)}<b>${esc(title || team.name)}</b></div>
+      <div class="sectors"><span>Ailes <b>${sector(['AiG', 'AiD'])}</b></span><span>Arrières et DC <b>${sector(['ArG', 'ArD', 'DC'])}</b></span><span>Pivot <b>${sector(['Piv'])}</b></span></div>
+      <div class="scroll"><table class="pt"><thead><tr><th>Joueur</th><th class="r">Min</th><th class="r">Buts / tirs</th><th class="r">%</th><th class="r">Pertes</th><th class="r">2 min</th><th></th></tr></thead><tbody>
+      ${field.map((r) => `<tr><td><span class="pos">${r.p.pos}</span> ${plink(r.p, short(r.p.name))}</td><td class="r">${Math.round(r.m)}</td><td class="r"><b>${r.s.g}</b>/${r.s.sh}</td><td class="r">${pct(r.s.g, r.s.sh)}</td><td class="r">${r.s.to}</td><td class="r">${r.s.ex || ''}</td><td>${tag(r)}</td></tr>`).join('')}
+      ${gks.map((r) => `<tr class="gkrow"><td><span class="pos gb">GB</span> ${plink(r.p, short(r.p.name))}</td><td class="r">${Math.round(r.m)}</td><td class="r" colspan="2"><b>${r.s.sv}</b> arrêts / ${r.s.fa} (${pct(r.s.sv, r.s.fa)})</td><td></td><td></td><td>${gtag(r)}</td></tr>`).join('')}
+      </tbody></table></div></div>`;
+  }
+  function perfSection(h, a, hs, as) {
+    return `<section class="panel"><h3>Performances individuelles</h3><div class="grid2">${perfBlock(h, hs)}${perfBlock(a, as)}</div>
+      <p class="legend">Tirs cadrés ou non, gestes compris. Par secteur : buts sur tirs. Repère qui est en feu chez l'adversaire pour adapter ta défense (style, bascules), et quel secteur de ton attaque fonctionne pour orienter tes consignes.</p></section>`;
+  }
+  function renderMatch() {
+    if (U.view === 'live' && U.m) return renderLive();
+    if (U.view === 'post' && U.post) return renderPost();
+    if (G.ended) return renderEnd();
+    const nf = nextFixture();
+    if (nf.rest) return renderRest();
+    const h = T(nf.h), a = T(nf.a), t = me();
+    const home = nf.h === t.id;
+    const opp = home ? a : h;
+    const best = opp.players.slice().sort((x, y) => y.ovr - x.ovr).slice(0, 3);
+    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id));
+    const tired = starters.filter((p) => p.fatigue > 28);
+    const tac = t.tactic;
+    return `<section class="board">${boardTeams(h, a, '–', '–')}<div class="meta"><span>Journée ${G.round + 1} · ${home ? 'à domicile' : "à l'extérieur"}</span><span>Salle de ${esc(h.city)}</span></div></section>
+      <div class="grid2">
+        <section class="panel"><h3>Ton plan de match</h3>
+          <div style="display:grid;gap:12px">
+            <div class="opt"><span class="label">Attaque · ${ATT_TXT[tac.att][0]} · jeu ${H.JEU[tac.jeu].toLowerCase()}</span><p>${ATT_TXT[tac.att][1]}. Identité de l'équipe : ${fitInfo(t).id.label.toLowerCase()} (${fitInfo(t).txt}).</p></div>
+            <div class="opt"><span class="label">Défense · ${H.DSTYLE[tac.dstyle]}</span><p>${rulesLine(tac.rules)}.</p></div>
+            <div class="opt"><span class="label">Consignes</span><p>${tac.cons.length ? tac.cons.map((c) => CONS[c]).join(' · ') : 'Aucune consigne'}</p></div>
+            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +2 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
+            ${adviceHtml(t, 'match')}
+            ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
+            <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
+          </div>
+        </section>
+        <section class="panel"><h3>L'adversaire</h3>
+          <div style="display:grid;gap:12px">
+            <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
+            <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
+            <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+            <div class="opt"><span class="label">Joueurs à surveiller</span>
+              ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted num">${p.ovr.toFixed(1)}</span></div>`).join('')}
+            </div>
+            ${faceHtml(t, opp)}
+          </div>
+        </section>
+      </div>
+      <section class="panel"><h3>Effectif adverse · ${esc(opp.name)}</h3>
+        <p class="legend" style="margin:0 0 8px">Les notes de tous leurs joueurs, pour préparer ton plan : repère leurs meilleurs tireurs, leurs ailiers et leurs duellistes. Clique sur un en-tête pour trier.</p>
+        ${squadTable(opp, opp.players.filter((p) => p.pos !== 'GB'), FIELD_COLS, false)}
+        <h3 class="sub3">Gardiens</h3>${squadTable(opp, opp.players.filter((p) => p.pos === 'GB'), GK_COLS, true)}</section>`;
+  }
+
+  function menHtml(s, i) {
+    const n = 7 - U.m.short(s, i);
+    let out = '';
+    for (let k = 0; k < 7; k++) out += `<i class="${k < n ? '' : 'out'}"></i>`;
+    return `<span class="men" aria-label="${n} joueurs sur le terrain">${out}</span>`;
+  }
+  const ipill = (s) => { const v = s.tac.int || 0; return `<span class="ipill i${v < 0 ? 'm' : ''}${Math.abs(v)}" title="Intensité">${H.INTENSITY_LV[v]}</span>`; };
+  function boardInner() {
+    const m = U.m;
+    const i = Math.min(m.i, m.N - 1);
+    const min = m.done ? 60 : m.minute(i);
+    const pct = Math.round((m.i / m.N) * 100);
+    return `${boardTeams(m.h.team, m.a.team, m.h.score, m.a.score)}
+      <div class="meta"><span>${menHtml(m.h, i)}</span><span class="clock">${min}'</span><span>${menHtml(m.a, i)}</span></div>
+      <div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="meta"><span>Défense ${m.h.curDef} ${ipill(m.h)}</span><span>${ipill(m.a)} Défense ${m.a.curDef}</span></div>
+      <div class="meta"><span>${m.halfDone ? '2e mi-temps' : '1re mi-temps'}${m.halfDone ? ` · mi-temps ${m.h.half}–${m.a.half}` : ''}</span><span>${U.paused ? 'En pause' : 'Vitesse ×' + U.speed}</span></div>`;
+  }
+  function evHtml(e, teams) {
+    const cls = e.side === -1 ? 'neutral' : e.side === U.side ? 'mine' : 'them';
+    const tm = teams && e.side >= 0 ? teams[e.side] : null;
+    const tag = e.type === 'excl' ? '<span class="tag excl">2 min</span>' : e.type === 'rouge' ? '<span class="tag rouge">Rouge</span>' : e.type === 'tm' ? '<span class="tag tm">TM</span>' : e.type === 'sys' ? '<span class="tag sys">Déf.</span>' : e.type === 'contre' ? '<span class="tag sys">Contre</span>' : e.type === 'coach' || (e.type === 'tm' && e.ai && e.side !== U.side) ? '<span class="tag coach">Coach</span>' : e.geste ? '<span class="tag geste">Geste</span>' : '';
+    const sc = e.type === 'but' ? `${e.sc[0]}–${e.sc[1]}` : '';
+    return `<div class="ev ${cls}${e.key ? ' key' : ''}"${tm ? ` style="--tc:${tm.color}"` : ''}><span class="m">${e.m}'</span><span class="t">${tm ? `<span class="evteam" style="background:${tm.color}">${tm.id}</span>` : ''}${tag}${esc(e.text)}</span><span class="s">${sc}</span></div>`;
+  }
+  function statsHtml(a, b) {
+    const pct = (s) => s.shots ? Math.round((s.goals / s.shots) * 100) + ' %' : '–';
+    const rows = [
+      ['Buts', a.goals, b.goals], ['Tirs', a.shots, b.shots], ['Efficacité', pct(a), pct(b)], ['Arrêts du gardien', a.saves, b.saves],
+      ['Exclusions 2 min', a.excl, b.excl], ['7 m marqués / obtenus', `${a.sevenG}/${a.seven}`, `${b.sevenG}/${b.seven}`],
+      ['Pertes de balle', a.to, b.to], ['Tirs contrés en défense', a.blocks || 0, b.blocks || 0], ['Contre-attaques', a.ca, b.ca], ['Gestes réussis / tentés', `${a.gestOk || 0}/${a.gest || 0}`, `${b.gestOk || 0}/${b.gest || 0}`]
+    ];
+    return `<div class="statcmp">${rows.map(([l, x, y]) => `<div class="sr"><span class="l">${x}</span><span class="c">${l}</span><span class="rr">${y}</span></div>`).join('')}</div>`;
+  }
+  function ctlSig() {
+    const m = U.m;
+    if (!m || U.view !== 'live') return '';
+    const s = m.S[U.side];
+    return JSON.stringify([U.tPanel, U.paused, U.speed, s.to, m.half(), m.minute(Math.min(m.i, m.N - 1)) >= 50, s.empty, s.tac, s.forceDef, s.lineup.GB.id]);
+  }
+  function ctlHtml() {
+    const m = U.m, s = m.S[U.side], h = m.half();
+    if (U.tPanel) {
+      const ht = U.tPanel === 'mt', adv = U.tPanel === 'adv';
+      return `<h3>${ht ? 'Mi-temps' : adv ? 'Temps mort adverse' : 'Temps mort'}</h3><div style="display:grid;gap:12px">
+        <p class="muted" style="margin:0">${ht ? `Pause à la mi-temps : ${m.h.score}–${m.a.score}. Regarde les performances individuelles plus bas et ajuste ton plan pour la 2e période.` : adv ? `${esc(m.S[1 - U.side].team.name)} demande un temps mort. Profites-en pour ajuster toi aussi, sans utiliser le tien.` : 'Le match est arrêté. Ajuste ta tactique pour la suite de la rencontre.'}</p>
+        <div class="opt"><span class="label">Système défensif</span><div class="seg"><button data-act="mdef" data-id="auto" aria-pressed="${!s.forceDef}">Auto (règles)</button>${H.TACTIC_DEFS.map((d) => `<button data-act="mdef" data-id="${d}" aria-pressed="${s.forceDef === d}">${d} forcé</button>`).join('')}</div></div>
+        <div class="opt"><span class="label">Style défensif</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="mds" data-id="${k}" aria-pressed="${s.tac.dstyle === k}">${l}</button>`).join('')}</div></div>
+        <div class="opt"><span class="label">Attaque</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="matt" data-id="${x}" aria-pressed="${s.tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div></div>
+        ${intensityHtml(s)}
+        <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="mjeu" data-id="${k}" aria-pressed="${s.tac.jeu === k}">${l}</button>`).join('')}</div></div>
+        <div class="opt"><span class="label">Consignes (2 maximum)</span><div class="row">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="mcons" data-id="${k}" aria-pressed="${s.tac.cons.includes(k)}">${l}</button>`).join('')}</div></div>
+        <div><button class="btn primary" data-act="resume">${ht ? 'Lancer la 2e mi-temps' : 'Reprendre le match'}</button></div></div>`;
+    }
+    const late = m.minute(Math.min(m.i, m.N - 1)) >= 50;
+    return `<h3>Banc de touche</h3><div style="display:grid;gap:12px">
+      <div class="row"><button class="btn" data-act="pause">${U.paused ? 'Reprendre' : 'Pause'}</button>
+        <div class="seg" role="group" aria-label="Vitesse">${[1, 2, 4].map((v) => `<button data-act="speed" data-id="${v}" aria-pressed="${U.speed === v}">×${v}</button>`).join('')}</div>
+        <button class="btn" data-act="finish">Aller au coup de sifflet final</button></div>
+      <div class="row"><button class="btn primary" data-act="timeout" ${s.to[h] ? 'disabled' : ''}>${s.to[h] ? 'Temps mort utilisé' : 'Temps mort'}</button>
+        <button class="btn" data-act="empty" aria-pressed="${s.empty}" ${late ? '' : 'disabled'}>${s.empty ? 'Arrêter le 7 contre 6' : 'Passer à 7 contre 6'}</button></div>
+      <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Un temps mort par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à partir de la 50e minute : bonus en attaque, mais cage vide en cas de perte.</p>
+      <p class="legend" style="margin:0">${tacLine(s.tac)}${s.tac.int ? ` · intensité ${H.INTENSITY_LV[s.tac.int].toLowerCase()}` : ''}<br>${s.forceDef ? 'Défense ' + s.forceDef + ' forcée' : rulesLine(s.tac.rules)}</p></div>`;
+  }
+  const INT_TXT = {
+    '-2': 'On gère : beaucoup moins de fatigue et d\'exclusions, mais moins de ballons récupérés et de contre-attaques. Idéal pour préserver l\'effectif avec une avance confortable.',
+    '-1': 'Un peu moins d\'engagement : on souffle et on évite les fautes.',
+    0: 'Engagement normal.',
+    1: 'Plus de pression défensive et de contre-attaques, un peu plus de fatigue et de 2 minutes.',
+    2: 'Tout pour revenir ou tuer le match : pression maximale, plus de ballons récupérés, de contre-attaques et de réussite, mais la fatigue grimpe vite et les exclusions pleuvent. À doser sur quelques minutes.'
+  };
+  function intensityHtml(s) {
+    const v = s.tac.int || 0;
+    return `<div class="opt"><span class="label">Intensité · <b style="color:var(--fg)">${H.INTENSITY_LV[v]}</b></span>
+      <input type="range" class="intrange" min="-2" max="2" step="1" value="${v}" data-int aria-label="Intensité" aria-valuetext="${H.INTENSITY_LV[v]}">
+      <div class="intlabels"><span>Gestion</span><span>Calme</span><span>Normale</span><span>Engagée</span><span>Tout donner</span></div>
+      <p style="margin:4px 0 0">${INT_TXT[v]}</p></div>`;
+  }
+  function courtPanel() {
+    const m = U.m, s = m.S[U.side], i = Math.min(m.i, m.N - 1);
+    const paused = U.paused, sel = paused ? U.subSel : null;
+    const exc = new Set(s.excl.filter((e) => e.until > i).map((e) => e.id));
+    const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
+    const info = (p) => { const f = Math.round(s.fat[p.id] || 0), st = s.ps[p.id] || { g: 0, sh: 0, sv: 0, fa: 0 };
+      return `<span class="cfat"><span style="width:${Math.min(100, f)}%;background:${fatCol(f)}"></span></span><span class="cline"><span class="lat ${p.hand === 'G' ? 'g' : 'd'}">${p.hand}</span><span class="num">${p.pos === 'GB' ? `${st.sv}/${st.fa} arr.` : `${st.g}/${st.sh} buts`}</span><span class="num muted">${f}</span></span>`; };
+    const effNote = (p, pos) => { const n = ovrAt(p, pos), f = s.fat[p.id] || 0; const k = f > H.FAT.thr ? Math.max(0.55, 1 - (f - H.FAT.thr) * H.FAT.k) : 1; return { n, e: n * k, tired: k < 0.995 }; };
+    const noteLine = (p, pos, lab) => { const x = effNote(p, pos); return `<span class="cnote">${lab}${x.n.toFixed(1)}${x.tired ? ` <span class="ctired" title="Note réelle avec la fatigue">→ ${x.e.toFixed(1)}</span>` : ''}</span>`; };
+    const onCards = H.POS.map((pos) => {
+      const p = s.lineup[pos];
+      if (!p) return '';
+      const out = exc.has(p.id) || s.red.has(p.id);
+      const dis = !paused || out;
+      return `<button class="ccard${sel === pos ? ' sel' : ''}${out ? ' out' : ''}" data-act="subpick" data-id="${pos}" ${dis ? 'disabled' : ''} aria-pressed="${sel === pos}">
+        <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${pos in s.manual ? `<span class="ctag" title="Le staff reprend ce poste dans ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))} min">Coach · ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))}'</span>` : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
+        <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, 'Note ')}</button>`;
+    }).join('');
+    const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos));
+    const benchCards = bench.map((p) => {
+      let cls = '', ok = false, note = '';
+      if (sel) {
+        ok = (sel === 'GB') === (p.pos === 'GB');
+        cls = !ok ? ' dim' : p.pos === sel ? ' match' : H.SECONDARY[p.pos].includes(sel) ? ' sec' : ' other';
+        if (ok) note = noteLine(p, sel, 'À ce poste ');
+      } else note = noteLine(p, p.pos, 'Note ');
+      return `<button class="ccard bench${cls}" data-act="subin" data-id="${p.id}" ${paused && sel && ok ? '' : 'disabled'}>
+        <span class="chead"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}</span><b>${esc(short(p.name))}</b>${info(p)}${note}</button>`;
+    }).join('');
+    const manual = Object.keys(s.manual);
+    return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0">Terrain et banc</h3>
+        <span class="legend">${paused ? (sel ? `Choisis qui entre au poste ${H.POS_LABEL[sel].toLowerCase()} : vert même poste, bleu poste secondaire.` : 'Clique sur un joueur du terrain pour le remplacer.') : 'Mets le match en pause pour faire un changement.'}</span></div>
+      <span class="label">Sur le terrain</span><div class="cgrid">${onCards}</div>
+      <span class="label" style="display:block;margin-top:12px">Banc</span><div class="cgrid">${benchCards || '<span class="muted">Personne sur le banc.</span>'}</div>
+      ${manual.length ? `<div class="row" style="gap:8px;margin-top:12px"><span class="legend">Postes gérés par toi (le staff reprend la main au bout de ${H.MANUAL_MIN} minutes de jeu) :</span>${manual.map((pos) => `<button class="chip" data-act="subauto" data-id="${pos}" ${paused ? '' : 'disabled'}>${pos} · rendre au staff</button>`).join('')}</div>` : ''}
+      <p class="legend" style="margin:8px 0 0">Jauge de fatigue : verte sous 28, orange jusqu'à 55, rouge au-delà ; dès 28, les attributs baissent. Les rotations restent automatiques. Dès que tu changes un joueur, le staff ne touche plus à ce poste pendant ${H.MANUAL_MIN} minutes de jeu, puis reprend les rotations (ou plus tôt si tu le lui rends). Un joueur exclu ne peut pas être remplacé pendant ses 2 minutes.</p></section>`;
+  }
+  function liveBar() {
+    const m = U.m, i = Math.min(m.i, m.N - 1);
+    return `<span class="lbscore"><b>${m.h.team.id}</b> <span class="num">${m.h.score}–${m.a.score}</span> <b>${m.a.team.id}</b> · <span class="num">${m.done ? 60 : m.minute(i)}'</span></span>
+      <button class="btn primary lbpause" data-act="${U.tPanel ? 'resume' : 'pause'}" aria-keyshortcuts="Space">${U.tPanel ? (U.tPanel === 'mt' ? '▶ 2e mi-temps' : '▶ Reprendre') : U.paused ? '▶ Reprendre' : '❚❚ Pause'}</button>
+      <span class="seg lbspeed" role="group" aria-label="Vitesse">${[1, 2, 4].map((v) => `<button data-act="speed" data-id="${v}" aria-pressed="${U.speed === v}">×${v}</button>`).join('')}</span>
+      <span class="legend lbhint">Espace : pause</span>`;
+  }
+  function renderLive() {
+    const m = U.m;
+    const sm = m.S[U.side], so = m.S[1 - U.side];
+    return `<section class="board" id="board" aria-live="off">${boardInner()}</section>
+      <div id="court">${courtPanel()}</div>
+      <div class="grid2">
+        <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0">Fil du match</h3><span class="legend">Le plus récent en haut</span></div><div class="feed" id="feed">${m.ev.slice().reverse().map((e) => evHtml(e, [m.h.team, m.a.team])).join('')}</div></section>
+        <div style="display:grid;gap:20px;min-width:0">
+          <section class="panel" id="ctl">${ctlHtml()}</section>
+          <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${esc(m.h.team.id)}</span><span class="label">${esc(m.a.team.id)}</span></div><div id="stats">${statsHtml(m.h.st, m.a.st)}</div></section>
+        </div>
+      </div>
+      <div id="perf">${perfSection(m.h.team, m.a.team, m.h, m.a)}</div>
+      <div class="livebar" id="livebar">${liveBar()}</div>`;
+  }
+  function liveUpdate(evs) {
+    const m = U.m;
+    if (U.tab !== 'match' || U.view !== 'live' || !m) return;
+    const b = document.getElementById('board');
+    if (!b) return;
+    b.innerHTML = boardInner();
+    const f = document.getElementById('feed');
+    if (f && evs && evs.length) f.insertAdjacentHTML('afterbegin', evs.slice().reverse().map((e) => evHtml(e, [m.h.team, m.a.team])).join(''));
+    const st = document.getElementById('stats');
+    if (st) st.innerHTML = statsHtml(m.h.st, m.a.st);
+    const ct = document.getElementById('court');
+    if (ct) ct.innerHTML = courtPanel();
+    const lb = document.getElementById('livebar');
+    if (lb) lb.innerHTML = liveBar();
+    const pf = document.getElementById('perf');
+    if (pf && (U.paused || m.i % 4 === 0)) pf.innerHTML = perfSection(m.h.team, m.a.team, m.h, m.a);
+    const sig = ctlSig();
+    if (sig !== U.ctlSig) {
+      U.ctlSig = sig;
+      const c = document.getElementById('ctl');
+      if (c) c.innerHTML = ctlHtml();
+    }
+  }
+  // Face-à-face de tes arrières et de ton pivot contre leur vis-à-vis (stat élargie en défense collective)
+  function faceVal(opp, attPos, k) {
+    const at = (pos) => opp.players.find((p) => p.id === opp.lineup[pos]);
+    const fpos = H.FACING[attPos], idx = H.DLINE.indexOf(fpos);
+    const val = (pos) => { const pl = at(pos); if (!pl) return null; const v = pl.a[k]; return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
+    const own = val(fpos), nb = [H.DLINE[idx - 1], H.DLINE[idx + 1]].filter(Boolean);
+    let ws = 0, sum = 0;
+    for (const pos of nb) { const v = val(pos); if (v === null) continue; const w = pos.startsWith('Ai') ? 0.5 : 1; sum += v * w; ws += w; }
+    const v = opp.tactic.dstyle === 'homme' ? own : own * (1 - (k === 'contre' ? 0.5 : 0.35)) + (sum / ws) * (k === 'contre' ? 0.5 : 0.35);
+    return { v, who: at(fpos) };
+  }
+  function faceHtml(t, opp) {
+    const homme = opp.tactic.dstyle === 'homme';
+    const rows = ['ArG', 'DC', 'ArD'].map((pos) => {
+      const me1 = t.players.find((p) => p.id === t.lineup[pos]);
+      if (!me1) return '';
+      const d = faceVal(opp, pos, 'duelDef'), c = faceVal(opp, pos, 'contre');
+      const gD = me1.a.duel - d.v, gL = me1.a.tirLoin - c.v;
+      const adv = gD >= 2 && gD >= gL ? ['ok', 'Percer'] : gL >= 2 && gL > gD ? ['far', 'Tirer de loin'] : gD <= -2 && gL <= -2 ? ['bad', 'Duel difficile'] : ['mid', 'Au choix'];
+      const bar = (a, b) => { const w = Math.max(-6, Math.min(6, a - b)); return `<span class="fbar"><span class="${w >= 0 ? 'pos' : 'neg'}" style="width:${Math.abs(w) / 6 * 50}%;${w >= 0 ? 'left:50%' : 'right:50%'}"></span></span>`; };
+      return `<div class="frow">
+        <div class="fwho"><span class="pos">${pos}</span> ${plink(me1, short(me1.name))}<span class="muted"> face à </span>${d.who ? plink(d.who, short(d.who.name)) : '–'}</div>
+        <div class="fduel"><span class="fl">Percée</span>${bar(me1.a.duel, d.v)}<span class="num muted">${me1.a.duel} / ${d.v.toFixed(0)}</span></div>
+        <div class="fduel"><span class="fl">Tir de loin</span>${bar(me1.a.tirLoin, c.v)}<span class="num muted">${me1.a.tirLoin} / ${c.v.toFixed(0)}</span></div>
+        <span class="fadv ${adv[0]}">${adv[1]}</span>
+        <div class="fpick"><span class="fl">Pour ce match</span><span class="seg sm">${[['', 'Habituel'], ['loin', 'De loin'], ['equilibre', 'Équilibré'], ['contact', 'Au contact']].map(([k, l]) => `<button data-act="mstyle" data-id="${me1.id}|${k}" aria-pressed="${(me1.matchStyle || '') === k}" title="${k ? '' : 'Réglage de la tactique : ' + H.BACK_STYLES[me1.style || H.autoStyle(me1)]}">${l}</button>`).join('')}</span></div></div>`;
+    }).join('');
+    return `<div class="opt"><span class="label">Face-à-face en attaque</span>
+      <div class="frows">${rows}</div>
+      <p style="margin:6px 0 0">Barre vers la droite : ton joueur prend le dessus (son duel contre le duel défensif adverse, son tir de loin contre le contre adverse). ${homme ? "En homme à homme, chaque défenseur est seul : vise le plus faible." : "En défense collective, chaque défenseur est aidé par ses voisins (notes élargies)."} Un défenseur exclu laisse un trou.</p></div>`;
+  }
+  function renderRest() {
+    const games = G.sched[G.round];
+    return `<section class="board"><div class="teams"><div class="team">${badge(me())}<span class="tn">${esc(me().name)}</span></div><div class="score"><span style="font-size:0.55em">Repos</span></div><div class="team away"><span class="tn">Journée ${G.round + 1}</span></div></div><div class="meta"><span>Pas de match pour toi cette semaine</span><span>${games.length} matchs au programme</span></div></section>
+      <div class="grid2"><section class="panel"><h3>Semaine de repos</h3><div style="display:grid;gap:12px">
+        <p style="margin:0">Avec un nombre impair de clubs, chaque équipe est au repos une journée par phase. Tes joueurs récupèrent 20 points de fatigue en plus, et l'entraînement de la semaine a lieu normalement, sans pénalité de temps de jeu.</p>
+        <div class="row"><button class="btn primary big" data-act="rest">Passer la journée</button><button class="btn" data-act="tab" data-id="entrainement">Régler l'entraînement</button></div></div></section>
+        <section class="panel"><h3>Au programme</h3><div class="scroll"><table><tbody>${games.map(([h, a]) => `<tr><td>${badge(T(h), true)} ${esc(T(h).name)}</td><td class="r">${badge(T(a), true)} ${esc(T(a).name)}</td></tr>`).join('')}</tbody></table></div></section></div>`;
+  }
+  // Fin de journée : matchs des autres, récupération, entraînement, centre de formation
+  function playRound(r) {
+    G.lastStyle = { round: G.round + 1, log: r ? H.applyResult(G, r).filter((x) => x.team === G.userId) : [] };
+    const rd = r ? [{ h: r.h.id, a: r.a.id, hs: r.h.score, as: r.a.score }] : [];
+    const playing = new Set();
+    for (const [h, a] of G.sched[G.round]) {
+      playing.add(h); playing.add(a);
+      if (r && h === r.h.id && a === r.a.id) continue;
+      const rr = new H.Match(T(h), T(a)).run();
+      H.applyResult(G, rr);
+      rd.push({ h, a, hs: rr.h.score, as: rr.a.score });
+    }
+    G.results.push(rd);
+    for (const p of me().players) delete p.matchStyle;
+    G.round++;
+    H.recover(G);
+    for (const t of G.teams) if (!playing.has(t.id)) for (const p of t.players) { p.fatigue = Math.max(0, p.fatigue - 20); p.lastMins = undefined; }
+    for (const t of G.teams) {
+      if (t.id === G.userId) G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(t, G.training.focus, G.training.intensity) };
+      else H.train(t, 'equilibre', 'normale');
+    }
+    if (G.round >= G.sched.length) G.ended = true;
+    if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, decision: 'Parti sans réponse' }); G.youth = null; }
+    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
+  }
+  function restRound() {
+    const nf = nextFixture();
+    if (!nf || !nf.rest) return;
+    playRound(null);
+    U.post = null;
+    U.view = 'pre';
+    save();
+    render();
+    window.scrollTo(0, 0);
+  }
+  function startMatch() {
+    const nf = nextFixture();
+    if (!nf || nf.rest) return;
+    for (const t of G.teams) if (t.id !== G.userId) H.aiPrepare(t);
+    H.ensureSheet(me());
+    U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
+    U.side = nf.h === G.userId ? 0 : 1;
+    U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false;
+    render();
+    schedule();
+  }
+  function schedule() {
+    clearTimeout(U.timer);
+    if (U.paused || !U.m || U.m.done) return;
+    U.timer = setTimeout(tick, U.speed === 1 ? 560 : U.speed === 2 ? 260 : 90);
+  }
+  function tick() {
+    const m = U.m;
+    if (!m) return;
+    const evs = m.step();
+    if (m.done) { finishMatch(); return; }
+    if (m.halfDone && !U.htDone) { U.htDone = true; U.paused = true; U.tPanel = 'mt'; clearTimeout(U.timer); liveUpdate(evs); return; }
+    // Décisions du coach adverse : notification courte
+    const dec = evs.filter((e) => e.side === 1 - U.side && (e.type === 'coach' || (e.type === 'sys' && /consigne du coach/.test(e.text))));
+    if (dec.length && !U.notifSticky) {
+      const opp = m.S[1 - U.side].team;
+      notify(`<span class="nbadge" style="background:${opp.color}">${esc(opp.id)}</span><span><b>Coach adverse · ${dec[0].m}'</b><br>${dec.map((e) => esc(e.text.replace(opp.name + ' ', '').replace(/^./, (c) => c.toUpperCase()))).join('<br>')}</span>`, false);
+    }
+    const atm = evs.find((e) => e.type === 'tm' && e.side !== U.side);
+    if (atm) {
+      U.paused = true; U.tPanel = 'adv'; clearTimeout(U.timer); liveUpdate(evs);
+      const why = (atm.text.match(/\(([^)]+)\)/) || [])[1];
+      const opp = m.S[1 - U.side].team;
+      notify(`<span class="nbadge" style="background:${opp.color}">${esc(opp.id)}</span><span><b>Temps mort adverse · ${atm.m}'</b><br>${esc(opp.name)}${why ? ' : ' + esc(why) : ''}. Le match est en pause, profites-en pour ajuster ta tactique.</span>`, true);
+      return;
+    }
+    liveUpdate(evs);
+    schedule();
+  }
+  // Notification en haut de l'écran (temps mort adverse)
+  function notify(html, sticky) {
+    let el = document.getElementById('notif');
+    if (!el) { el = document.createElement('div'); el.id = 'notif'; el.setAttribute('role', 'alert'); document.body.appendChild(el); }
+    el.innerHTML = html + '<button class="nclose" data-act="nclose" aria-label="Fermer la notification">✕</button>';
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    clearTimeout(U.notifT);
+    U.notifSticky = !!sticky;
+    el.classList.toggle('short', !sticky);
+    if (!sticky) U.notifT = setTimeout(hideNotify, 4500);
+  }
+  function hideNotify() { U.notifSticky = false; const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
+  function finishMatch() {
+    hideNotify();
+    clearTimeout(U.timer);
+    const m = U.m;
+    while (!m.done) m.step();
+    const r = m.result();
+    playRound(r);
+    const pack = (s) => ({ id: s.id, score: s.score, half: s.half, st: s.st, goals: s.goals, saves: s.saves, ps: s.ps, mins: s.mins });
+    G.last = { h: pack(r.h), a: pack(r.a), ev: r.ev.filter((e) => e.key), side: U.side, round: G.round };
+    U.post = G.last;
+    U.m = null;
+    U.view = 'post';
+    save();
+    render();
+    window.scrollTo(0, 0);
+  }
+  function renderPost() {
+    const p = U.post;
+    const h = T(p.h.id), a = T(p.a.id);
+    const mine = p.side === 0 ? p.h : p.a, opp = p.side === 0 ? p.a : p.h;
+    const res = mine.score > opp.score ? 'Victoire' : mine.score < opp.score ? 'Défaite' : 'Match nul';
+    const t = me();
+    const sc = Object.entries(mine.goals).sort((x, y) => y[1] - x[1]).map(([id, n]) => ({ p: t.players.find((x) => x.id === id), n })).filter((x) => x.p);
+    const gk = Object.entries(mine.saves).map(([id, n]) => ({ p: t.players.find((x) => x.id === id), n })).filter((x) => x.p);
+    const old = p.side === undefined ? '' : '';
+    U.side = p.side;
+    return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div>
+      <div class="row" style="justify-content:center"><button class="btn primary" data-act="tab" data-id="championnat">Passer à la suite : résultats et classement →</button></div></section>${old}
+      <div class="grid2">
+        <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
+        <div style="display:grid;gap:20px;min-width:0">
+          <section class="panel"><h3>Tes buteurs</h3>${sc.length ? sc.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos">${x.p.pos}</span><span>${esc(x.p.name)}</span><span class="spacer" style="flex:1"></span><b class="num">${x.n}</b></div>`).join('') : '<p class="muted">Aucun but.</p>'}
+            ${gk.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos gb">GB</span><span>${esc(x.p.name)}</span><span style="flex:1"></span><span class="num muted">${x.n} arrêt${x.n > 1 ? 's' : ''}</span></div>`).join('')}</section>
+          <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${h.id}</span><span class="label">${a.id}</span></div>${statsHtml(p.h.st, p.a.st)}</section>
+          <div class="row"><button class="btn primary" data-act="next">${G.ended ? 'Voir le bilan de la saison' : 'Retour en ville'}</button><button class="btn" data-act="tab" data-id="entrainement">Progrès à l'entraînement</button><button class="btn" data-act="tab" data-id="championnat">Résultats de la journée</button></div>
+        </div>
+      </div>
+      ${p.h.ps ? perfSection(h, a, p.h, p.a) : ''}`;
+  }
+  function renderEnd() {
+    const s = H.standings(G);
+    const r = s.find((x) => x.id === G.userId);
+    const pos = s.indexOf(r) + 1;
+    const t = me();
+    const top = t.players.slice().sort((x, y) => y.goals - x.goals)[0];
+    const champ = T(s[0].id);
+    const verdict = pos === 1 ? 'Champion de France ! Le titre est pour toi.' : pos <= 3 ? 'Sur le podium : une saison réussie.' : pos <= 6 ? 'Une place dans la première moitié du tableau.' : pos <= 9 ? 'Une saison difficile, le maintien est assuré.' : 'Saison galère : il faudra tout reconstruire.';
+    return `<section class="board"><div class="teams"><div class="team">${badge(t)}<span class="tn">${esc(t.name)}</span></div><div class="score"><span>${ord(pos)}</span></div><div class="team away"><span class="tn">${r.pts} pts</span></div></div><div class="meta"><span>Fin de saison · ${r.g} victoire${r.g > 1 ? 's' : ''}, ${r.n} nul${r.n > 1 ? 's' : ''}, ${r.p} défaite${r.p > 1 ? 's' : ''}</span><span>Champion : ${esc(champ.name)}</span></div></section>
+      <section class="panel"><h3>Bilan</h3><div style="display:grid;gap:12px"><p style="margin:0">${verdict}</p>
+        <p class="muted" style="margin:0">${r.bp} buts marqués, ${r.bc} encaissés. Meilleur buteur du club : ${esc(top.name)} (${top.goals} buts).</p>
+        <div class="row"><button class="btn primary" data-act="replay">Rejouer une saison avec ce club</button><button class="btn" data-act="resetYes">Changer de club</button></div></div></section>`;
+  }
+
+  // ---------- Effectif ----------
+  const FIELD_COLS = [
+    ['Tir', [['tirLoin', '9 m'], ['tirPres', '6 m'], ['tirAile', 'Aile'], ['penalty', '7 m']]],
+    ['Jeu', [['passes', 'Pas.'], ['vision', 'Vis.'], ['position', 'Pos.']]],
+    ['Physique', [['duel', 'Duel'], ['vitesse', 'Vit.'], ['endurance', 'End.']]],
+    ['Défense', [['contre', 'Ctr.'], ['duelDef', 'Duel D'], ['discipline', 'Disc.']]],
+    ['Mental', [['sangfroid', 'S-F']]],
+    ['Profil', [['excentricite', 'Exc.'], ['collectif', 'Coll.']]]
+  ];
+  const TRAIT_KEYS = ['excentricite', 'collectif'];
+  const GK_COLS = [['Gardien', [['reflexes', 'Réfl.'], ['placement', 'Plac.'], ['gk7m', '7 m'], ['relance', 'Rel.'], ['endurance', 'End.']]]];
+  const ATTR_LABEL = Object.fromEntries(H.FIELD.concat(H.GKA, H.TRAITS));
+  const heat = (v) => v >= 16 ? 'h5' : v >= 13 ? 'h4' : v >= 10 ? 'h3' : v >= 7 ? 'h2' : 'h1';
+  // Colonnes visibles de l'effectif (choix mémorisé dans ce navigateur)
+  function hiddenCols() { if (!U.hidden) { try { U.hidden = JSON.parse(localStorage.getItem('hbm-cols') || '[]'); } catch (e) { U.hidden = []; } } return U.hidden; }
+  function colPicker() {
+    const h = hiddenCols();
+    return `<div class="colpick"><span class="label">Colonnes</span>${['Suivi'].concat(FIELD_COLS.map(([g]) => g)).map((g) => `<button class="chip" data-act="colt" data-id="${g}" aria-pressed="${!h.includes(g)}">${g === 'Suivi' ? 'Forme, fatigue, minutes' : g}</button>`).join('')}</div>`;
+  }
+  function squadTable(t, players, groupsAll, gk) {
+    const hid = hiddenCols(), suivi = !hid.includes('Suivi');
+    const groups = gk ? groupsAll : groupsAll.filter(([g]) => !hid.includes(g));
+    const starters = new Set(Object.values(t.lineup));
+    const s = U.sort;
+    const val = (p, k) => k === 'pos' ? H.POS.indexOf(p.pos) * 100 - p.ovr : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? p.ovr - (p.ovr0 ?? p.ovr) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
+    const sty = new Map(t.id === G.userId && G.lastStyle && G.lastStyle.round === G.round ? G.lastStyle.log.map((e) => [e.id, e.d]) : []);
+    const wk = new Set(t.id === G.userId && G.lastTraining && G.lastTraining.round === G.round ? G.lastTraining.log.map((e) => e.id + ':' + e.k) : []);
+    const sorted = players.slice().sort((x, y) => {
+      const a = val(x, s.k), b = val(y, s.k);
+      if (a === undefined || b === undefined) return H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos) || y.ovr - x.ovr;
+      const c = typeof a === 'string' ? a.localeCompare(b) : a - b;
+      return (s.k === 'pos' || s.k === 'name' ? c : -c) * s.dir;
+    });
+    const sh = (k, l, cls, title) => `<th class="${cls || ''}${s.k === k ? ' sorted' : ''}"${title ? ` title="${esc(title)}"` : ''}><button class="sortbtn" data-act="sort" data-id="${k}">${l}${s.k === k ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button></th>`;
+    const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
+    const formTxt = (f) => f > 0 ? `<span class="form" style="color:var(--good)">+${f}</span>` : f < 0 ? `<span class="form" style="color:var(--bad)">${f}</span>` : '<span class="form muted">=</span>';
+    const head1 = `<tr class="grp"><th class="stick" colspan="1"></th><th colspan="${suivi ? 8 : 4}"></th>${groups.map(([g, cols]) => `<th colspan="${cols.length}" class="gh">${g}</th>`).join('')}<th></th></tr>`;
+    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}<th class="r${['ovr', 'pot'].includes(s.k) ? ' sorted' : ''}"><button class="sortbtn" data-act="sort" data-id="ovr">Note</button> / <button class="sortbtn" data-act="sort" data-id="pot">pot.</button></th>${sh('dlt', 'Δ', 'r', 'Progression de la note depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
+    const rows = sorted.map((p) => {
+      const keys = H.POS_ATTRS[p.pos];
+      const st = starters.has(p.id);
+      return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
+        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="r nw"><b>${p.ovr.toFixed(1)}</b><span class="pot" title="Potentiel">/${(p.pot ?? p.ovr).toFixed(1)}</span></td><td class="r">${(() => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? `<span class="dlt">+${d.toFixed(1)}</span>` : d <= -0.05 ? `<span class="dlt neg">${d.toFixed(1)}</span>` : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
+        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
+        ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}">${p.a[k]}</td>`).join('')).join('')}
+        <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
+    }).join('');
+    return `<div class="scroll"><table class="sq"><thead>${head1}${head2}</thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function renderSquad() {
+    const t = me();
+    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id));
+    const avg = starters.reduce((a, p) => a + p.ovr, 0) / 7;
+    const field = t.players.filter((p) => p.pos !== 'GB'), gks = t.players.filter((p) => p.pos === 'GB');
+    const best = field.slice().sort((x, y) => y.ovr - x.ovr)[0];
+    const tired = starters.filter((p) => p.fatigue > 28).length;
+    return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Vestiaire · effectif de ${t.players.length}</h3>
+        <span class="row" style="gap:16px"><span class="muted">Note moyenne des titulaires <b class="num" style="color:var(--fg)">${avg.toFixed(1)}</b></span><span class="muted">Meilleur joueur <b style="color:var(--fg)">${esc(short(best.name))} (${best.ovr.toFixed(1)})</b></span><span class="muted">Titulaires fatigués <b class="num" style="color:var(--fg)">${tired}</b></span></span></div>
+        <p class="legend" style="margin:0 0 12px">Toutes les notes sont sur 20. Note / pot. : niveau actuel et niveau que le joueur peut atteindre ; tant qu'il est sous son potentiel, il progresse vite, ensuite presque plus. Δ : progression depuis le début de saison. Min : temps de jeu moyen par match. Exp. : multiplicateur de progression à l'entraînement selon les minutes du dernier match (de ×0,7 sans jouer à ×1,3 pour 45 minutes et plus, effet doublé avant 23 ans). Les cases encadrées sont les attributs de son poste, les seuls qui progressent à l'entraînement. Clique sur un en-tête pour trier.</p>
+        <div class="heatkey"><span class="h5">16 et +</span><span class="h4">13 à 15</span><span class="h3">10 à 12</span><span class="h2">7 à 9</span><span class="h1">6 et −</span><span class="up upkey">▲ +1 cette semaine</span><span class="muted">Main : D droitier, G gaucher · T titulaire · Tr en tribune (hors des 14 de la feuille de match) · J formé au club</span></div>
+        <h3 class="sub3">Profil de l'équipe</h3>${teamProfile(t)}
+        ${G.lastTraining && G.lastTraining.round === G.round && G.lastTraining.log.length ? `<div class="advice" style="margin-top:12px"><span class="label">Progrès à l'entraînement après la journée ${G.lastTraining.round}</span><div class="row" style="gap:6px">${Object.values(G.lastTraining.log.reduce((acc, e) => { (acc[e.id] = acc[e.id] || { name: e.name, n: 0 }).n++; return acc; }, {})).map((x) => `<span class="up">${esc(short(x.name))} +${x.n}</span>`).join('')}</div></div>` : ''}
+        ${G.lastStyle && G.lastStyle.round === G.round && G.lastStyle.log.length ? `<div class="advice" style="margin-top:12px"><span class="label">Esprit collectif après la journée ${G.lastStyle.round}</span><div class="row" style="gap:6px">${G.lastStyle.log.map((e) => `<span class="${e.d > 0 ? 'up' : 'up down'}">${esc(short(e.name))} ${e.d > 0 ? '+1' : '−1'} → ${e.v}</span>`).join('')}</div></div>` : ''}
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:10px"><h3 class="sub3">Joueurs de champ</h3>${colPicker()}</div>${squadTable(t, field, FIELD_COLS, false)}
+        <h3 class="sub3">Gardiens</h3>${squadTable(t, gks, GK_COLS, true)}
+        <p class="legend">9 m : tir de loin · 6 m : tir de près · 7 m : pénalty · Pas. : passes · Vis. : vision de jeu · Pos. : prise de position · Vit. : vitesse · End. : endurance · Déf. : défense · Disc. : discipline · S-F : sang-froid · Réfl. : réflexes · Plac. : placement · Rel. : relance. Exc. : excentricité, la propension à tenter des gestes spectaculaires (roucoulette, kung-fu, chabala) : réussis, ils trompent le gardien et lancent l'équipe ; ratés, c'est un ballon perdu. Coll. : esprit collectif, de joueur perso (bas) à joueur collectif (haut), qui évolue avec le temps de jeu dans un style collectif (▲) ou individuel (▼) ; ces deux colonnes décrivent un profil, pas un niveau, d'où leur couleur bleue. Dès 28 de fatigue, les attributs baissent : environ −10 % à 40, −25 % à 55, −45 % au maximum. La jauge monte d'environ 1,7 point par minute sur le terrain et redescend lentement sur le banc ; entre deux journées, chacun récupère 35 points.</p></section>`;
+  }
+
+  // ---------- Entraînement ----------
+  function renderTraining() {
+    const tr = G.training;
+    const lt = G.lastTraining;
+    const t = me();
+    let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici après la prochaine journée.</p>';
+    if (lt && lt.log.length) {
+      const byP = {};
+      for (const e of lt.log) (byP[e.id] = byP[e.id] || { name: e.name, pos: e.pos, items: [] }).items.push(e);
+      prog = `<p class="muted" style="margin:0 0 8px">Après la journée ${lt.round} · focus ${H.TRAIN[lt.focus].label.toLowerCase()}, intensité ${H.INTENSITY[lt.intensity].label.toLowerCase()} · ${lt.log.length} attribut${lt.log.length > 1 ? 's' : ''} en hausse</p>
+        <div class="proglist">${Object.values(byP).map((x) => `<div class="prog"><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span><span>${esc(x.name)}</span><span class="pitems">${x.items.map((e) => `<span class="up">${esc(ATTR_LABEL[e.k])} ${e.v - 1} → <b>${e.v}</b></span>`).join('')}</span></div>`).join('')}</div>`;
+    } else if (lt) prog = `<p class="muted" style="margin:0">Aucun progrès après la journée ${lt.round}. Ça arrive, surtout avec un effectif expérimenté ou une semaine légère.</p>`;
+    const young = t.players.filter((p) => p.age < 23).length, old = t.players.filter((p) => p.age > 31).length;
+    return `<div class="grid2">
+      <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">
+        <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
+        <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}">${x.label}</button>`).join('')}</div>
+          <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match.' : 'Progression normale, récupération normale.'}</p></div>
+        <p class="legend" style="margin:0">Le programme s'applique après chaque journée. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
+      </div></section>
+      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel"><h3>Progrès de la dernière semaine</h3>${prog}</section></div></div>`;
+  }
+
+  // ---------- Centre de formation ----------
+  function nextYouthRound() {
+    for (let r = G.round + 1; r < G.sched.length; r++) if (r % 5 === 0) return r;
+    return null;
+  }
+  function youthCard(modal) {
+    const y = G.youth.p, t = me();
+    const full = t.players.length >= 16;
+    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr);
+    const attrs = y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS);
+    const keys = Object.keys(H.WEIGHTS[y.pos]);
+    const rel = U.yRelease;
+    const relName = rel ? (t.players.find((p) => p.id === rel) || {}).name : null;
+    return `<div class="ycard">
+      <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centre de formation · après la journée ${G.youth.round}</span>
+        <h2 id="ytitle" style="margin-top:4px">${esc(y.name)}</h2>
+        <p class="muted" style="margin:4px 0 0">${H.POS_LABEL[y.pos]} · ${y.age} ans · ${y.hand === 'G' ? 'gaucher' : 'droitier'}</p></div>
+        <div class="ynotes"><div><span class="label">Note</span><b class="num">${y.ovr.toFixed(1)}</b></div><div><span class="label">Potentiel</span><b class="num" style="color:var(--iso-youth)">${y.pot.toFixed(1)}</b></div></div></div>
+      <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Tant que sa note est sous son potentiel, il progresse bien plus vite à l'entraînement (jusqu'à ×${(1 + Math.max(0, y.pot - y.ovr) / 4).toFixed(1)} aujourd'hui) ; une fois le potentiel atteint, presque plus.</p>
+      <div class="yattrs">${attrs.map(([k, l]) => `<div class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
+      ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/16) : choisis qui part pour lui faire de la place</span>
+        <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} · ${p.ovr.toFixed(1)} · ${p.age} ans</button>`).join('')}</div></div>`
+        : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
+        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}</div>
+      <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
+  }
+  function renderFormation() {
+    const t = me(), nr = nextYouthRound();
+    const left = nr ? nr - G.round : 0;
+    const youths = t.players.filter((p) => p.youth);
+    return `<div class="grid2">
+      <section class="panel"><h3>Centre de formation</h3>
+        ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
+          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à 16 joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
+      </section>
+      <div style="display:grid;gap:20px;min-width:0">
+        <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="up">Note ${p.ovr.toFixed(1)} · potentiel ${p.pot.toFixed(1)}</span></span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
+          <p class="legend">Effectif : ${t.players.length}/16 joueurs.</p></section>
+        <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="r num">${l.ovr.toFixed(1)} → ${l.pot.toFixed(1)}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
+      </div></div>`;
+  }
+
+  // ---------- Ville ----------
+  const IX = 430, IY = 128;
+  const P = (x, y, z) => [IX + (x - y) * 32, IY + (x + y) * 16 - (z || 0)];
+  const pts = (arr) => arr.map((p) => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const EDGE = 'stroke="var(--iso-edge)" stroke-width="0.8" stroke-linejoin="round"';
+  const poly = (arr, fill, extra) => `<polygon points="${pts(arr)}" fill="${fill}" ${extra || ''}/>`;
+  function isoBox(b) {
+    const { x, y, w, d, h } = b, z = b.z || 0, c = b.c;
+    const top = [P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)];
+    const left = [P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x, y + d, z + h)];
+    const right = [P(x + w, y, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x + w, y, z + h)];
+    return poly(left, c, EDGE) + poly(left, '#000', 'fill-opacity="0.14"') + poly(right, c, EDGE) + poly(right, '#000', 'fill-opacity="0.3"')
+      + (b.noTop ? '' : poly(top, c, EDGE) + poly(top, '#fff', 'fill-opacity="0.2"'));
+  }
+  const hsh = (n) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+  function winFace(b, rows, cols, fill, op, side) {
+    const { x, y, w, d, h } = b, z = b.z || 0;
+    const len = side === 'L' ? w : d;
+    const mu = Math.min(0.16, len / (cols * 4)), mv = Math.max(4, h / (rows * 5));
+    const cw = (len - mu * (cols + 1)) / cols, rh = (h - mv * (rows + 1)) / rows;
+    const pt = (u, v) => side === 'L' ? P(u, y + d, v) : P(x + w, u, v);
+    const o0 = side === 'L' ? x : y;
+    let s = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const u = o0 + mu + c * (cw + mu), v = z + mv + r * (rh + mv);
+      const lit = hsh(x * 7 + y * 13 + r * 3.1 + c * 1.7 + (side === 'L' ? 0 : 50));
+      const o = (op || 0.85) * (0.45 + 0.55 * lit);
+      s += poly([pt(u, v), pt(u + cw, v), pt(u + cw, v + rh), pt(u, v + rh)], fill, `fill-opacity="${o.toFixed(2)}" stroke="var(--iso-edge)" stroke-width="0.4"`);
+      if (rh > 6) s += `<line x1="${pt(u + cw / 2, v)[0].toFixed(1)}" y1="${pt(u + cw / 2, v)[1].toFixed(1)}" x2="${pt(u + cw / 2, v + rh)[0].toFixed(1)}" y2="${pt(u + cw / 2, v + rh)[1].toFixed(1)}" stroke="var(--iso-edge)" stroke-width="0.35"/>`;
+    }
+    return s;
+  }
+  const winL = (b, rows, cols, fill, op) => winFace(b, rows, cols, fill, op, 'L');
+  const winR = (b, rows, cols, fill, op) => winFace(b, rows, cols, fill, op ? op : 0.7, 'R');
+  function parapet(b) {
+    const { x, y, w, d, h } = b, z = (b.z || 0) + h, m = 0.07;
+    return poly([P(x + m, y + m, z), P(x + w - m, y + m, z), P(x + w - m, y + d - m, z), P(x + m, y + d - m, z)], '#000', 'fill-opacity="0.1"')
+      + poly([P(x + m, y + m, z), P(x + w - m, y + m, z), P(x + w - m, y + m, z - 1.5), P(x + m, y + m, z - 1.5)], '#000', 'fill-opacity="0.12"');
+  }
+  function unit(x, y, z, s) {
+    s = s || 1;
+    return isoBox({ x, y, w: 0.32 * s, d: 0.26 * s, h: 5 * s, z, c: 'var(--iso-unit)' }) + poly([P(x + 0.06 * s, y + 0.26 * s, z + 1.2), P(x + 0.26 * s, y + 0.26 * s, z + 1.2), P(x + 0.26 * s, y + 0.26 * s, z + 3.8 * s), P(x + 0.06 * s, y + 0.26 * s, z + 3.8 * s)], '#000', 'fill-opacity="0.18"');
+  }
+  function door(x0, x1, yf, h, fill) { return poly([P(x0, yf, 0), P(x1, yf, 0), P(x1, yf, h), P(x0, yf, h)], fill || 'var(--iso-door)', EDGE); }
+  function shadowOf(b) {
+    const { x, y, w, d, h } = b, dx = Math.max(0, Math.min(1.4, h / 40, 12 - x - w));
+    return poly([P(x, y), P(x + w + dx, y), P(x + w + dx, y + d), P(x, y + d)], '#000', 'fill-opacity="0.09"');
+  }
+  function car(x, y, along, col) {
+    const L = 0.46, W = 0.24;
+    const b = along === 'x' ? { x, y, w: L, d: W } : { x, y, w: W, d: L };
+    const cab = along === 'x' ? { x: x + 0.1, y: y + 0.02, w: 0.24, d: W - 0.04 } : { x: x + 0.02, y: y + 0.1, w: W - 0.04, d: 0.24 };
+    return poly([P(b.x + 0.03, b.y + 0.03), P(b.x + b.w + 0.08, b.y + 0.03), P(b.x + b.w + 0.08, b.y + b.d + 0.03), P(b.x + 0.03, b.y + b.d + 0.03)], '#000', 'fill-opacity="0.15"')
+      + isoBox(Object.assign({ h: 3.5, c: col }, b)) + isoBox(Object.assign({ h: 2.6, z: 3.5, c: 'var(--iso-glass)' }, cab));
+  }
+  function lamp(x, y) {
+    const [gx, gy] = P(x, y, 0), [tx, ty] = P(x, y, 24);
+    return `<line x1="${gx}" y1="${gy}" x2="${tx}" y2="${ty}" stroke="var(--iso-pole)" stroke-width="1.3"/><line x1="${tx}" y1="${ty}" x2="${tx + 5}" y2="${ty + 1}" stroke="var(--iso-pole)" stroke-width="1.3"/><circle cx="${tx + 5}" cy="${ty + 2}" r="1.8" fill="var(--iso-lamp)"/><circle cx="${tx + 5}" cy="${ty + 2}" r="6" fill="var(--iso-lamp)" opacity="var(--iso-glow)"/>`;
+  }
+  function bench(x, y) { return isoBox({ x, y, w: 0.34, d: 0.1, h: 2.5, c: 'var(--iso-trunk)' }) + isoBox({ x, y: y - 0.04, w: 0.34, d: 0.03, h: 5, c: 'var(--iso-trunk)' }); }
+  function conifer(x, y, s) {
+    s = s || 1;
+    const [gx, gy] = P(x, y, 0);
+    return `<ellipse cx="${gx}" cy="${gy}" rx="${8 * s}" ry="${4 * s}" fill="#000" fill-opacity="0.1"/><line x1="${gx}" y1="${gy}" x2="${gx}" y2="${gy - 6 * s}" stroke="var(--iso-trunk)" stroke-width="2"/>
+      <polygon points="${gx - 8 * s},${gy - 5 * s} ${gx},${gy - 30 * s} ${gx + 8 * s},${gy - 5 * s}" fill="var(--iso-tree2)" ${EDGE}/><polygon points="${gx},${gy - 30 * s} ${gx + 8 * s},${gy - 5 * s} ${gx + 1},${gy - 5 * s}" fill="#000" fill-opacity="0.15"/>`;
+  }
+  function gable(b, rh, roof) {
+    const { x, y, w, d, h } = b, z = (b.z || 0) + h, m = y + d / 2;
+    return poly([P(x, y, z), P(x + w, y, z), P(x + w, m, z + rh), P(x, m, z + rh)], roof, EDGE) + poly([P(x, y, z), P(x + w, y, z), P(x + w, m, z + rh), P(x, m, z + rh)], '#fff', 'fill-opacity="0.12"')
+      + poly([P(x + w, y, z), P(x + w, y + d, z), P(x + w, m, z + rh)], b.c, EDGE) + poly([P(x + w, y, z), P(x + w, y + d, z), P(x + w, m, z + rh)], '#000', 'fill-opacity="0.3"')
+      + poly([P(x, y + d, z), P(x + w, y + d, z), P(x + w, m, z + rh), P(x, m, z + rh)], roof, EDGE) + poly([P(x, y + d, z), P(x + w, y + d, z), P(x + w, m, z + rh), P(x, m, z + rh)], '#000', 'fill-opacity="0.08"');
+  }
+  function tree(x, y, s) {
+    s = s || 1;
+    const [gx, gy] = P(x, y, 0);
+    return `<ellipse cx="${gx + 3 * s}" cy="${gy}" rx="${10 * s}" ry="${4.5 * s}" fill="#000" fill-opacity="0.12"/><line x1="${gx}" y1="${gy}" x2="${gx}" y2="${gy - 12 * s}" stroke="var(--iso-trunk)" stroke-width="2.4"/>
+      <circle cx="${gx + 2 * s}" cy="${gy - 15 * s}" r="${8.5 * s}" fill="var(--iso-tree2)" ${EDGE}/><circle cx="${gx - 2 * s}" cy="${gy - 20 * s}" r="${8 * s}" fill="var(--iso-tree)" ${EDGE}/><circle cx="${gx + 3 * s}" cy="${gy - 22 * s}" r="${5.5 * s}" fill="var(--iso-tree)"/><circle cx="${gx - 4 * s}" cy="${gy - 24 * s}" r="${3 * s}" fill="#fff" fill-opacity="0.18"/>`;
+  }
+  function bush(x, y) { const [gx, gy] = P(x, y, 0); return `<ellipse cx="${gx}" cy="${gy - 3}" rx="6" ry="4.5" fill="var(--iso-tree2)" ${EDGE}/><ellipse cx="${gx - 1.5}" cy="${gy - 4.5}" rx="3" ry="2" fill="#fff" fill-opacity="0.15"/>`; }
+  function flat(x, y, w, d, fill, extra) { return poly([P(x, y), P(x + w, y), P(x + w, y + d), P(x, y + d)], fill, extra); }
+  function skewText(x, y, z, txt, size, fill) {
+    const [sx, sy] = P(x, y, z);
+    return `<text transform="matrix(0.894 0.447 0 1 ${sx.toFixed(1)} ${sy.toFixed(1)})" font-size="${size}" font-weight="800" fill="${fill}" class="isotxt">${esc(txt)}</text>`;
+  }
+  function citySign(o, ghost) {
+    const [sx, sy] = P(o.at[0], o.at[1], o.at[2]);
+    const lw = o.label.length * 7.6, sw = o.sub.length * 6.2;
+    const w = Math.max(lw, sw) + 26, hh = 42, y0 = sy - 18 - (o.lift || 0) - hh, cx = sx + (o.dx || 0);
+    const attrs = ghost ? `data-gsign="${o.key}"` : `data-psign="${o.key}"`;
+    return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs}><line x1="${sx}" y1="${sy}" x2="${sx}" y2="${y0 + hh}" stroke="${ghost ? 'var(--muted)' : o.c}" stroke-width="1.4"/><circle cx="${sx}" cy="${sy}" r="2.6" fill="${ghost ? 'var(--muted)' : o.c}"/>
+      <rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="7" fill="var(--surface)" stroke="${ghost ? 'var(--line)' : o.c}" stroke-width="${ghost ? 1 : 1.6}"/>
+      ${ghost ? '' : `<rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="5" height="${hh}" rx="2" fill="${o.c}"/>`}
+      <text x="${cx}" y="${(y0 + 18).toFixed(1)}" text-anchor="middle" class="sl1">${esc(o.label)}</text><text x="${cx}" y="${(y0 + 33).toFixed(1)}" text-anchor="middle" class="sl2">${esc(o.sub)}</text></g>`;
+  }
+  function cityPlaces() {
+    const t = me();
+    const nf = nextFixture();
+    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id));
+    const tired = starters.filter((p) => p.fatigue > 28).length;
+    let arenaSub = 'Saison terminée · bilan';
+    if (U.view === 'post' && U.post) arenaSub = 'Résumé du dernier match';
+    else if (nf && nf.rest) arenaSub = `J${G.round + 1} · repos`;
+    else if (nf) { const home = nf.h === t.id; arenaSub = `J${G.round + 1} · ${home ? 'contre' : 'à'} ${T(home ? nf.a : nf.h).name}`; }
+    const s = H.standings(G), row = s.find((r) => r.id === G.userId);
+    return [
+      { key: 'salle', tab: 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : nf ? 'Jouer la journée' : 'Voir le bilan' },
+      { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes' },
+      { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
+      { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
+      { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
+      { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement' }
+    ];
+  }
+  const GHOSTS = [
+    { key: 'siege', label: 'Siège du club', sub: 'Mercato et finances · bientôt', at: [1.8, 1.8, 64] },
+    { key: 'infirmerie', label: 'Infirmerie', sub: 'Blessures et soins · bientôt', at: [3.85, 10.25, 26] },
+    { key: 'boutique', label: 'Boutique du club', sub: 'Supporters et recettes · bientôt', at: [8, 11.4, 18] }
+  ];
+  // Détails décoratifs de la ville (clins d'œil, purement visuels)
+  const prop = (svg) => `<g class="deco">${svg}</g>`;
+
+  function renderCityMap() {
+    const t = me();
+    const G1 = 'var(--iso-grey)', WIN = 'var(--iso-win)';
+    const flatLayer = [];
+    const F = (x, y, w, d, fill, extra) => flatLayer.push(flat(x, y, w, d, fill, extra));
+    // Socle et sol
+    flatLayer.push(isoBox({ x: 0, y: 0, w: 12, d: 12, h: 12, z: -12, c: 'var(--iso-ground)', noTop: true }));
+    flatLayer.push(poly([P(0, 0, -12), P(12, 0, -12), P(12, 12, -12), P(0, 12, -12)], 'none'));
+    F(0, 0, 12, 12, 'var(--iso-ground)', EDGE);
+    for (let k = 1; k < 12; k++) { if (k === 5 || k === 6 || k === 7) continue; flatLayer.push(`<line x1="${P(k, 0)[0]}" y1="${P(k, 0)[1]}" x2="${P(k, 12)[0]}" y2="${P(k, 12)[1]}" stroke="var(--iso-gridline)" stroke-width="0.5"/>`, `<line x1="${P(0, k)[0]}" y1="${P(0, k)[1]}" x2="${P(12, k)[0]}" y2="${P(12, k)[1]}" stroke="var(--iso-gridline)" stroke-width="0.5"/>`); }
+    // Campus du club (dalles)
+    F(6.2, 0.4, 5.6, 5.4, 'var(--iso-campus)'); F(6.2, 7.2, 5.6, 4.6, 'var(--iso-campus)');
+    // Trottoirs, routes, marquages, passages piétons
+    F(4.82, 0, 0.18, 12, 'var(--iso-side)'); F(6, 0, 0.18, 12, 'var(--iso-side)'); F(0, 5.82, 12, 0.18, 'var(--iso-side)'); F(0, 7, 12, 0.18, 'var(--iso-side)');
+    F(5, 0, 1, 12, 'var(--iso-road)'); F(0, 6, 12, 1, 'var(--iso-road)');
+    for (let k = 0.3; k < 12; k += 0.9) { if (k > 4.6 && k < 7.4) continue; F(5.47, k, 0.06, 0.45, 'var(--iso-mark)'); F(k, 6.47, 0.45, 0.06, 'var(--iso-mark)'); }
+    for (let k = 0; k < 5; k++) { F(5.08 + k * 0.19, 5.5, 0.1, 0.3, 'var(--iso-mark)'); F(5.08 + k * 0.19, 7.2, 0.1, 0.3, 'var(--iso-mark)'); F(4.5, 6.08 + k * 0.19, 0.3, 0.1, 'var(--iso-mark)'); F(6.2, 6.08 + k * 0.19, 0.3, 0.1, 'var(--iso-mark)'); }
+    // Terrain de quartier avec buts
+    // Terrain de hand en plein air : 40 × 20 m, zones de 6 m, pointillés à 9 m, buts
+    {
+      const x0 = 0.5, x1 = 2.5, y0 = 10.05, y1 = 11.05, yc = (y0 + y1) / 2, m = (x1 - x0) / 40;
+      F(0.38, 9.85, 2.24, 1.4, 'var(--iso-stone)', EDGE);
+      F(x0, y0, x1 - x0, y1 - y0, 'var(--iso-pitch)');
+      const dz = (gx, dir, r) => {
+        const pts = [], post = 1.5 * m;
+        for (let a = 0; a <= 90; a += 15) { const t = a * Math.PI / 180; pts.push([gx + dir * r * Math.sin(t), yc - post - r * Math.cos(t)]); }
+        for (let a = 90; a >= 0; a -= 15) { const t = a * Math.PI / 180; pts.push([gx + dir * r * Math.sin(t), yc + post + r * Math.cos(t)]); }
+        return pts.map(([x, y]) => [x, Math.max(y0, Math.min(y1, y))]);
+      };
+      for (const [gx, dir] of [[x0, 1], [x1, -1]]) {
+        flatLayer.push(poly(dz(gx, dir, 6 * m).map(([x, y]) => P(x, y)), 'var(--iso-bed)'));
+        flatLayer.push(poly(dz(gx, dir, 6 * m).map(([x, y]) => P(x, y)), 'none', 'stroke="var(--iso-mark)" stroke-width="0.9"'));
+        const nine = dz(gx, dir, 9 * m).map(([x, y]) => P(x, y));
+        flatLayer.push(`<polyline points="${nine.map((p) => p.join(',')).join(' ')}" fill="none" stroke="var(--iso-mark)" stroke-width="0.7" stroke-dasharray="2 2"/>`);
+        const sev = gx + dir * 7 * m;
+        flatLayer.push(`<line x1="${P(sev, yc - 0.5 * m)[0]}" y1="${P(sev, yc - 0.5 * m)[1]}" x2="${P(sev, yc + 0.5 * m)[0]}" y2="${P(sev, yc + 0.5 * m)[1]}" stroke="var(--iso-mark)" stroke-width="0.9"/>`);
+      }
+      F(x0, y0, x1 - x0, y1 - y0, 'none', 'stroke="var(--iso-mark)" stroke-width="1"');
+      flatLayer.push(`<line x1="${P((x0 + x1) / 2, y0)[0]}" y1="${P((x0 + x1) / 2, y0)[1]}" x2="${P((x0 + x1) / 2, y1)[0]}" y2="${P((x0 + x1) / 2, y1)[1]}" stroke="var(--iso-mark)" stroke-width="0.9"/>`);
+      U.courtGoals = [[x0, yc, -1], [x1, yc, 1]].map(([gx, gy, d]) => ({ gx, gy, d, w: 1.5 * m }));
+    }
+    // Mini-terrain du centre de formation
+    F(10.35, 2.85, 1.45, 1.3, 'var(--iso-turf)', EDGE);
+    F(10.45, 2.95, 1.25, 1.1, 'none', 'stroke="var(--iso-mark)" stroke-width="0.8"');
+    flatLayer.push(`<line x1="${P(11.075, 2.95)[0]}" y1="${P(11.075, 2.95)[1]}" x2="${P(11.075, 4.05)[0]}" y2="${P(11.075, 4.05)[1]}" stroke="var(--iso-mark)" stroke-width="0.8"/>`);
+    // Place et fontaine
+    F(0.9, 5.05, 1.5, 0.7, 'var(--iso-side)', EDGE);
+    const [fx, fy] = P(1.65, 5.4, 0);
+    flatLayer.push(`<ellipse cx="${fx}" cy="${fy}" rx="17" ry="8.5" fill="var(--iso-stone)" ${EDGE}/><ellipse cx="${fx}" cy="${fy - 1}" rx="13" ry="6.5" fill="var(--iso-water)"/><line x1="${fx}" y1="${fy - 1}" x2="${fx}" y2="${fy - 9}" stroke="var(--iso-water)" stroke-width="2"/><circle cx="${fx}" cy="${fy - 10}" r="2.5" fill="var(--iso-water)" opacity="0.8"/>`);
+    // Parking
+    F(9.3, 10.8, 2.5, 1, 'var(--iso-road)');
+    for (let k = 9.5; k < 11.8; k += 0.45) F(k, 10.85, 0.04, 0.5, 'var(--iso-mark)');
+    // Parterres devant la salle
+    F(6.9, 10.55, 0.8, 0.22, 'var(--iso-bed)'); F(9.5, 10.55, 0.8, 0.22, 'var(--iso-bed)');
+
+    const objs = [];
+    const add = (x, y, svg) => objs.push({ d: x + y, svg });
+    const places = cityPlaces();
+    const pl = Object.fromEntries(places.map((p) => [p.key, p]));
+ const bwrap = (p, svg) => `<g class="bld" role="button" tabindex="0" data-act="tab" data-id="${p.tab}" data-place="${p.key}" aria-label="${esc(p.label)} : ${esc(p.sub)}"><g class="body">${svg}</g></g>`;
+    const gwrap = (g, svg) => `<g class="gbld" data-ghost="${g.key}" tabindex="0" aria-label="${esc(g.label)}, ${esc(g.sub)}">${svg}</g>`;
+    const shade = (b) => flatLayer.push(shadowOf(b));
+
+    // Salle
+    const ar = { x: 7, y: 7.6, w: 3.4, d: 2.8, h: 40, c: 'var(--court)' };
+    shade(ar);
+    const roof = { x: 7.3, y: 7.9, w: 2.8, d: 2.2, h: 7, z: 40, c: 'var(--court)' };
+    let arena = isoBox(ar)
+      + poly([P(7, 10.4, 32), P(10.4, 10.4, 32), P(10.4, 10.4, 39), P(7, 10.4, 39)], 'var(--iso-glass)', 'fill-opacity="0.85"')
+      + winR(ar, 2, 7, WIN, 0.55)
+      + isoBox(roof) + parapet(roof)
+      + [0.5, 1.1, 1.7, 2.3].map((k) => poly([P(7.55, 7.9 + k, 47.1), P(9.85, 7.9 + k, 47.1), P(9.85, 8.15 + k, 47.1), P(7.55, 8.15 + k, 47.1)], 'var(--iso-glass)', 'fill-opacity="0.8"')).join('')
+      + unit(9.6, 8.1, 47) + unit(7.5, 8.2, 47, 0.8)
+      + poly([P(7.2, 10.4, 12), P(10.2, 10.4, 12), P(10.2, 10.4, 29), P(7.2, 10.4, 29)], t.color, EDGE)
+      + skewText(7.45, 10.4, 16, (t.city + ' HB').toUpperCase(), 13, '#fff')
+      + door(8.1, 9.1, 10.4, 10) + `<line x1="${P(8.6, 10.4, 0)[0]}" y1="${P(8.6, 10.4, 0)[1]}" x2="${P(8.6, 10.4, 10)[0]}" y2="${P(8.6, 10.4, 10)[1]}" stroke="var(--iso-glass)" stroke-width="0.8"/>`
+      + isoBox({ x: 7.9, y: 10.4, w: 1.4, d: 0.42, h: 1.6, z: 10.5, c: 'var(--iso-stone)' });
+    add(ar.x + ar.w / 2, ar.y + ar.d / 2, bwrap(pl.salle, arena));
+    for (const [k, col] of [[9.7, t.color], [10.0, 'var(--iso-mark)'], [10.3, t.color]]) {
+      const [bx, by] = P(6.6, k, 0), [tx, ty] = P(6.6, k, 30);
+      add(6.6, k, `<g class="deco"><line x1="${bx}" y1="${by}" x2="${tx}" y2="${ty}" stroke="var(--iso-pole)" stroke-width="1.2"/>${poly([P(6.6, k, 30), P(6.6, k - 0.3, 30), P(6.6, k - 0.3, 24), P(6.6, k, 24)], col, EDGE)}</g>`);
+    }
+    // Vestiaire
+    const ve = { x: 10.55, y: 8.1, w: 1.3, d: 1.9, h: 22, c: 'var(--accent)' };
+    shade(ve);
+    add(ve.x + ve.w / 2, ve.y + ve.d / 2, bwrap(pl.vestiaire, isoBox(ve) + parapet(ve) + winL(ve, 1, 2, WIN) + winR(ve, 1, 3, WIN, 0.6) + door(11.0, 11.4, 10, 9) + unit(11.2, 8.4, 22, 0.8)
+      + isoBox({ x: 10.9, y: 10, w: 0.6, d: 0.25, h: 1.2, z: 9.5, c: 'var(--iso-stone)' })));
+    // Gymnase
+    const gy = { x: 7, y: 1, w: 2.8, d: 2.2, h: 30, c: 'var(--iso-gym)' };
+    shade(gy);
+    let gym = isoBox(gy) + winL(gy, 1, 5, WIN) + winR(gy, 1, 4, WIN, 0.6) + gable(gy, 12, 'var(--iso-gym)')
+      + door(8.05, 8.75, 3.2, 10) + isoBox({ x: 7.95, y: 3.2, w: 0.9, d: 0.35, h: 1.4, z: 10.5, c: 'var(--iso-stone)' });
+    for (const k of [0.4, 1.2, 2.0]) gym += poly([P(7 + k, 2.1 + 0.05, 30 + 11), P(7 + k + 0.5, 2.1 + 0.05, 30 + 11), P(7 + k + 0.5, 2.85, 30 + 3), P(7 + k, 2.85, 30 + 3)], 'var(--iso-glass)', 'fill-opacity="0.85"');
+    add(gy.x + gy.w / 2, gy.y + gy.d / 2, bwrap(pl.gymnase, gym));
+    // Bureau du coach
+    const bu = { x: 10.3, y: 1.2, w: 1.3, d: 1.3, h: 56, c: 'var(--iso-office)' };
+    shade(bu);
+    add(bu.x + bu.w / 2, bu.y + bu.d / 2, bwrap(pl.bureau, isoBox(bu) + parapet(bu) + winL(bu, 6, 2, WIN) + winR(bu, 6, 2, WIN, 0.6) + door(10.75, 11.15, 2.5, 8) + unit(10.45, 1.35, 56) + unit(11.0, 1.8, 56, 0.7)
+      + `<line x1="${P(11.25, 1.45, 56)[0]}" y1="${P(11.25, 1.45, 56)[1]}" x2="${P(11.25, 1.45, 72)[0]}" y2="${P(11.25, 1.45, 72)[1]}" stroke="var(--iso-pole)" stroke-width="1.2"/><circle cx="${P(11.25, 1.45, 72)[0]}" cy="${P(11.25, 1.45, 72)[1]}" r="1.6" fill="var(--bad)"/>`));
+    // Kiosque
+    const ki = { x: 1.6, y: 8.3, w: 1.1, d: 1.0, h: 15, c: 'var(--iso-press)' };
+    shade(ki);
+    let kio = isoBox(ki) + poly([P(1.75, 9.3, 4), P(2.55, 9.3, 4), P(2.55, 9.3, 11), P(1.75, 9.3, 11)], WIN, 'fill-opacity="0.9"') + gable(ki, 10, 'var(--iso-press)');
+    for (let k = 0; k < 5; k++) { const x0 = 1.6 + k * 0.22; kio += poly([P(x0, 9.3, 12), P(x0 + 0.22, 9.3, 12), P(x0 + 0.22, 9.62, 8.5), P(x0, 9.62, 8.5)], k % 2 ? 'var(--iso-mark)' : 'var(--iso-press)', EDGE); }
+    kio += isoBox({ x: 2.75, y: 8.95, w: 0.25, d: 0.32, h: 6, c: 'var(--iso-stone)' }) + poly([P(3, 8.98, 2), P(3, 9.24, 2), P(3, 9.24, 5), P(3, 8.98, 5)], WIN, 'fill-opacity="0.8"');
+    add(ki.x + ki.w / 2, ki.y + ki.d / 2, bwrap(pl.kiosque, kio));
+    // Centre de formation
+    const fo = { x: 7, y: 4.3, w: 3.2, d: 1.3, h: 18, c: 'var(--iso-youth)' };
+    shade(fo);
+    add(8.6, 4.95, bwrap(pl.formation, isoBox(fo) + parapet(fo) + winL(fo, 1, 6, WIN, 0.8) + winR(fo, 1, 2, WIN, 0.6) + door(8.4, 8.9, 5.6, 8) + unit(7.3, 4.5, 18) + unit(9.6, 4.6, 18, 0.8)));
+    for (const [gx, gy2] of [[10.45, 3.35], [11.6, 3.35]]) add(gx, gy2, isoBox({ x: gx, y: gy2, w: 0.12, d: 0.3, h: 4, c: 'var(--iso-mark)' }));
+
+    // Bâtiments grisés à venir
+    const gh = Object.fromEntries(GHOSTS.map((g) => [g.key, g]));
+    const si = { x: 1, y: 1, w: 1.6, d: 1.6, h: 62, c: G1 };
+    shade(si);
+    add(1.8, 1.8, gwrap(gh.siege, isoBox(si) + parapet(si) + winL(si, 7, 3, WIN, 0.4) + winR(si, 7, 3, WIN, 0.35) + door(1.6, 2.0, 2.6, 8) + unit(1.2, 1.2, 62) + unit(2.0, 1.9, 62, 0.8)
+      + isoBox({ x: 1.5, y: 1.5, w: 0.6, d: 0.6, h: 6, z: 62, c: G1 })));
+    const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: G1 };
+    shade(inf);
+    add(3.85, 10.25, gwrap(gh.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
+      + poly([P(3.75, 10.9, 10), P(4.05, 10.9, 10), P(4.05, 10.9, 20), P(3.75, 10.9, 20)], 'var(--iso-mark)') + poly([P(3.6, 10.9, 13.5), P(4.2, 10.9, 13.5), P(4.2, 10.9, 16.5), P(3.6, 10.9, 16.5)], 'var(--iso-mark)')));
+    const bo = { x: 7.2, y: 11.0, w: 1.6, d: 0.8, h: 15, c: G1 };
+    shade(bo);
+    let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);
+    for (let k = 0; k < 6; k++) { const x0 = 7.2 + k * 0.267; shop += poly([P(x0, 11.8, 11), P(x0 + 0.267, 11.8, 11), P(x0 + 0.267, 12, 8.5), P(x0, 12, 8.5)], k % 2 ? 'var(--iso-mark)' : 'var(--iso-roof)', EDGE); }
+    add(8, 11.4, gwrap(gh.boutique, shop));
+
+    // Décor : immeubles, maisons
+    const deco = [
+      { x: 3, y: 1, w: 1.4, d: 2.2, h: 44, win: [5, 2, 4, 3], units: 2 }, { x: 0.8, y: 3.6, w: 2.2, d: 1.4, h: 30, win: [3, 4, 3, 2], units: 1 },
+      { x: 3.4, y: 4, w: 1.2, d: 1.2, h: 52, win: [6, 2, 6, 2], units: 1 }, { x: 3.4, y: 7.5, w: 1, d: 0.8, h: 12, roof: 9, house: true },
+      { x: 10.8, y: 4.4, w: 1, d: 0.9, h: 13, roof: 9, house: true }, { x: 3.5, y: 11.2, w: 0.9, d: 0.6, h: 11, roof: 8, house: true },
+      { x: 0.5, y: 7.4, w: 0.9, d: 0.8, h: 12, roof: 8, house: true }
+    ];
+    for (const b of deco) {
+      const bb = Object.assign({ c: G1 }, b);
+      shade(bb);
+      let s = isoBox(bb);
+      if (b.win) s += parapet(bb) + winL(bb, b.win[0], b.win[1], WIN, 0.38) + winR(bb, b.win[2], b.win[3], WIN, 0.3) + door(b.x + b.w / 2 - 0.15, b.x + b.w / 2 + 0.15, b.y + b.d, 7);
+      if (b.units) { s += unit(b.x + 0.15, b.y + 0.2, b.h); if (b.units > 1) s += unit(b.x + b.w - 0.5, b.y + b.d - 0.5, b.h, 0.8); }
+      if (b.roof) s += winL(bb, 1, 2, WIN, 0.4) + gable(bb, b.roof, 'var(--iso-roof)') + isoBox({ x: b.x + b.w * 0.65, y: b.y + 0.15, w: 0.12, d: 0.12, h: 7, z: b.h + 2, c: 'var(--iso-roof)' });
+      add(b.x + b.w / 2, b.y + b.d / 2, `<g class="deco">${s}</g>`);
+    }
+    // Végétation, mobilier, voitures
+    const trees = [[4.6, 0.5, 1], [0.4, 0.5, 0.9], [0.4, 5.4, 0.85], [4.7, 5.4, 0.9], [6.6, 0.6, 1], [11.6, 0.5, 0.9], [11.5, 5.5, 0.95], [6.5, 5.6, 0.85], [2.6, 7.4, 0.9], [4.7, 8.9, 1], [4.7, 11.4, 1], [6.5, 11.5, 0.9], [6.5, 7.5, 0.95], [11.6, 7.4, 0.9], [0.4, 9.2, 0.85], [2.65, 5.45, 0.8]];
+    for (const [x, y, s] of trees) add(x, y, `<g class="deco">${tree(x, y, s)}</g>`);
+    for (const [x, y, s] of [[4.6, 2.9, 0.9], [0.35, 2.6, 1], [4.65, 10.2, 0.85], [11.75, 6.2, 0.8], [6.45, 3.6, 0.85]]) add(x, y, `<g class="deco">${conifer(x, y, s)}</g>`);
+    for (const [x, y] of [[6.75, 10.65], [7.4, 10.65], [9.7, 10.65], [10.3, 10.65], [1.45, 7.6], [0.9, 8.6], [2.85, 3.3]]) add(x, y, `<g class="deco">${bush(x, y)}</g>`);
+    for (const [x, y] of [[4.88, 1.6], [4.88, 4.4], [4.88, 8.6], [4.88, 11.1], [6.1, 3.0], [6.1, 9.4], [2.4, 5.9], [9.8, 5.92], [2.4, 7.05], [9.8, 7.06]]) add(x, y, `<g class="deco">${lamp(x, y)}</g>`);
+    for (const [x, y] of [[1.0, 5.8], [2.1, 5.8], [8.2, 3.95]]) add(x, y, `<g class="deco">${bench(x, y)}</g>`);
+    const cols = ['#c0392b', '#2e86c1', '#f1c40f', '#ecf0f1', '#34495e', '#16a085', '#8e44ad'];
+    for (const [x, y, a, c] of [[5.12, 2.2, 'y', 0], [5.62, 8.9, 'y', 1], [2.8, 6.12, 'x', 2], [8.6, 6.62, 'x', 3], [9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6], [5.62, 0.6, 'y', 3]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
+    // Buts du terrain de quartier
+    for (const g of U.courtGoals || []) {
+      const ln = (a, b, c) => `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/>`;
+      const back = g.gx + g.d * 0.05, h = 5;
+      const a1 = P(g.gx, g.gy - g.w, 0), a2 = P(g.gx, g.gy - g.w, h), b1 = P(g.gx, g.gy + g.w, 0), b2 = P(g.gx, g.gy + g.w, h);
+      const net = poly([P(g.gx, g.gy - g.w, h), P(back, g.gy - g.w, h * 0.6), P(back, g.gy + g.w, h * 0.6), P(g.gx, g.gy + g.w, h)], 'var(--iso-mark)', 'fill-opacity="0.3"') + poly([P(back, g.gy - g.w, 0), P(back, g.gy + g.w, 0), P(back, g.gy + g.w, h * 0.6), P(back, g.gy - g.w, h * 0.6)], 'var(--iso-mark)', 'fill-opacity="0.25"');
+      add(g.gx + 0.01, g.gy, `<g class="deco">${net}${ln(a1, a2, 'var(--iso-press)')}${ln(b1, b2, 'var(--iso-press)')}${ln(a2, b2, 'var(--iso-mark)')}</g>`);
+    }
+    // Un petit arrière en bleu, en suspension, armé au 9 m : un clin d'œil aux légendes du hand français
+    { const [fx, fy] = P(2.12, 10.62, 2.5);
+      add(2.12, 10.62, `<g class="deco" transform="translate(${fx.toFixed(1)} ${fy.toFixed(1)})">
+        <ellipse cx="0" cy="${(P(2.12, 10.62, 0)[1] - fy).toFixed(1)}" rx="2.6" ry="1.1" fill="#000" fill-opacity="0.18"/>
+        <path d="M-1 -1 L-2.3 2.6 M1 -1 L2.2 1.4 L1.4 3" stroke="#f4f4f4" stroke-width="1.3" stroke-linecap="round" fill="none"/>
+        <rect x="-1.7" y="-6.6" width="3.4" height="5.8" rx="1" fill="#2b4fa0"/>
+        <path d="M-1.4 -5.6 L-3.4 -3.2 M1.4 -5.8 L3.2 -9.4" stroke="#d9a982" stroke-width="1.1" stroke-linecap="round"/>
+        <circle cx="3.6" cy="-10.4" r="1.3" fill="var(--iso-lamp)" stroke="var(--iso-pole)" stroke-width="0.3"/>
+        <circle cx="0" cy="-8.2" r="1.6" fill="#d9a982"/><path d="M-1.6 -8.6 Q0 -10.6 1.6 -8.6" fill="#3a2a20"/>
+      </g>`); }
+    // Car de l'équipe, garé devant la salle
+    {
+      const bus = { x: 5.42, y: 9.6, w: 0.38, d: 1.45, h: 10, c: t.color };
+      shade(bus);
+      let s = isoBox(bus)
+        + poly([P(bus.x + bus.w, bus.y + 0.12, 5.5), P(bus.x + bus.w, bus.y + bus.d - 0.12, 5.5), P(bus.x + bus.w, bus.y + bus.d - 0.12, 8.6), P(bus.x + bus.w, bus.y + 0.12, 8.6)], 'var(--iso-glass)', 'fill-opacity="0.95"')
+        + poly([P(bus.x + bus.w, bus.y + 0.12, 3.2), P(bus.x + bus.w, bus.y + bus.d - 0.12, 3.2), P(bus.x + bus.w, bus.y + bus.d - 0.12, 4.3), P(bus.x + bus.w, bus.y + 0.12, 4.3)], '#ffffff', 'fill-opacity="0.85"')
+        + poly([P(bus.x + 0.04, bus.y + bus.d, 5), P(bus.x + bus.w - 0.04, bus.y + bus.d, 5), P(bus.x + bus.w - 0.04, bus.y + bus.d, 8.8), P(bus.x + 0.04, bus.y + bus.d, 8.8)], 'var(--iso-glass)')
+        + isoBox({ x: bus.x + 0.06, y: bus.y + 0.25, w: 0.26, d: 0.4, h: 0.8, z: 10, c: 'var(--iso-unit)' });
+      for (const k of [0.25, 1.15]) { const [wx, wy] = P(bus.x + bus.w, bus.y + k, 0.8); s += `<ellipse cx="${wx.toFixed(1)}" cy="${wy.toFixed(1)}" rx="2.2" ry="2.6" fill="#1d1f22"/>`; }
+      add(bus.x + bus.w / 2 + 0.2, bus.y + bus.d / 2 + 0.2, `<g class="deco">${s}</g>`);
+    }
+    // Clins d'œil : chat, pigeon, résine, panneau Beyond9M, affiche 1995, voyant du bureau
+    { const [cx, cy] = P(11.05, 8.7, 22);
+      objs.push({ d: 20.3, svg: prop(`<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2.6" rx="3.6" ry="2.3" fill="#2a2a2a"/><circle cx="3.2" cy="-5" r="1.9" fill="#2a2a2a"/><path d="M2 -6.3 L2.4 -8.4 L3.4 -6.7 Z M3.6 -6.7 L4.6 -8.4 L4.9 -6.2 Z" fill="#2a2a2a"/><path d="M-3.4 -2.6 C -6 -3, -6.2 -6.5, -4.8 -7.4" stroke="#2a2a2a" stroke-width="1.1" fill="none" stroke-linecap="round"/><circle cx="3.9" cy="-5.2" r="0.35" fill="#f6c453"/></g>`) }); }
+    { const [cx, cy] = P(2.15, 8.8, 25);
+      objs.push({ d: 11, svg: prop(`<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="2.6" ry="1.7" fill="#8f98a3"/><circle cx="2.2" cy="-3.6" r="1.2" fill="#6f7882"/><path d="M3.2 -3.6 L4.4 -3.3 L3.2 -3.1 Z" fill="#e0a34a"/><path d="M-2.4 -2 L-4.2 -1.2 L-2.4 -1.3 Z" fill="#6f7882"/></g>`) }); }
+    objs.push({ d: 12.7, svg: prop(isoBox({ x: 9.0, y: 3.45, w: 0.16, d: 0.16, h: 2.4, c: '#e8c547' }) + isoBox({ x: 8.99, y: 3.44, w: 0.18, d: 0.18, h: 0.5, z: 2.4, c: '#c94f3d' })) });
+    objs.push({ d: 8.7, svg: prop(poly([P(3.48, 5.2, 25), P(4.52, 5.2, 25), P(4.52, 5.2, 46), P(3.48, 5.2, 46)], '#121417', EDGE) + skewText(3.55, 5.2, 37.5, 'BEYOND', 7, '#ffffff') + skewText(3.75, 5.2, 28.5, '9M', 8, '#e8c547')) });
+    objs.push({ d: 11.9, svg: prop(poly([P(3.55, 8.3, 3.5), P(3.68, 8.3, 3.5), P(3.68, 8.3, 9), P(3.55, 8.3, 9)], '#2b4fa0') + poly([P(3.68, 8.3, 3.5), P(3.81, 8.3, 3.5), P(3.81, 8.3, 9), P(3.68, 8.3, 9)], '#f4f4f4') + poly([P(3.81, 8.3, 3.5), P(3.94, 8.3, 3.5), P(3.94, 8.3, 9), P(3.81, 8.3, 9)], '#c8453b') + skewText(3.57, 8.3, 7.4, '95', 3.2, '#111')) });
+    { const [lx, ly] = P(11.25, 1.45, 72);
+      objs.push({ d: 12.9, svg: prop(`<circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`) }); }
+    objs.sort((a, b) => a.d - b.d);
+
+    const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
+    const css = GHOSTS.map((g) => `.city:has([data-ghost="${g.key}"]:hover) [data-gsign="${g.key}"], .city:has([data-ghost="${g.key}"]:focus-visible) [data-gsign="${g.key}"]`)
+      .concat(places.map((p) => `.city:has([data-place="${p.key}"]:hover) [data-psign="${p.key}"], .city:has([data-place="${p.key}"]:focus-visible) [data-psign="${p.key}"]`)).join(',') + '{opacity:1}';
+    return `<div class="citywrap"><svg class="city" viewBox="40 92 780 448" role="group" aria-label="Plan de la ville du club"><style>${css}</style>${flatLayer.join('')}${objs.map((o) => o.svg).join('')}<g class="signs">${signs}</g></svg></div>`;
+  }
+  function renderCity() {
+    const t = me();
+    return `<section class="panel citypanel"><div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(t.city)} · la Cité du hand</h3><span class="legend">Clique sur un bâtiment pour y entrer. Les bâtiments gris arriveront plus tard.</span></div>${renderCityMap()}</section>`;
+  }
+
+  // ---------- Tactique ----------
+  const COURT = `<svg viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0 Z" fill="var(--zone)" fill-opacity="0.92"/>
+    <path d="M0 29.6 A90 90 0 0 0 85 90 L115 90 A90 90 0 0 0 200 29.6" fill="none" stroke="#fff" stroke-opacity="0.8" stroke-width="1" stroke-dasharray="4 3"/>
+    <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0" fill="none" stroke="#fff" stroke-width="1.2"/>
+    <line x1="95" y1="70" x2="105" y2="70" stroke="#fff" stroke-width="1.2"/>
+    <rect x="85" y="0" width="30" height="3.5" fill="#fff"/>
+    <line x1="0" y1="149.5" x2="200" y2="149.5" stroke="#fff" stroke-opacity="0.6" stroke-width="1"/>
+  </svg>`;
+  function slotHtml(t, pos) {
+    const cur = t.players.find((p) => p.id === t.lineup[pos]);
+    const opts = t.players.filter((p) => pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB')
+      .sort((x, y) => (y.pos === pos) - (x.pos === pos) || ovrAt(y, pos) - ovrAt(x, pos));
+    return `<div class="slot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"><span class="label">${H.POS_LABEL[pos]}</span>
+      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${ovrAt(p, pos).toFixed(1)}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
+      <span class="ovr">${cur.hand === 'G' ? 'Gaucher' : 'Droitier'} · fat. ${cur.fatigue} · forme ${cur.form > 0 ? '+' : ''}${cur.form}${(pos === 'ArD' || pos === 'AiD') && cur.hand === 'D' ? ' · <b style="color:var(--bad)">mauvais côté</b>' : ''}</span></div>`;
+  }
+  function dragChip(p, click, ghost) {
+    return `<button class="chip dragchip${ghost ? ' ghostchip' : ''}" draggable="true" data-drag="${p.id}" ${click ? `data-act="tribune" data-id="${p.id}"` : ''}><span class="grip" aria-hidden="true">⋮⋮</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${esc(short(p.name))} <span class="muted num">${p.ovr.toFixed(1)}</span></button>`;
+  }
+  // Glisser-déposer de la composition : banc ⇄ tribune, et vers un poste du terrain
+  function setLineup(t, pos, pid) {
+    const p = t.players.find((x) => x.id === pid);
+    if (!p || (pos === 'GB') !== (p.pos === 'GB')) return false;
+    const other = Object.keys(t.lineup).find((k) => k !== pos && t.lineup[k] === pid);
+    if (other) t.lineup[other] = t.lineup[pos];
+    t.out = (t.out || []).filter((x) => x !== pid);
+    t.lineup[pos] = pid;
+    return true;
+  }
+  function dropPlayer(pid, zone, targetId, pos) {
+    const t = me();
+    t.out = t.out || [];
+    const P = (id) => t.players.find((x) => x.id === id);
+    const p = P(pid);
+    if (!p) return;
+    const starters = new Set(Object.values(t.lineup));
+    const inOut = t.out.includes(pid);
+    if (zone === 'slot') { if (!setLineup(t, pos, pid)) return; }
+    else if (zone === 'tribune' && !inOut && !starters.has(pid)) {
+      let back = targetId && t.out.includes(targetId) ? targetId : null;
+      if (!back) back = t.out.slice().sort((a, b) => (P(b).pos === p.pos) - (P(a).pos === p.pos) || P(b).ovr - P(a).ovr)[0];
+      if (!back) return;
+      t.out = t.out.map((x) => x === back ? pid : x);
+    } else if (zone === 'bench' && inOut) {
+      const bench = t.players.filter((x) => !starters.has(x.id) && !t.out.includes(x.id));
+      let go = targetId && bench.some((x) => x.id === targetId) ? targetId : null;
+      if (!go) { const g = bench.slice().sort((a, b) => (b.pos === p.pos) - (a.pos === p.pos) || a.ovr - b.ovr)[0]; go = g && g.id; }
+      if (!go) return;
+      t.out = t.out.map((x) => x === pid ? go : x);
+    } else return;
+    H.ensureSheet(t);
+    save();
+    render();
+  }
+  function modsHtml() {
+    const t = me();
+    return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="modstitle" style="margin:0">Bonus et malus du club</h2><button class="btn" data-act="modsclose" aria-label="Fermer">✕</button></div>
+      <p class="muted" style="margin:6px 0 14px">Choisis au lancement de la saison, ils restent jusqu'au bout. Le staff t'en reparle dans ses conseils quand ils comptent pour ta tactique ou ton entraînement.</p>
+      <div style="display:grid;gap:12px">${(t.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="modsclose">Fermer</button></div>`;
+  }
+  function backStyleSummary(t) {
+    const st = H.BACK_POS.map((pos) => ({ pos, p: t.players.find((x) => x.id === t.lineup[pos]) })).filter((x) => x.p);
+    const custom = t.players.filter((p) => H.BACK_POS.includes(p.pos) && p.style).length;
+    return `<div class="opt"><span class="label">Jeu des arrières</span>
+      <div class="row" style="gap:6px">${st.map((x) => `<span class="chip"><span class="pos">${x.pos}</span>${esc(short(x.p.name))} · <b>${H.BACK_STYLES[H.backStyle(x.p)]}</b></span>`).join('')}</div>
+      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Jeu conseillé par le staff pour tous'}</span></div></div>`;
+  }
+  function backStyleHtml(t) {
+    const backs = t.players.filter((p) => H.BACK_POS.includes(p.pos)).sort((a, b) => H.BACK_POS.indexOf(a.pos) - H.BACK_POS.indexOf(b.pos) || b.ovr - a.ovr);
+    const starters = new Set(Object.values(t.lineup));
+    return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="bstitle" style="margin:0">Jeu des arrières</h2><button class="btn" data-act="bsclose" aria-label="Fermer">✕</button></div>
+      <p class="muted" style="margin:6px 0 10px">Choisis comment chaque arrière attaque. Le réglage suit le joueur, même s'il change de poste.</p>
+      <div class="bstyles">${backs.map((p) => { const nat = H.autoStyle(p), cur = H.backStyle(p);
+        return `<div class="bsrow"><span class="bsname"><span class="pos">${p.pos}</span> ${plink(p, short(p.name))}${starters.has(p.id) ? ' <span class="tit" title="Titulaire">T</span>' : ''}<span class="bsnotes muted num" title="Tir de loin · tir à 6 m · duel">9 m ${p.a.tirLoin} · 6 m ${p.a.tirPres} · duel ${p.a.duel}</span></span>
+          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}" title="${k === nat ? 'Conseillé par le staff selon ses notes' : ''}">${l}${k === nat ? ' <span class="reco" aria-label="conseillé">●</span>' : ''}</button>`).join('')}</span></div>`; }).join('')}</div>
+      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Le point ● marque le jeu conseillé selon ses notes : dans son registre, il gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p>
+      <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre au jeu conseillé</button></div>`;
+  }
+  function renderTactics() {
+    if (me().players.length > 14) H.ensureSheet(me());
+    const t = me(), tac = t.tactic, r = tac.rules, fi = fitInfo(t);
+    const sel = (rule, field, opts, cur, fmt) => `<select class="rsel" data-rule="${rule}" data-field="${field}" aria-label="${rule} ${field}">${opts.map((o) => `<option value="${o}" ${String(o) === String(cur) ? 'selected' : ''}>${fmt ? fmt(o) : o}</option>`).join('')}</select>`;
+    const starters = new Set(Object.values(t.lineup));
+    const bench = t.players.filter((p) => !starters.has(p.id)).sort((x, y) => H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos));
+    return `<div class="grid2">
+      <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">Composition</h3><button class="btn" data-act="auto">Composition auto</button></div>
+        <div class="court">${COURT}${H.POS.map((p) => slotHtml(t, p)).join('')}</div>
+        <p class="legend">La note affichée est celle du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec la note correspondante. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : 85 % de sa note ; ailleurs, la note dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
+        <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${t.players.length > 14 ? ` Feuille de match : 14 joueurs sur ${t.players.length}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
+        <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, t.players.length > 14, false)).join('')}</div></div>
+        ${t.players.length > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+      </section>
+      <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
+        ${adviceHtml(t, 'tactique')}
+        <div class="tsec"><span class="tsech">Attaque</span>
+          <div class="opt"><span class="label">Rythme</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="att" data-id="${x}" aria-pressed="${tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div><p>${ATT_TXT[tac.att][1]}.</p></div>
+          <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="jeu" data-id="${k}" aria-pressed="${tac.jeu === k}">${l}</button>`).join('')}</div>
+            <p>${JEU_TXT[tac.jeu]} Ton équipe est <b style="color:var(--fg)">${fi.id.label.toLowerCase()}</b> (esprit collectif moyen ${fi.id.v.toFixed(1)}) : <span class="${fi.cls}">${fi.txt}</span>.</p></div>
+          ${backStyleSummary(t)}
+        </div>
+        <div class="tsec"><span class="tsech">Défense</span>
+          <div class="opt"><span class="label">Style</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="dstyle" data-id="${k}" aria-pressed="${tac.dstyle === k}">${l}</button>`).join('')}</div>
+            <p><b style="color:var(--fg)">Point fort</b> : ${DSTYLE_TXT[tac.dstyle][0].toLowerCase()}.<br><b style="color:var(--fg)">Point faible</b> : ${DSTYLE_TXT[tac.dstyle][1].toLowerCase()}.</p></div>
+          <div class="opt"><span class="label">Système</span><p style="margin:0">Base <b style="color:var(--fg)">6-0</b> : ${DEF_TXT['6-0'][0].toLowerCase()}, mais ${DEF_TXT['6-0'][1].toLowerCase()}. Les bascules ci-dessous s'appliquent seules pendant le match, par ordre de priorité.</p>
+            <div class="rules">
+              <div class="rule"><button class="chip" data-act="rule" data-id="mene" aria-pressed="${r.mene.on}">Pour revenir au score</button>
+                <span>Si mené de ${sel('mene', 'ecart', [2, 3, 4, 5], r.mene.ecart, (v) => v + ' buts')} à partir de la ${sel('mene', 'min', [40, 45, 50, 55], r.mene.min, (v) => v + 'e')}, passer en ${sel('mene', 'sys', ['5-1', '4-2'], r.mene.sys)}</span></div>
+              <div class="rule"><button class="chip" data-act="rule" data-id="sup" aria-pressed="${r.sup.on}">En supériorité numérique</button>
+                <span>Quand l'adversaire a un joueur exclu, passer en ${sel('sup', 'sys', ['5-1', '4-2'], r.sup.sys)}</span></div>
+              <div class="rule"><button class="chip" data-act="rule" data-id="tireur" aria-pressed="${r.tireur.on}">Contre un tireur redoutable</button>
+                <span>Si un arrière adverse a 16 ou plus en tir de loin sur le terrain, passer en ${sel('tireur', 'sys', ['5-1', '4-2'], r.tireur.sys)}</span></div>
+            </div>
+            <p class="legend" style="margin:6px 0 0">5-1 : ${DEF_TXT['5-1'][0].toLowerCase()} ; ${DEF_TXT['5-1'][1].toLowerCase()}. 4-2 : ${DEF_TXT['4-2'][0].toLowerCase()} ; ${DEF_TXT['4-2'][1].toLowerCase()}.</p></div>
+        </div>
+        <div class="opt"><span class="label">Consignes · 2 maximum</span><div class="row" style="gap:8px">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="cons" data-id="${k}" aria-pressed="${tac.cons.includes(k)}">${l}</button>`).join('')}</div>
+          <p>Une troisième consigne remplace la plus ancienne.</p></div>
+      </div></section></div>`;
+  }
+
+  // ---------- Championnat ----------
+  function resultRow(g) {
+    const h = T(g.h), a = T(g.a);
+    const mine = g.h === G.userId || g.a === G.userId;
+    const s = g.hs === undefined ? '<span class="muted">–</span>' : `<b class="num">${g.hs}–${g.as}</b>`;
+    return `<tr class="${mine ? 'me' : ''}"><td>${badge(h, true)} ${esc(h.name)}</td><td class="r" style="text-align:center">${s}</td><td style="text-align:right">${esc(a.name)} ${badge(a, true)}</td></tr>`;
+  }
+  function renderLeague() {
+    const s = H.standings(G);
+    const table = s.map((r, i) => {
+      const t = T(r.id);
+      return `<tr class="${r.id === G.userId ? 'me' : ''}"><td class="r">${i + 1}</td><td>${badge(t, true)} ${esc(t.name)} ${(t.mods || []).map((k) => { const m = H.modInfo(k); return m ? `<span class="moddot ${m.bonus ? 'plus' : 'minus'}" title="${esc(m.name)} : ${esc(m.desc)}">${m.bonus ? '+' : '−'}</span>` : ''; }).join('')}</td><td class="r">${r.j}</td><td class="r">${r.g}</td><td class="r">${r.n}</td><td class="r">${r.p}</td><td class="r">${r.bp}</td><td class="r">${r.bc}</td><td class="r">${r.bp - r.bc > 0 ? '+' : ''}${r.bp - r.bc}</td><td class="r"><b>${r.pts}</b></td></tr>`;
+    }).join('');
+    const last = G.results[G.results.length - 1];
+    const next = G.round < G.sched.length ? G.sched[G.round].map(([h, a]) => ({ h, a })) : null;
+    const sc = H.scorers(G, 10);
+    return `<div class="grid2">
+      <section class="panel"><h3>Classement</h3><div class="scroll"><table><thead><tr><th class="r">#</th><th>Club</th><th class="r">J</th><th class="r">G</th><th class="r">N</th><th class="r">P</th><th class="r">BP</th><th class="r">BC</th><th class="r">Diff</th><th class="r">Pts</th></tr></thead><tbody>${table}</tbody></table></div>
+        <p class="legend">Victoire 2 pts, nul 1, défaite 0. Départage : points, différence de buts particulière, différence générale, buts marqués.</p></section>
+      <div style="display:grid;gap:20px;min-width:0">
+        ${last ? `<section class="panel"><h3>Journée ${G.results.length}</h3><div class="scroll"><table><tbody>${last.map(resultRow).join('')}</tbody></table></div></section>` : ''}
+        ${next ? `<section class="panel"><h3>Journée ${G.round + 1} · à venir</h3><div class="scroll"><table><tbody>${next.map(resultRow).join('')}</tbody></table></div></section>` : ''}
+        <section class="panel"><h3>Meilleurs buteurs</h3>${sc.length ? `<div class="scroll"><table><tbody>${sc.map((x, i) => `<tr class="${x.t.id === G.userId ? 'me' : ''}"><td class="r">${i + 1}</td><td>${esc(x.p.name)} <span class="pos">${x.p.pos}</span></td><td>${badge(x.t, true)}</td><td class="r"><b>${x.p.goals}</b></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Le classement des buteurs apparaît après la 1re journée.</p>'}</section>
+      </div></div>`;
+  }
+
+  // ---------- Événements ----------
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
+    if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
+    const b = e.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    const act = b.dataset.act, id = b.dataset.id;
+    const t = G ? me() : null;
+    const ms = U.m ? U.m.S[U.side] : null;
+    switch (act) {
+      case 'pick': U.newClub = id; render(); return;
+      case 'nclose': hideNotify(); return;
+      case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
+      case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
+      case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
+      case 'bsclose': U.bsModal = false; render(); { const o = document.querySelector('[data-act=bsopen]'); if (o) o.focus(); } return;
+      case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
+      case 'colt': { const h = hiddenCols(); U.hidden = h.includes(id) ? h.filter((x) => x !== id) : h.concat(id); try { localStorage.setItem('hbm-cols', JSON.stringify(U.hidden)); } catch (e) {} render(); return; }
+      case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
+      case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
+      case 'player': openSheet(id); return;
+      case 'psclose': closeSheet(); return;
+      case 'step2': U.homeStep = 2; render(); window.scrollTo(0, 0); return;
+      case 'step1': U.homeStep = 1; render(); window.scrollTo(0, 0); return;
+      case 'pickb': ensureDraft().b = id; render(); return;
+      case 'pickm': ensureDraft().m = id; render(); return;
+      case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
+      case 'tab': U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
+      case 'kickoff': startMatch(); return;
+      case 'rest': restRound(); return;
+      case 'gonext': U.tab = 'match'; U.post = null; U.view = 'pre'; render(); window.scrollTo(0, 0); return;
+      case 'pause': U.paused = !U.paused; if (!U.paused) U.subSel = null; schedule(); liveUpdate([]); return;
+      case 'speed': U.speed = Number(id); schedule(); liveUpdate([]); return;
+      case 'finish': finishMatch(); return;
+      case 'timeout': if (U.m.timeout(U.side)) { U.paused = true; U.tPanel = true; clearTimeout(U.timer); liveUpdate(U.m.ev.slice(-1)); } return;
+      case 'resume': hideNotify(); U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); return;
+      case 'empty': ms.empty = !ms.empty; liveUpdate([]); return;
+      case 'mgk': U.m.setGK(U.side, id); liveUpdate([]); return;
+      case 'subpick': if (!U.paused) return; U.subSel = U.subSel === id ? null : id; liveUpdate([]); return;
+      case 'subin': if (!U.paused || !U.subSel) return; U.m.manualSub(U.side, U.subSel, id); U.subSel = null; U.ctlSig = ''; liveUpdate([]); return;
+      case 'subauto': if (!U.paused) return; U.m.releasePos(U.side, id); liveUpdate([]); return;
+      case 'mdef': ms.forceDef = id === 'auto' ? null : id; liveUpdate([]); return;
+      case 'mds': ms.tac.dstyle = id; liveUpdate([]); return;
+      case 'mjeu': ms.tac.jeu = id; liveUpdate([]); return;
+      case 'dstyle': t.tactic.dstyle = id; save(); render(); return;
+      case 'jeu': t.tactic.jeu = id; save(); render(); return;
+      case 'rule': t.tactic.rules[id].on = !t.tactic.rules[id].on; save(); render(); return;
+      case 'matt': ms.tac.att = id; liveUpdate([]); return;
+      case 'mcons': toggleCons(ms.tac, id); liveUpdate([]); return;
+      case 'att': t.tactic.att = id; save(); render(); return;
+      case 'cons': toggleCons(t.tactic, id); save(); render(); return;
+      case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
+      case 'yrel': U.yRelease = id; render(); return;
+      case 'ylater': U.youthModal = false; render(); return;
+      case 'yrefuse': if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, decision: 'Refusé' }); G.youth = null; } U.youthModal = false; save(); render(); return;
+      case 'yaccept': {
+        if (!G.youth) return;
+        const tm = me(), y = G.youth.p;
+        let decision = 'Recruté';
+        if (tm.players.length >= 16) {
+          const out = tm.players.find((p) => p.id === U.yRelease);
+          if (!out) return;
+          tm.players = tm.players.filter((p) => p.id !== out.id);
+          tm.out = (tm.out || []).filter((id) => id !== out.id);
+          for (const pos of H.POS) if (tm.lineup[pos] === out.id) {
+            const rep = tm.players.filter((p) => p.pos === pos).sort((a, b) => b.ovr - a.ovr)[0] || y;
+            tm.lineup[pos] = rep.id;
+          }
+          decision = `Recruté, ${out.name} quitte le club`;
+        }
+        tm.players.push(y);
+        for (const pos of H.POS) if (!tm.players.some((p) => p.id === tm.lineup[pos])) tm.lineup[pos] = y.id;
+        H.ensureSheet(tm);
+        G.youthLog.unshift({ round: G.youth.round, name: y.name, pos: y.pos, ovr: y.ovr, pot: y.pot, decision });
+        G.youth = null; U.youthModal = false; U.yRelease = null; save(); render(); return;
+      }
+      case 'tribune': {
+        const tm = me();
+        tm.out = tm.out || [];
+        if (tm.out.includes(id)) {
+          tm.out = tm.out.filter((x) => x !== id);
+          const starters = new Set(Object.values(tm.lineup));
+          const c = tm.players.filter((p) => !starters.has(p.id) && !tm.out.includes(p.id) && p.id !== id).sort((a, b) => a.ovr - b.ovr)[0];
+          if (c) tm.out.push(c.id);
+        } else tm.out.push(id);
+        H.ensureSheet(tm); save(); render(); return;
+      }
+      case 'sort': U.sort = U.sort.k === id ? { k: id, dir: -U.sort.dir } : { k: id, dir: 1 }; render(); return;
+      case 'tfocus': G.training.focus = id; save(); render(); return;
+      case 'tint': G.training.intensity = id; save(); render(); return;
+      case 'next': U.view = 'pre'; U.post = null; U.tab = G.ended ? 'match' : 'ville'; render(); window.scrollTo(0, 0); return;
+      case 'reset': U.confirmReset = true; render(); return;
+      case 'resetNo': U.confirmReset = false; render(); return;
+      case 'resetYes': clearTimeout(U.timer); U.draft = null; U.homeStep = 1; clearSave(); U.newClub = G ? G.userId : 'REN'; G = null; U.m = null; U.view = 'pre'; U.post = null; U.confirmReset = false; render(); window.scrollTo(0, 0); return;
+      case 'replay': { const club = G.userId; const mods = (me().mods || []).slice(); G = H.newGame(club, undefined, mods); me().tactic.rules = H.defaultRules(); U.view = 'pre'; U.post = null; U.tab = 'ville'; save(); render(); window.scrollTo(0, 0); return; }
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
+    if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
+    if (e.key === 'Escape' && U.modsModal) { U.modsModal = false; render(); return; }
+    if (document.getElementById('psheet')) return;
+    if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
+      e.preventDefault();
+      if (U.tPanel) { hideNotify(); U.tPanel = false; U.paused = false; U.subSel = null; liveUpdate([]); schedule(); }
+      else { U.paused = !U.paused; if (!U.paused) U.subSel = null; schedule(); liveUpdate([]); }
+      return;
+    }
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const g = e.target.closest && e.target.closest('svg [role="button"][data-act]');
+    if (!g) return;
+    e.preventDefault();
+    g.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  function toggleCons(tac, id) {
+    const i = tac.cons.indexOf(id);
+    if (i >= 0) tac.cons.splice(i, 1);
+    else { tac.cons.push(id); if (tac.cons.length > 2) tac.cons.shift(); }
+  }
+  document.addEventListener('change', (e) => {
+    const ir = e.target.closest && e.target.closest('input[data-int]');
+    if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
+    const rs = e.target.closest('select[data-rule]');
+    if (rs && G) {
+      const v = rs.value;
+      me().tactic.rules[rs.dataset.rule][rs.dataset.field] = /^\d+$/.test(v) ? Number(v) : v;
+      save(); render();
+      return;
+    }
+    const sel = e.target.closest('select[data-pos]');
+    if (!sel || !G) return;
+    const t = me(), pos = sel.dataset.pos, pid = sel.value;
+    const other = Object.keys(t.lineup).find((k) => k !== pos && t.lineup[k] === pid);
+    if (other) t.lineup[other] = t.lineup[pos];
+    t.lineup[pos] = pid;
+    H.ensureSheet(t);
+    save();
+    render();
+    const again = document.getElementById('slot-' + pos);
+    if (again) again.focus();
+  });
+
+  document.addEventListener('dragstart', (e) => {
+    const c = e.target.closest && e.target.closest('[data-drag]');
+    if (!c) return;
+    e.dataTransfer.setData('text/plain', c.dataset.drag);
+    e.dataTransfer.effectAllowed = 'move';
+    U.dragId = c.dataset.drag;
+    c.classList.add('dragging');
+    document.body.classList.add('isdragging');
+  });
+  document.addEventListener('dragend', () => {
+    U.dragId = null;
+    document.body.classList.remove('isdragging');
+    document.querySelectorAll('.dragging, .dropover').forEach((x) => x.classList.remove('dragging', 'dropover'));
+  });
+  document.addEventListener('dragover', (e) => {
+    const z = U.dragId && e.target.closest && e.target.closest('[data-drop]');
+    if (!z) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('.dropover').forEach((x) => x !== z && x.classList.remove('dropover'));
+    z.classList.add('dropover');
+  });
+  document.addEventListener('drop', (e) => {
+    const z = U.dragId && e.target.closest && e.target.closest('[data-drop]');
+    if (!z) return;
+    e.preventDefault();
+    const tgt = e.target.closest('[data-drag]');
+    const id = U.dragId;
+    U.dragId = null;
+    document.body.classList.remove('isdragging');
+    dropPlayer(id, z.dataset.drop, tgt && tgt.dataset.drag !== id ? tgt.dataset.drag : null, z.dataset.pos);
+  });
+
+  // ---------- Démarrage ----------
+  function start(data) {
+    G = load();
+    if (G) {
+      U.tab = (data && data.tab) || 'ville';
+      if (G.last && G.last.round === G.round && !G.ended) U.post = null;
+    }
+    render();
+  }
+  if (window.claude && window.claude.hot && window.claude.hot.snapshot) {
+    try { window.claude.hot.snapshot(() => ({ tab: U.tab })); } catch (e) { /* ignore */ }
+  }
+  if (window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start);
+  else start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+})();

@@ -1,0 +1,1174 @@
+(function (root) {
+  'use strict';
+
+  // ---------- RNG ----------
+  let R = Math.random;
+  function setSeed(seed) {
+    let s = seed >>> 0;
+    R = function () {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const rnd = () => R();
+  const ri = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const pick = (a) => a[Math.floor(R() * a.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function gauss() {
+    let u = 0, v = 0;
+    while (!u) u = R();
+    while (!v) v = R();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+  function wpick(items, wf) {
+    const w = items.map(wf);
+    const s = w.reduce((a, b) => a + Math.max(0, b), 0);
+    if (s <= 0) return pick(items);
+    let r = R() * s;
+    for (let i = 0; i < items.length; i++) {
+      r -= Math.max(0, w[i]);
+      if (r <= 0) return items[i];
+    }
+    return items[items.length - 1];
+  }
+
+  // ---------- Données de base ----------
+  const POS = ['GB', 'AiG', 'ArG', 'DC', 'ArD', 'AiD', 'Piv'];
+  const POS_LABEL = {
+    GB: 'Gardien', AiG: 'Ailier gauche', ArG: 'Arrière gauche', DC: 'Demi-centre',
+    ArD: 'Arrière droit', AiD: 'Ailier droit', Piv: 'Pivot'
+  };
+  const FIELD = [
+    ['tirLoin', 'Tir de loin (9 m)'], ['tirPres', 'Tir de près (6 m)'], ['tirAile', "Tir de l'aile"],
+    ['penalty', 'Pénalty (7 m)'], ['passes', 'Passes'], ['position', 'Prise de position'],
+    ['vision', 'Vision de jeu'], ['duel', 'Duel / pénétration'], ['vitesse', 'Vitesse'],
+    ['contre', 'Contre'], ['duelDef', 'Duel défensif'], ['discipline', 'Discipline'], ['endurance', 'Endurance'], ['sangfroid', 'Sang-froid']
+  ];
+  const TRAITS = [['excentricite', 'Excentricité'], ['collectif', 'Esprit collectif']];
+  const GKA = [['reflexes', 'Réflexes'], ['placement', 'Placement'], ['gk7m', 'Arrêts sur 7 m'], ['relance', 'Relance'], ['endurance', 'Endurance']];
+  const WEIGHTS = {
+    GB: { reflexes: 0.4, placement: 0.35, gk7m: 0.15, relance: 0.1 },
+    AiG: { tirAile: 0.37, vitesse: 0.3, position: 0.15, penalty: 0.1, duelDef: 0.08 },
+    AiD: { tirAile: 0.37, vitesse: 0.3, position: 0.15, penalty: 0.1, duelDef: 0.08 },
+    ArG: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
+    ArD: { tirLoin: 0.35, duel: 0.25, passes: 0.15, contre: 0.08, duelDef: 0.07, tirPres: 0.1 },
+    DC: { vision: 0.3, passes: 0.2, duel: 0.2, sangfroid: 0.15, tirLoin: 0.15 },
+    Piv: { tirPres: 0.45, position: 0.3, contre: 0.1, duelDef: 0.15 }
+  };
+  // Attributs travaillés à l'entraînement : ceux du poste, plus endurance et discipline pour les joueurs de champ
+  const POS_ATTRS = Object.fromEntries(Object.entries(WEIGHTS).map(([k, w]) => [k, Object.keys(w).concat(k === 'GB' ? [] : ['endurance', 'discipline'])]));
+  const SECONDARY = { GB: [], DC: ['ArG', 'ArD'], ArG: ['DC', 'AiG'], ArD: ['DC', 'AiD'], AiG: ['ArG'], AiD: ['ArD'], Piv: [] };
+  function ovrAt(p, pos) {
+    if (pos === p.pos) return p.ovr;
+    if ((pos === 'GB') !== (p.pos === 'GB')) return 0;
+    const w = WEIGHTS[pos];
+    let v = 0;
+    for (const k in w) v += w[k] * (p.a[k] || 0);
+    if (SECONDARY[p.pos].includes(pos)) v = Math.max(v, p.ovr * 0.85);
+    return Math.round(v * 10) / 10;
+  }
+  function potFor(p) {
+    const head = p.age < 21 ? 2 + rnd() * 4 : p.age < 24 ? 1 + rnd() * 3 : p.age < 28 ? rnd() * 1.5 : p.age < 31 ? rnd() * 0.5 : 0;
+    return Math.round(clamp(p.ovr + head, 1, 20) * 10) / 10;
+  }
+  const CLUBS = [
+    { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a' },
+    { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b' },
+    { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a', color2: '#d9b45a' },
+    { id: 'TLS', name: 'Toulouse Briques Roses', city: 'Toulouse', rep: 4, color: '#c2185b', color2: '#5fb3a1' },
+    { id: 'NAN', name: 'Les Éléphants de Nantes', city: 'Nantes', rep: 4, color: '#2e7d32', color2: '#e3c35a' },
+    { id: 'BDX', name: 'Bordeaux Garonne HB', city: 'Bordeaux', rep: 4, color: '#6a1b4d', color2: '#d8b46a' },
+    { id: 'REN', name: 'Rennes Hermine HB', city: 'Rennes', rep: 3, color: '#111111', color2: '#c8453b' },
+    { id: 'MRS', name: 'Marseille Calanques HB', city: 'Marseille', rep: 3, color: '#1b8bb4', color2: '#e7b75a' },
+    { id: 'LIL', name: 'Lille Beffroi HB', city: 'Lille', rep: 3, color: '#c62828', color2: '#5b7fa8' },
+    { id: 'STR', name: 'Strasbourg Rhin HB', city: 'Strasbourg', rep: 3, color: '#455a9a', color2: '#e2b45c' },
+    { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100', color2: '#2f5d7c' },
+    { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20', color2: '#e0c060' },
+    { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b', color2: '#3d5a80' },
+    { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f' },
+    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a' },
+    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a' }
+  ];
+  // Noms : un clin d'œil aux régions des clubs, quelques joueurs venus d'ailleurs
+  const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Mehdi', 'Ibrahima', 'Florian', 'Arthur', 'Samuel', 'Elias', 'Raphaël', 'Karim', 'Moussa', 'Nicolas', 'Julien'];
+  const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun'];
+  const REGION_NAMES = {
+    bretagne: { first: ['Erwan', 'Yann', 'Gaël', 'Malo', 'Ewen', 'Loïc', 'Corentin', 'Killian', 'Brieuc', 'Tanguy', 'Goulven', 'Ronan', 'Maël', 'Armel'], last: ['Le Gall', 'Le Goff', 'Kerjean', "Guivarc'h", 'Le Bihan', 'Tanguy', 'Riou', 'Quéméner', 'Le Roux', 'Morvan', 'Kervella', 'Cadiou', 'Le Floch', 'Le Bris', 'Guéguen', 'Le Corre', 'Jézéquel', 'Kerhervé'] },
+    ouest: { first: ['Clément', 'Bastien', 'Mathéo', 'Gaëtan', 'Loïc', 'Maxence'], last: ['Rousseau', 'Chauvin', 'Gaudin', 'Pasquier', 'Tessier', 'Bouchet', 'Guérin', 'Brossard', 'Rabiller', 'Gautreau', 'Retailleau', 'Baudry', 'Boisseau', 'Pineau'] },
+    nord: { first: ['Kévin', 'Dylan', 'Grégory', 'Jordan', 'Mathieu', 'Florian'], last: ['Delattre', 'Lefebvre', 'Vandenberghe', 'Desmet', 'Leclercq', 'Dumortier', 'Vanhoutte', 'Lemaire', 'Deschamps', 'Vercruysse', 'Dewaele', 'Delannoy', 'Wattiez', 'Pruvost'] },
+    alsace: { first: ['Florian', 'Thomas', 'Luc', 'Mathias', 'Frédéric', 'Joël'], last: ['Muller', 'Schmitt', 'Meyer', 'Wolff', 'Klein', 'Weber', 'Hoffmann', 'Koenig', 'Fischer', 'Zimmermann', 'Stoeckel', 'Ehrhart', 'Burckel', 'Wurtz'] },
+    paris: { first: ['Yanis', 'Ilyes', 'Samy', 'Adam', 'Bilal', 'Hugo', 'Paul'], last: ['Martin', 'Dubois', 'Lefèvre', 'Moreau', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Mendy', 'Camara', 'Nguyen', 'Da Silva', 'Lemoine', 'Rivière'] },
+    provence: { first: ['Marius', 'Fabien', 'Olivier', 'Anthony', 'Rémi', 'Lucas'], last: ['Agostini', 'Fabre', 'Giraud', 'Castellani', 'Martini', 'Rossi', 'Santoni', 'Olivieri', 'Bertolini', 'Camoin', 'Roubaud', 'Bianchi', 'Gasparini', 'Mariani'] },
+    sudouest: { first: ['Mathieu', 'Thibault', 'Bixente', 'Peio', 'Hugo', 'Romain'], last: ['Laborde', 'Etcheverry', 'Lafargue', 'Larrieu', 'Dupuy', 'Castaing', 'Bordenave', 'Cazenave', 'Lacoste', 'Fourcade', 'Lacombe', 'Salvat', 'Marty', 'Barthe'] },
+    alpes: { first: ['Baptiste', 'Clément', 'Rémi', 'Jules', 'Valentin', 'Loris'], last: ['Girard', 'Chabert', 'Roux', 'Faure', 'Brun', 'Blanc', 'Gauthier', 'Chambon', 'Fayolle', 'Vidal', 'Rochette', 'Pélissier', 'Rey', 'Juge'] },
+    auvergne: { first: ['Aurélien', 'Damien', 'Cyril', 'Hugo', 'Benjamin'], last: ['Chassaing', 'Vialle', 'Fayolle', 'Bonnefoy', 'Teyssier', 'Rochon', 'Vernet', 'Chambon', 'Delmas', 'Bayle'] },
+    bourgogne: { first: ['Arnaud', 'Guillaume', 'Damien', 'Victor', 'Thomas'], last: ['Bonnot', 'Rameau', 'Guillot', 'Perrot', 'Bourgeois', 'Moreau', 'Morel', 'Perrin', 'Gautheron', 'Bretin'] }
+  };
+  const CLUB_REGION = { PAR: 'paris', MTP: 'sudouest', LYO: 'alpes', TLS: 'sudouest', NAN: 'ouest', BDX: 'sudouest', REN: 'bretagne', MRS: 'provence', LIL: 'nord', STR: 'alsace', NCE: 'provence', STE: 'alpes', GRE: 'alpes', ANG: 'ouest', DIJ: 'bourgogne', CLE: 'auvergne' };
+  const FOREIGN = {
+    DK: { flag: '🇩🇰', first: ['Mads', 'Rasmus', 'Magnus', 'Jesper', 'Emil', 'Frederik'], last: ['Nielsen', 'Pedersen', 'Sørensen', 'Kristensen', 'Mortensen', 'Holm'] },
+    DE: { flag: '🇩🇪', first: ['Lukas', 'Jonas', 'Finn', 'Tobias', 'Niklas', 'Felix'], last: ['Schmidt', 'Becker', 'Wagner', 'Schäfer', 'Krüger', 'Hartmann'] },
+    NO: { flag: '🇳🇴', first: ['Sander', 'Kristian', 'Eirik', 'Henrik', 'Sindre'], last: ['Berg', 'Haugen', 'Bakken', 'Strand', 'Lunde'] },
+    ES: { flag: '🇪🇸', first: ['Jorge', 'Álex', 'Daniel', 'Iker', 'Pablo'], last: ['Fernández', 'Ruiz', 'Navarro', 'Ortega', 'Serrano'] },
+    HR: { flag: '🇭🇷', first: ['Ivan', 'Luka', 'Marin', 'Domagoj', 'Josip'], last: ['Horvat', 'Kovačević', 'Babić', 'Marić', 'Jurić'] },
+    RS: { flag: '🇷🇸', first: ['Nemanja', 'Stefan', 'Miloš', 'Dragan'], last: ['Petrović', 'Jovanović', 'Nikolić', 'Marković'] },
+    SE: { flag: '🇸🇪', first: ['Oscar', 'Viktor', 'Albin', 'Gustav'], last: ['Lindqvist', 'Eriksson', 'Nyström', 'Bergström'] },
+    IS: { flag: '🇮🇸', first: ['Gunnar', 'Bjarki', 'Arnar', 'Ómar'], last: ['Sigurðsson', 'Jónsson', 'Gunnarsson', 'Magnússon'] }
+  };
+  function makeName(teamId) {
+    if (rnd() < 0.12) { const code = pick(Object.keys(FOREIGN)), f = FOREIGN[code]; return { name: pick(f.first) + ' ' + pick(f.last), nat: code }; }
+    const reg = REGION_NAMES[CLUB_REGION[teamId]];
+    const first = reg && rnd() < 0.5 ? pick(reg.first) : pick(FIRST);
+    const last = reg && rnd() < 0.7 ? pick(reg.last) : pick(LAST);
+    return { name: first + ' ' + last };
+  }
+  const flagOf = (p) => (p && p.nat && FOREIGN[p.nat]) ? FOREIGN[p.nat].flag : '';
+  const TACTIC_DEFS = ['6-0', '5-1', '4-2'];
+  const JEU = { collectif: 'Collectif', equilibre: 'Équilibré', individuel: 'Individuel' };
+  const DSTYLE = { zone: 'Défense collective', homme: 'Homme à homme' };
+  const GESTES = {
+    aile: ['Roucoulette', 'Kung-fu'], pivot: ['Tir dans le dos', 'Roucoulette'], loin: ['Tir à la hanche', 'Tir rebond'],
+    percee: ['Tir à la hanche', 'Chabala'], ca: ['Chabala', 'Kung-fu', 'Tir dans le dos'], er: ['Chabala', 'Tir à la hanche']
+  };
+  const MODS = {
+    public: { label: 'Public', plus: ['Un chaudron les soirs de match', "À domicile, le public pousse : +3 % de réussite au tir et l'adversaire perd plus de ballons."], minus: ['Trois pelés et un tondu', "À domicile, l'ambiance est glaciale : −3 % de réussite au tir."] },
+    staff: { label: 'Staff', plus: ['Un staff bac+12', "Progression à l'entraînement ×1,8."], minus: ['Le staff joue à Fortnite', "Progression à l'entraînement ×0,4."] },
+    formation: { label: 'Formation', plus: ['La génération dorée', 'Les moins de 23 ans, et les jeunes du centre, arrivent avec +1 dans tous leurs attributs.'], minus: ['Les cadets sont encore au goûter', 'Les moins de 23 ans, et les jeunes du centre, arrivent avec −1 dans tous leurs attributs.'] },
+    vestiaire: { label: 'Vestiaire', plus: ['Barbecue tous les dimanches', 'Cohésion de départ à 75.'], minus: ['Deux groupes WhatsApp', 'Cohésion de départ à 35.'] },
+    soins: { label: 'Soins', plus: ['Le kiné a des mains de fée', '20 % de fatigue en moins pendant les matchs, et 10 points récupérés en plus entre deux journées.'], minus: ['Le kiné est parti à Ibiza', '7 points de fatigue récupérés en moins entre deux journées.'] },
+    cage: { label: 'Cage', plus: ['Un mur dans les cages', 'Gardiens à +1 en réflexes et en placement.'], minus: ['Des mains en beurre doux', 'Gardiens à −1 en réflexes et en placement.'] },
+    discipline: { label: 'Discipline', plus: ['Des enfants de chœur', '+4 en discipline pour tous : moins d\'exclusions.'], minus: ['Sang chaud garanti', '−4 en discipline pour tous : plus d\'exclusions.'] },
+    spectacle: { label: 'Spectacle', plus: ['Les Harlem Globetrotters du hand', '+3 en excentricité, et des gestes mieux exécutés (+12 % de réussite).'], minus: ['Roucoulette interdite au règlement intérieur', '−6 en excentricité, et un jeu prévisible : −1,5 % de réussite au tir en attaque placée.'] },
+    mental: { label: 'Mental', plus: ["Des nerfs d'acier", '+4 en sang-froid, et +3 % au tir dans les fins de match serrées.'], minus: ['Les jambes en coton à la 55e', '−4 en sang-froid, et −3 % au tir dans les fins de match serrées.'] },
+    physique: { label: 'Physique', plus: ['Ils ne transpirent jamais', '+2 en vitesse et en endurance.'], minus: ['La raclette de la veille', 'Chaque match commence avec 8 points de fatigue en plus.'] },
+    arbitrage: { label: 'Arbitrage', plus: ['Les arbitres sont des cousins', '60 % de jets de 7 m obtenus en plus.'], minus: ["L'arbitre a une dent contre nous", 'Plus d\'exclusions subies.'] },
+    calendrier: { label: 'Calendrier', plus: ['Un calendrier en pente douce', 'Les 5 premières journées contre les clubs les plus faibles (aller et retour), et un bon départ soude le groupe : +10 de cohésion.'], minus: ['Le calendrier du diable', 'Les 5 premières journées contre les clubs les plus forts (aller et retour), et le groupe doute : −10 de cohésion.'] }
+  };
+  const hasMod = (t, key) => !!(t && t.mods && t.mods.includes(key));
+  function modInfo(key) {
+    const d = key.slice(0, -1), sign = key.slice(-1), m = MODS[d];
+    if (!m) return null;
+    const [name, desc] = sign === '+' ? m.plus : m.minus;
+    return { key, domain: d, label: m.label, bonus: sign === '+', name, desc };
+  }
+  function applyGenMods(t) {
+    const add = (p, k, v) => { if (p.a[k] !== undefined) p.a[k] = clamp(p.a[k] + v, 1, 20); };
+    const traits = ['excentricite', 'collectif'];
+    for (const p of t.players) {
+      const fv = hasMod(t, 'formation+') ? 1 : hasMod(t, 'formation-') ? -1 : 0;
+      if (fv && p.age < 23) for (const k in p.a) if (!traits.includes(k)) add(p, k, fv);
+      if (p.pos === 'GB') {
+        const v = hasMod(t, 'cage+') ? 1 : hasMod(t, 'cage-') ? -1 : 0;
+        if (v) { add(p, 'reflexes', v); add(p, 'placement', v); }
+      } else {
+        if (hasMod(t, 'discipline+')) add(p, 'discipline', 4);
+        if (hasMod(t, 'discipline-')) add(p, 'discipline', -4);
+        if (hasMod(t, 'spectacle+')) add(p, 'excentricite', 3);
+        if (hasMod(t, 'spectacle-')) add(p, 'excentricite', -6);
+        if (hasMod(t, 'mental+')) add(p, 'sangfroid', 4);
+        if (hasMod(t, 'mental-')) add(p, 'sangfroid', -4);
+        if (hasMod(t, 'physique+')) { add(p, 'vitesse', 2); add(p, 'endurance', 2); }
+      }
+      p.ovr = overall(p);
+    }
+    if (hasMod(t, 'vestiaire+')) t.cohesion = 75;
+    if (hasMod(t, 'vestiaire-')) t.cohesion = 35;
+    if (hasMod(t, 'calendrier+')) t.cohesion = (t.cohesion || 50) + 10;
+    if (hasMod(t, 'calendrier-')) t.cohesion = (t.cohesion || 50) - 10;
+  }
+  function defaultRules() {
+    return { sup: { on: true, sys: '5-1' }, mene: { on: true, sys: '4-2', ecart: 3, min: 50 }, tireur: { on: false, sys: '5-1' } };
+  }
+  const CONSIGNES = [
+    ['pivot', 'Cibler le pivot'], ['ailes', 'Cibler les ailes'],
+    ['agressive', 'Défense agressive'], ['rotations', 'Rotations fréquentes']
+  ];
+
+  // Jeu des arrières : de loin (tir à 9 m) ou au contact (6 m et duel) ; par défaut selon ses notes
+  const BACK_STYLES = { loin: 'De loin', equilibre: 'Équilibré', contact: 'Au contact' };
+  function autoStyle(p) {
+    if (p.pos === 'GB') return 'equilibre';
+    const loin = p.a.tirLoin, near = (p.a.tirPres + p.a.duel) / 2;
+    return loin - near >= 2 ? 'loin' : near - loin >= 2 ? 'contact' : 'equilibre';
+  }
+  const backStyle = (p) => p.matchStyle || p.style || autoStyle(p);
+  const BACK_POS = ['ArG', 'DC', 'ArD'];
+  // Intensité du match, de −2 (gestion) à +2 (tout donner) : pression défensive, contre-attaques et engagement, contre fatigue et exclusions
+  const INTENSITY_LV = { '-2': 'Gestion', '-1': 'Calme', 0: 'Normale', 1: 'Engagée', 2: 'Tout donner' };
+  const intensity = (s) => s.tac.int || 0;
+  // Ligne défensive (de la droite à la gauche du défenseur) et vis-à-vis de chaque attaquant
+  const DLINE = ['AiD', 'ArD', 'DC', 'Piv', 'ArG', 'AiG'];
+  const FACING = { ArG: 'ArD', ArD: 'ArG', DC: 'DC', Piv: 'Piv', AiG: 'AiD', AiD: 'AiG' };
+
+  // ---------- Génération ----------
+  function overall(p) {
+    const w = WEIGHTS[p.pos];
+    let s = 0;
+    for (const k in w) s += w[k] * p.a[k];
+    return Math.round(s * 10) / 10;
+  }
+  let pid = 0;
+  // Niveau selon l'âge : les très jeunes un peu en dessous (mais avec du potentiel), les plus de 31 ans un peu au-dessus
+  const AGE_LEVEL = (age) => age <= 20 ? -1.5 : age <= 23 ? -0.8 : age <= 27 ? 0.15 : age <= 31 ? 0.5 : 0.7;
+  function makePlayer(pos, level, teamId) {
+    const a = {};
+    const age = ri(18, 35);
+    level += AGE_LEVEL(age);
+    const keys = Object.keys(WEIGHTS[pos]);
+    const r = (m) => clamp(Math.round(m + gauss() * 1.8), 1, 20);
+    if (pos === 'GB') {
+      for (const [k] of GKA) a[k] = r(keys.includes(k) ? level : level - 1.5);
+    } else {
+      for (const [k] of FIELD) {
+        let m = keys.includes(k) ? level : level - 3;
+        if (k === 'discipline' || k === 'endurance') m = level - 1;
+        if (k === 'penalty') m = level - 2;
+        a[k] = r(m);
+      }
+      a.excentricite = clamp(Math.round(9 + gauss() * 3.8), 1, 20);
+      a.collectif = clamp(Math.round(11 + gauss() * 3.2), 1, 20);
+      // Profil des arrières : tireur de loin, pénétrant, ou complet
+      if (['ArG', 'DC', 'ArD'].includes(pos)) {
+        const r0 = rnd();
+        if (r0 < 0.38) { a.tirLoin = clamp(a.tirLoin + 2, 1, 20); a.duel = clamp(a.duel - 1, 1, 20); a.tirPres = clamp(a.tirPres - 1, 1, 20); }
+        else if (r0 < 0.72) { a.tirLoin = clamp(a.tirLoin - 2, 1, 20); a.duel = clamp(a.duel + 2, 1, 20); a.tirPres = clamp(a.tirPres + 2, 1, 20); }
+      }
+    }
+    // Côté droit (arrière et ailier droits) : toujours des gauchers ; ailleurs, environ 15 % de gauchers
+    const left = (pos === 'ArD' || pos === 'AiD') ? true : rnd() < 0.15;
+    const p = {
+      id: teamId + '-' + (++pid) + '-' + Math.floor(rnd() * 1e6),
+      ...makeName(teamId), pos, age, hand: left ? 'G' : 'D',
+      a, form: 0, fatigue: 0, goals: 0, apps: 0, saves: 0, mins: 0
+    };
+    p.ovr = overall(p);
+    p.pot = potFor(p);
+    p.ovr0 = p.ovr;
+    return p;
+  }
+  function makeTeam(club) {
+    const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[club.rep];
+    const players = [];
+    for (const pos of POS) {
+      players.push(makePlayer(pos, base + 1, club.id));
+      players.push(makePlayer(pos, base - 0.8, club.id));
+    }
+    // Pas d'homonymes dans un même effectif
+    const seen = new Set();
+    for (const p of players) { let k = 0; while (seen.has(p.name) && k++ < 20) Object.assign(p, makeName(club.id)); seen.add(p.name); }
+    const t = {
+      ...club, players,
+      tactic: { att: rnd() < 0.5 ? 'place' : 'rapide', dstyle: rnd() < 0.6 ? 'zone' : 'homme', jeu: 'equilibre', cons: [], rules: defaultRules() },
+      lineup: {}, cohesion: Math.round(45 + rnd() * 15), lastXI: null
+    };
+    const cons = CONSIGNES.map(c => c[0]);
+    t.tactic.cons = [pick(cons)];
+    t.tactic.rules.mene.ecart = pick([2, 3, 3, 4]);
+    t.tactic.rules.mene.min = pick([45, 50, 50]);
+    if (rnd() < 0.25) t.tactic.rules.sup.sys = '6-0';
+    if (rnd() < 0.4) t.tactic.rules.tireur.on = true;
+    autoLineup(t);
+    aiStyle(t);
+    return t;
+  }
+  function starters(t) { return POS.map(p => t.players.find(x => x.id === t.lineup[p])).filter(Boolean); }
+  function identity(t) {
+    const f = starters(t).filter(p => p.pos !== 'GB');
+    const v = f.reduce((a, p) => a + (p.a.collectif || 11), 0) / Math.max(1, f.length);
+    return { v: Math.round(v * 10) / 10, label: v >= 12.5 ? 'Collective' : v <= 9.5 ? 'Individuelle' : 'Mixte' };
+  }
+  function experience(t) {
+    const s = starters(t);
+    const age = s.reduce((a, p) => a + p.age, 0) / s.length, apps = s.reduce((a, p) => a + p.apps, 0) / s.length;
+    return clamp(Math.round((age - 19) * 5 + apps * 1.2), 0, 100);
+  }
+  function aiStyle(t) {
+    const id = identity(t).v;
+    t.tactic.jeu = id >= 12 ? 'collectif' : id <= 10 ? 'individuel' : 'equilibre';
+  }
+  function migrate(st) {
+    const pool = Object.keys(MODS).filter(k => k !== 'calendrier');
+    for (const t of st.teams) {
+      for (const p of t.players) {
+        // Ancien attribut Défense : réparti en Contre et Duel défensif
+        for (const a of [p.a, p.a0]) if (a && a.defense !== undefined) {
+          a.contre = clamp(Math.round(a.defense + gauss() * 1.5), 1, 20);
+          a.duelDef = clamp(Math.round(a.defense + gauss() * 1.5), 1, 20);
+          delete a.defense;
+        }
+        if (p.a0 && p.a.contre !== undefined && p.a0.contre === undefined) { p.a0.contre = p.a.contre; p.a0.duelDef = p.a.duelDef; }
+        p.ovr = overall(p);
+        if (p.pot === undefined) p.pot = potFor(p);
+        p.pot = Math.max(p.pot, p.ovr);
+        if (p.ovr0 === undefined) p.ovr0 = p.ovr;
+        if (!p.a0) p.a0 = Object.assign({}, p.a);
+        if (!p.hist) p.hist = [];
+        if (p.mins === undefined) p.mins = 0;
+      }
+      if (t.id !== st.userId && t.mods && t.mods.length === 1) {
+        const k = t.mods[0], d = k.slice(0, -1), sign = k.slice(-1);
+        const other = pick(pool.filter(x => x !== d));
+        t.mods.push(other + (sign === '+' ? '-' : '+'));
+      }
+    }
+    if (!st.youthLog) st.youthLog = [];
+    if (!st.legends) st.legends = [];
+    // Anciens noms de légendes, trop proches des vrais : renommés
+    const LEG_OLD = { 'Thierry Omeyre': 'Thomas Omeyrac', 'Arpad Sterbich': 'Árpi Sterbán', 'Niklas Landinn': 'Nils Landström', 'Nicola Karabatik': 'Nikolaï Karabatov', 'Ivano Balicz': 'Ivo Balinović', 'Jackson Richardsonn': 'Jason Richardin', 'Aron Palmarsonn': 'Aric Palmarsen', 'Talant Duchebaev': 'Talan Dujshenko', 'Mikel Hanssen': 'Mikael Hanstrup', 'Daniel Narcis': 'Danny Narcissot', 'Kiril Lazarow': 'Kyrill Lazarević', 'Jérôme Fernandès': 'Jérémy Fernandini', 'Uwe Genshaimer': 'Uli Gensmeier', 'Michel Guigoux': 'Mickaël Guigard', 'Luc Abalow': 'Luca Abalone', 'Hans Lindbergh': 'Hans Lindhorst', 'Ivan Cupitch': 'Ivo Čupovac', 'Bertrand Gile': 'Bertrand Gillot', 'Bjarte Myrol': 'Bjørn Myrvold', 'Cédric Sorindo': 'Cédric Sorhandier' };
+    st.legends = st.legends.map(n => LEG_OLD[n] || n);
+    for (const t of st.teams) for (const p of t.players) if (LEG_OLD[p.name]) p.name = LEG_OLD[p.name];
+    if (st.youth && LEG_OLD[st.youth.p.name]) st.youth.p.name = LEG_OLD[st.youth.p.name];
+    if (st.youth === undefined) st.youth = null;
+    for (const t of st.teams) {
+      for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
+        p.a.excentricite = clamp(Math.round(9 + gauss() * 3.8), 1, 20);
+        p.a.collectif = clamp(Math.round(11 + gauss() * 3.2), 1, 20);
+      }
+      const tc = t.tactic;
+      if (!tc.rules) tc.rules = defaultRules();
+      if (!tc.dstyle) tc.dstyle = 'zone';
+      if (!tc.jeu) tc.jeu = 'equilibre';
+      tc.cons = (tc.cons || []).filter(c => c !== 'loin');
+      delete tc.def;
+      if (t.cohesion === undefined) { t.cohesion = 50; t.lastXI = null; }
+      if (!t.mods) t.mods = [];
+      if (!t.out) t.out = [];
+    }
+    return st;
+  }
+  // ---------- Centre de formation et feuille de match ----------
+  // « Regens » : de jeunes pépites aux noms qui rappellent des légendes du hand, au même poste
+  const LEGENDS = [
+    { name: 'Thomas Omeyrac', pos: 'GB', hand: 'D' }, { name: 'Árpi Sterbán', pos: 'GB', hand: 'D' }, { name: 'Nils Landström', pos: 'GB', hand: 'D' },
+    { name: 'Nikolaï Karabatov', pos: 'DC', hand: 'D' }, { name: 'Ivo Balinović', pos: 'DC', hand: 'D' }, { name: 'Jason Richardin', pos: 'DC', hand: 'D' }, { name: 'Aric Palmarsen', pos: 'DC', hand: 'D' }, { name: 'Talan Dujshenko', pos: 'DC', hand: 'D' },
+    { name: 'Mikael Hanstrup', pos: 'ArG', hand: 'D' }, { name: 'Danny Narcissot', pos: 'ArG', hand: 'D' },
+    { name: 'Kyrill Lazarević', pos: 'ArD', hand: 'G' }, { name: 'Jérémy Fernandini', pos: 'ArD', hand: 'G' },
+    { name: 'Uli Gensmeier', pos: 'AiG', hand: 'D' }, { name: 'Mickaël Guigard', pos: 'AiG', hand: 'D' },
+    { name: 'Luca Abalone', pos: 'AiD', hand: 'G' }, { name: 'Hans Lindhorst', pos: 'AiD', hand: 'G' }, { name: 'Ivo Čupovac', pos: 'AiD', hand: 'G' },
+    { name: 'Bertrand Gillot', pos: 'Piv', hand: 'D' }, { name: 'Bjørn Myrvold', pos: 'Piv', hand: 'D' }, { name: 'Cédric Sorhandier', pos: 'Piv', hand: 'D' }
+  ];
+  function legendize(p, L, st) {
+    p.name = L.name; p.hand = L.hand; delete p.nat;
+    for (const k of Object.keys(WEIGHTS[p.pos])) p.a[k] = Math.max(p.a[k], clamp(p.a[k] + 3, 1, 15));
+    p.ovr = overall(p);
+    p.pot = Math.round(clamp(Math.max(p.ovr + 5, 16.5 + rnd() * 2.5), 1, 19.5) * 10) / 10;
+    p.legend = true;
+    if (st) (st.legends = st.legends || []).push(L.name);
+  }
+  function makeYouth(t, st) {
+    const free = st ? LEGENDS.filter(L => !(st.legends || []).includes(L.name)) : [];
+    const L = free.length && rnd() < 0.18 ? pick(free) : null;
+    const pos = L ? L.pos : pick(POS);
+    const p = makePlayer(pos, 10, t.id);
+    // Loterie, mais réaliste : attributs autour de 9 (rarement au-dessus de 14), traits de personnalité libres
+    for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round(9 + gauss() * 2.4), 2, 16);
+    const fv = hasMod(t, 'formation+') ? 1 : hasMod(t, 'formation-') ? -1 : 0;
+    if (fv) for (const k in p.a) if (k !== 'excentricite' && k !== 'collectif') p.a[k] = clamp(p.a[k] + fv, 1, 20);
+    p.age = ri(17, 19);
+    p.ovr = overall(p);
+    // Marge de progression : 1,5 à 5,5 points, et une vraie pépite de temps en temps (+3 en plus)
+    p.pot = Math.round(clamp(p.ovr + 1.5 + rnd() * 4 + (rnd() < 0.12 ? 3 : 0), 1, 18.5) * 10) / 10;
+    if (L) legendize(p, L, st);
+    p.youth = true;
+    { let k = 0; while (t.players.some(x => x.name === p.name) && k++ < 20) Object.assign(p, makeName(t.id)); }
+    p.ovr0 = p.ovr;
+    p.a0 = Object.assign({}, p.a);
+    p.hist = [];
+    return p;
+  }
+  function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
+  function ensureSheet(t) {
+    const starters = new Set(Object.values(t.lineup));
+    const need = Math.max(0, t.players.length - 14);
+    t.out = (t.out || []).filter(id => !starters.has(id) && t.players.some(p => p.id === id));
+    while (t.out.length > need) t.out.shift();
+    if (t.out.length < need) {
+      const cands = t.players.filter(p => !starters.has(p.id) && !t.out.includes(p.id))
+        .sort((x, y) => sheetScore(x) - sheetScore(y));
+      for (const p of cands) {
+        if (t.out.length >= need) break;
+        const left = t.players.filter(q => q.pos === p.pos && !t.out.includes(q.id) && q.id !== p.id).length;
+        if (left >= 1) t.out.push(p.id);
+      }
+    }
+    return t.out;
+  }
+  function autoLineup(t) {
+    for (const pos of POS) {
+      const c = t.players.filter(p => p.pos === pos).sort((x, y) => (y.ovr - y.fatigue * 0.04) - (x.ovr - x.fatigue * 0.04));
+      t.lineup[pos] = c[0].id;
+    }
+  }
+  // Championnat aller-retour ; avec un nombre impair de clubs, une équipe est au repos à chaque journée
+  function schedule(ids) {
+    const arr = ids.slice();
+    if (arr.length % 2) arr.push(null);
+    const n = arr.length, rounds = [];
+    for (let r = 0; r < n - 1; r++) {
+      const games = [];
+      for (let i = 0; i < n / 2; i++) {
+        const h = arr[i], a = arr[n - 1 - i];
+        if (h === null || a === null) continue;
+        games.push(r % 2 === 0 ? [h, a] : [a, h]);
+      }
+      rounds.push(games);
+      arr.splice(1, 0, arr.pop());
+    }
+    const second = rounds.map(g => g.map(([h, a]) => [a, h]));
+    return rounds.concat(second);
+  }
+  function newGame(userId, seed, userMods) {
+    seed = seed || Math.floor(Math.random() * 1e9);
+    setSeed(seed);
+    pid = 0;
+    const teams = CLUBS.map(makeTeam);
+    const pool = Object.keys(MODS).filter(k => k !== 'calendrier');
+    // Trois jeunes « légendes » éparpillées chez les clubs adverses dès le début
+    const legends = [];
+    { const ais = teams.filter(t => t.id !== userId).sort(() => rnd() - 0.5), picks = LEGENDS.slice().sort(() => rnd() - 0.5).slice(0, 3);
+      picks.forEach((L, k) => { const t = ais[k], cands = t.players.filter(p => p.pos === L.pos).sort((a, b) => a.ovr - b.ovr), p = cands[0];
+        if (!p) return;
+        const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[t.rep];
+        const np = makePlayer(L.pos, base - 3.2, t.id); np.age = ri(18, 20); np.pot = 0;
+        legendize(np, L, { legends });
+        t.players[t.players.indexOf(p)] = np; }); }
+    for (const t of teams) {
+      if (t.id === userId) t.mods = (userMods || []).slice();
+      else { const b = pick(pool); const m = pick(pool.filter(k => k !== b)); t.mods = [b + '+', m + '-']; }
+      applyGenMods(t);
+      for (const p of t.players) { p.pot = Math.max(p.pot, p.ovr); p.ovr0 = p.ovr; p.a0 = Object.assign({}, p.a); p.hist = []; }
+      autoLineup(t);
+      aiStyle(t);
+    }
+    const ids = teams.map(t => t.id);
+    for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    let sched = schedule(ids);
+    const ut = teams.find(t => t.id === userId);
+    if (hasMod(ut, 'calendrier+') || hasMod(ut, 'calendrier-')) {
+      const first = sched.slice(0, sched.length / 2);
+      const oppRep = (rd) => { const g = rd.find(([h, a]) => h === userId || a === userId); return g ? teams.find(t => t.id === (g[0] === userId ? g[1] : g[0])).rep + rnd() * 0.5 : (hasMod(ut, 'calendrier+') ? 9 : 0); };
+      const keyed = first.map(rd => ({ rd, r: oppRep(rd) }));
+      keyed.sort((x, y) => hasMod(ut, 'calendrier+') ? x.r - y.r : y.r - x.r);
+      const ordered = keyed.map(k => k.rd);
+      sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
+    }
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
+  }
+
+  // ---------- Moteur de match ----------
+  // Fatigue : gain par possession sur le terrain, récupération sur le banc, seuil et pente de la perte d'attributs
+  // Avantage du terrain : réussite au tir, ballons perdus, sévérité de l'arbitre, fatigue du déplacement
+  const HOME = { shot: 0.02, to: 0.007, ex: 0.03, travel: 4 };
+  const MANUAL_MIN = 7;
+  const FAT = { gain: 0.9, gk: 0.2, rest: 0.35, ht: 10, thr: 28, k: 0.009, recover: 35, release: 55 };
+  const ZONE_BASE = { loin: 0.44, aile: 0.56, pivot: 0.67, percee: 0.58, ca: 0.8, er: 0.68, '7m': 0.74, vide: 0.9 };
+  const TO_MATRIX = { '6-0': { place: 0, rapide: 0 }, '5-1': { place: 0.03, rapide: 0 }, '4-2': { place: 0.005, rapide: 0.05 } };
+  const ER_PROB = { '6-0': 0.08, '5-1': 0.22, '4-2': 0.16 };
+  const ZONE_DEF = {
+    '6-0': { loin: 0.06, pivot: -0.04, percee: -0.03, aile: 0 },
+    '5-1': { loin: -0.05, pivot: 0.045, percee: 0, aile: 0.02 },
+    '4-2': { loin: -0.02, pivot: 0.05, percee: 0.045, aile: 0.02 }
+  };
+  const ZONE_W = {
+    '6-0': { loin: 1.35, aile: 1, pivot: 0.8, percee: 0.9 },
+    '5-1': { loin: 0.75, aile: 1.1, pivot: 1.25, percee: 1 },
+    '4-2': { loin: 0.9, aile: 1.05, pivot: 1.2, percee: 1.15 }
+  };
+  const ZONE_TXT = { loin: 'tir de loin', aile: "à l'aile", pivot: 'au pivot', percee: 'en percée', ca: 'en contre-attaque', er: 'sur engagement rapide', '7m': 'sur 7 m', vide: 'dans la cage vide' };
+
+  function makeSide(team) {
+    const lineup = {};
+    for (const p of POS) lineup[p] = team.players.find(x => x.id === team.lineup[p]);
+    const ids = new Set(Object.values(lineup).map(p => p.id));
+    return {
+      team, lineup, bench: team.players.filter(p => !ids.has(p.id) && !(team.out || []).includes(p.id)),
+      tac: JSON.parse(JSON.stringify(team.tactic)),
+      curDef: '6-0', forceDef: null, coh: team.cohesion || 50, exp: experience(team), boost: -1,
+      fat: Object.fromEntries(team.players.map(p => [p.id, (p.fatigue || 0) + (hasMod(team, 'physique-') ? 8 : 0)])),
+      played: new Set(ids), excl: [], ex2: {}, red: new Set(),
+      starters: Object.fromEntries(POS.map(p => [p, lineup[p].id])), at: Object.fromEntries(POS.map(p => [lineup[p].id, p])),
+      mins: {}, ps: {}, gkLock: false, manual: {}, lastSub: -9, styleMin: {},
+      // Plan de rotation propre à chaque poste et à chaque match : décalage, temps de jeu visé, marge
+      rot: Object.fromEntries(POS.map(p => [p, { off: ri(0, 7), share: (40 + (rnd() - 0.5) * 10) / 60, slack: 1 + rnd() * 4, since: 0, stint: 0 }])),
+      score: 0, half: 0, goals: {}, saves: {}, empty: false, to: [0, 0],
+      st: { shots: 0, goals: 0, saves: 0, excl: 0, seven: 0, sevenG: 0, to: 0, ca: 0, caG: 0, gest: 0, gestOk: 0, blocks: 0 }
+    };
+  }
+
+  function Match(home, away, opts) {
+    opts = opts || {};
+    this.h = makeSide(home);
+    this.a = makeSide(away);
+    this.S = [this.h, this.a];
+    // Déplacement : l'équipe visiteuse démarre un peu plus fatiguée
+    for (const id in this.a.fat) this.a.fat[id] = Math.min(100, this.a.fat[id] + HOME.travel);
+    // Coach IA : toute équipe qui n'est pas celle du joueur. Tempérament : réagit plus ou moins tôt
+    this.S.forEach(s => {
+      s.ai = opts.user !== undefined && s.team.id === opts.user ? null : { bold: rnd() < 0.5 ? 1 : 0, orig: { att: s.tac.att, dstyle: s.tac.dstyle }, gk: false };
+      s.run = 0;
+    });
+    const fast = s => (s.tac.att === 'rapide' ? 3 : 0);
+    this.N = 2 * (53 + fast(this.h) + fast(this.a) + ri(-2, 2));
+    this.i = 0;
+    this.ev = [];
+    this.last = null;
+    this.done = false;
+    this.halfDone = false;
+    this.lead = 0;
+  }
+  const P = Match.prototype;
+  P.minute = function (i) { return Math.min(60, Math.floor((i / this.N) * 60) + 1); };
+  P.half = function () { return this.i < this.N / 2 ? 0 : 1; };
+  P.eff = function (s, p, k) {
+    let v = p.a[k];
+    const at = s.at[p.id];
+    if (at && at !== p.pos && WEIGHTS[at][k] !== undefined && SECONDARY[p.pos].includes(at)) v = Math.max(v, p.ovr * 0.85);
+    const f = s.fat[p.id] || 0;
+    if (f > FAT.thr) v *= Math.max(0.55, 1 - (f - FAT.thr) * FAT.k);
+    return v + (p.form || 0) * 0.3;
+  };
+  P.on = function (s, i) {
+    const out = [];
+    for (const pos of POS) {
+      const p = s.lineup[pos];
+      if (!p || s.red.has(p.id)) continue;
+      if (s.excl.some(e => e.id === p.id && e.until > i)) continue;
+      out.push({ pos, p });
+    }
+    return out;
+  };
+  P.short = function (s, i) { return s.excl.filter(e => e.until > i).length; };
+  P.field = function (s, i) { return this.on(s, i).filter(x => x.pos !== 'GB'); };
+  P.avg = function (s, i, k) {
+    const f = this.field(s, i);
+    if (!f.length) return 10;
+    return f.reduce((a, x) => a + this.eff(s, x.p, k), 0) / f.length;
+  };
+  P.coll = function (s, i) {
+    const f = this.field(s, i);
+    return f.length ? f.reduce((a, x) => a + (x.p.a.collectif || 11), 0) / f.length : 11;
+  };
+  P.fit = function (s, i) {
+    const c = this.coll(s, i);
+    return s.tac.jeu === 'collectif' ? clamp((c - 11) * 0.006, -0.04, 0.04) : s.tac.jeu === 'individuel' ? clamp((11 - c) * 0.006, -0.04, 0.04) : 0;
+  };
+  P.defSystem = function (D, A, i) {
+    if (D.forceDef) return D.forceDef;
+    const r = D.tac.rules, diff = D.score - A.score, min = this.minute(i);
+    if (r.mene.on && diff <= -r.mene.ecart && min >= r.mene.min) return r.mene.sys;
+    if (r.sup.on && this.short(A, i) > this.short(D, i)) return r.sup.sys;
+    if (r.tireur.on && this.field(A, i).some(x => ['ArG', 'ArD', 'DC'].includes(x.pos) && this.eff(A, x.p, 'tirLoin') >= 16)) return r.tireur.sys;
+    return '6-0';
+  };
+  // Défense centrale : les ailiers comptent moins face aux arrières
+  // Face-à-face : l'attaquant affronte le défenseur placé en face de lui (l'arrière gauche face à l'arrière droit adverse…).
+  // En défense collective, chaque défenseur s'appuie sur ses voisins de ligne (stat « élargie ») ; en homme à homme, il est seul.
+  // Les ailiers pèsent moins en défense ; un défenseur absent (exclu) laisse un trou.
+  P.defFace = function (D, i, attPos, k) {
+    const map = {};
+    for (const x of this.field(D, i)) map[x.pos] = x.p;
+    const fpos = FACING[attPos] || 'DC', idx = DLINE.indexOf(fpos);
+    const val = (pos) => { const pl = map[pos]; if (!pl) return null; const v = this.eff(D, pl, k); return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
+    const own = val(fpos);
+    const nb = [DLINE[idx - 1], DLINE[idx + 1]].filter(Boolean).map((pos) => ({ pos, v: val(pos) })).filter((x) => x.v !== null);
+    let ws = 0, sum = 0;
+    for (const x of nb) { const w = x.pos.startsWith('Ai') ? 0.5 : 1; sum += x.v * w; ws += w; }
+    const nbAvg = ws ? sum / ws : 9;
+    if (own === null) return { v: nbAvg - 2.5, who: nb.length ? map[nb[0].pos] : null, hole: true };
+    if (D.tac.dstyle === 'homme') return { v: own, who: map[fpos] };
+    const share = k === 'contre' ? 0.5 : 0.35;
+    return { v: own * (1 - share) + nbAvg * share, who: map[fpos] };
+  };
+  P.defAvg = function (D, i, k) {
+    const f = this.field(D, i);
+    if (!f.length) return 10;
+    let s = 0, w = 0;
+    for (const x of f) { const wt = x.pos.startsWith('Ai') ? 0.4 : 1; s += this.eff(D, x.p, k) * wt; w += wt; }
+    return s / w;
+  };
+  // Part des arrières sur le terrain qui jouent de loin ou au contact
+  P.backMix = function (A, i) {
+    const b = this.field(A, i).filter(x => BACK_POS.includes(x.pos));
+    if (!b.length) return { loin: 0, contact: 0 };
+    return { loin: b.filter(x => backStyle(x.p) === 'loin').length / b.length, contact: b.filter(x => backStyle(x.p) === 'contact').length / b.length };
+  };
+  P.ps = function (s, id) { return s.ps[id] || (s.ps[id] = { sh: 0, g: 0, to: 0, ex: 0, sv: 0, fa: 0 }); };
+  P.swap = function (s, pos, p) {
+    const cur = s.lineup[pos];
+    if (!p || (cur && cur.id === p.id)) return;
+    s.lineup[pos] = p;
+    s.bench = s.bench.filter(b => b.id !== p.id).concat(cur ? [cur] : []);
+    s.played.add(p.id);
+    if (cur) delete s.at[cur.id];
+    s.at[p.id] = pos;
+  };
+  P.manualSub = function (si, pos, pid) {
+    const s = this.S[si], i = Math.min(this.i, this.N - 1);
+    const cur = s.lineup[pos], p = s.bench.find(b => b.id === pid);
+    if (!p || s.red.has(p.id) || (pos === 'GB') !== (p.pos === 'GB')) return false;
+    if (cur && s.excl.some(e => e.id === cur.id && e.until > i)) return false;
+    this.swap(s, pos, p);
+    s.manual[pos] = this.i;
+    if (pos === 'GB') s.gkLock = true;
+    return true;
+  };
+  P.releasePos = function (si, pos) {
+    const s = this.S[si];
+    delete s.manual[pos];
+    if (pos === 'GB') s.gkLock = false;
+  };
+  P.setGK = function (si, pid) {
+    const s = this.S[si], p = s.team.players.find(x => x.id === pid && x.pos === 'GB');
+    if (!p || s.red.has(p.id)) return false;
+    this.swap(s, 'GB', p);
+    s.gkLock = true;
+    return true;
+  };
+  P.push = function (type, side, text, key, extra) {
+    const e = { m: this.minute(this.i), side, type, text, key: !!key, sc: [this.h.score, this.a.score] };
+    if (extra) Object.assign(e, extra);
+    this.ev.push(e);
+    return e;
+  };
+
+  P.step = function () {
+    if (this.done) return [];
+    const n0 = this.ev.length;
+    const i = this.i;
+    if (!this.halfDone && i >= this.N / 2) {
+      this.halfDone = true;
+      this.h.half = this.h.score; this.a.half = this.a.score;
+      for (const s of this.S) for (const id in s.fat) s.fat[id] = Math.max(0, s.fat[id] - FAT.ht);
+      this.push('mt', -1, `Mi-temps : ${this.h.score} – ${this.a.score}`, true);
+      this.S.forEach((s, si) => {
+        if (s.gkLock) return;
+        const other = s.bench.filter(b => b.pos === 'GB' && !s.red.has(b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id])[0];
+        if (other) { this.swap(s, 'GB', other); this.push('gk', si, `${other.name} remplace le gardien pour la 2e mi-temps`, false); }
+      });
+    }
+    if (i > 0) { this.rotate(this.h, i); this.rotate(this.a, i); }
+    this.S.forEach((s, si) => this.coach(si, i));
+    const ai = i % 2;
+    this.possession(this.S[ai], this.S[1 - ai], ai, i);
+    this.fatigue(i);
+    this.i++;
+    if (this.i >= this.N) {
+      this.done = true;
+      this.push('fin', -1, `Fin du match : ${this.h.score} – ${this.a.score}`, true);
+    }
+    return this.ev.slice(n0);
+  };
+  P.run = function () { while (!this.done) this.step(); return this.result(); };
+
+  P.fatigue = function (i) {
+    for (const s of this.S) {
+      const onIds = new Set(this.on(s, i).map(x => x.p.id));
+      const dm = 60 / this.N;
+      const sty = s.tac.jeu === 'collectif' ? 1 : s.tac.jeu === 'individuel' ? -1 : 0;
+      for (const id of onIds) { s.mins[id] = (s.mins[id] || 0) + dm; if (sty) s.styleMin[id] = (s.styleMin[id] || 0) + dm * sty; }
+      const mult = (1 + intensity(s) * 0.16) * (s.tac.att === 'rapide' ? (hasMod(s.team, 'physique+') ? 1.05 : hasMod(s.team, 'physique-') ? 1.25 : 1.15) : 1) * (s.curDef === '4-2' ? 1.12 : 1) * (s.tac.dstyle === 'homme' ? 1.08 : 1) * (hasMod(s.team, 'soins+') ? 0.8 : 1) * (s.tac.cons.includes('agressive') ? 1.05 : 1);
+      for (const p of s.team.players) {
+        if (onIds.has(p.id)) {
+          const base = p.pos === 'GB' ? FAT.gk : FAT.gain;
+          const ct = BACK_POS.includes(s.at[p.id]) && backStyle(p) === 'contact' ? 1.08 : 1;
+          s.fat[p.id] = Math.min(100, s.fat[p.id] + base * (1.6 - p.a.endurance / 20) * mult * ct);
+        } else {
+          s.fat[p.id] = Math.max(0, s.fat[p.id] - FAT.rest);
+        }
+      }
+    }
+  };
+
+  P.rotate = function (s, i) {
+    const less = s.tac.cons.includes('rotations') ? 5 / 60 : 0;
+    const opp = s === this.h ? this.a : this.h;
+    const min = this.minute(i), elapsed = (i / this.N) * 60;
+    const close = Math.abs(s.score - opp.score) <= 3;
+    for (const pos of POS) {
+      if (pos === 'GB') continue;
+      const plan = s.rot[pos];
+      // Un poste pris en main par le coach revient au staff au bout de 7 minutes de jeu
+      if (pos in s.manual) {
+        if ((i - s.manual[pos]) * 60 / this.N >= MANUAL_MIN) { delete s.manual[pos]; plan.since = -99; }
+        else continue;
+      }
+      if ((i + plan.off) % 8 !== 0) continue;
+      const share = plan.share - less;
+      const cur = s.lineup[pos];
+      if (!cur || s.excl.some(e => e.id === cur.id && e.until > i)) continue;
+      const st = s.team.players.find(p => p.id === s.starters[pos]);
+      const stAvail = st && !s.red.has(st.id) && (st.id === cur.id || s.bench.some(b => b.id === st.id));
+      if (!stAvail) continue;
+      const subs = s.bench.filter(b => b.pos === pos && b.id !== st.id && !s.red.has(b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id]);
+      let want = st;
+      if (!(close && min >= 50) && subs.length && (s.mins[st.id] || 0) >= share * elapsed + plan.slack) want = subs[0];
+      let urgent = false;
+      if (s.fat[want.id] > 70) {
+        const alt = [st].concat(subs).filter(x => x.id !== want.id).sort((x, y) => s.fat[x.id] - s.fat[y.id])[0];
+        if (alt && s.fat[alt.id] < 50) { want = alt; urgent = true; }
+      }
+      if (want.id === cur.id) continue;
+      if (!urgent && (i - s.lastSub < 3 || i - (plan.since || 0) < plan.stint)) continue;
+      this.swap(s, pos, want);
+      s.lastSub = i;
+      plan.since = i;
+      plan.stint = 10 + ri(0, 8);
+      plan.slack = 1 + rnd() * 4;
+    }
+  };
+
+  P.exclude = function (D, di, p, i) {
+    D.ex2[p.id] = (D.ex2[p.id] || 0) + 1;
+    D.st.excl++;
+    this.ps(D, p.id).ex++;
+    D.excl.push({ id: p.id, until: i + 8 });
+    if (D.ex2[p.id] >= 3) {
+      D.red.add(p.id);
+      D.excl.push({ id: 'red-' + p.id, until: i + 8 });
+      const pos = Object.keys(D.lineup).find(k => D.lineup[k] && D.lineup[k].id === p.id);
+      const rep = D.bench.find(b => b.pos === pos && !D.red.has(b.id));
+      if (rep && pos) {
+        D.lineup[pos] = rep;
+        D.bench = D.bench.filter(b => b.id !== rep.id);
+        D.played.add(rep.id);
+        delete D.at[p.id];
+        D.at[rep.id] = pos;
+      }
+      this.push('rouge', di, `Carton rouge pour ${p.name} (3e exclusion)`, true);
+    } else {
+      this.push('excl', di, `Exclusion de 2 min pour ${p.name} (${POS_LABEL[p.pos].toLowerCase()})`, true);
+    }
+  };
+
+  P.possession = function (A, D, ai, i) {
+    const last = this.last;
+    this.last = null;
+    const min = this.minute(i);
+    const dsys = this.defSystem(D, A, i);
+    if (dsys !== D.curDef) {
+      D.curDef = dsys;
+      const r = D.tac.rules, why = D.forceDef ? 'consigne du coach' : dsys === '6-0' ? 'retour à la base' : (r.mene.on && D.score - A.score <= -r.mene.ecart && min >= r.mene.min) ? 'pour revenir au score' : (r.sup.on && this.short(A, i) > this.short(D, i)) ? 'en supériorité numérique' : 'contre le tireur adverse';
+      this.push('sys', 1 - ai, `${D.team.name} passe en défense ${dsys} (${why})`, why === 'pour revenir au score' || why === 'consigne du coach');
+    }
+    this.dsys = dsys;
+    // Cage vide après une perte quand l'adversaire jouait à 7 contre 6
+    if (last && last.by === 1 - ai && D.empty && last.kind !== 'goal' && rnd() < 0.6) {
+      return this.shoot(A, D, ai, i, 'vide');
+    }
+    // Contre-attaque
+    if (last && last.by === 1 - ai && last.kind === 'to') {
+      const pca = 0.32 + intensity(A) * 0.03 + (A.tac.att === 'rapide' ? 0.12 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * 0.015
+        + (dsys === '4-2' ? 0.03 : 0) + (dsys === '6-0' ? -0.05 : 0)
+        + (A.tac.att === 'rapide' && hasMod(A.team, 'physique+') ? 0.05 : 0) + (A.tac.att === 'rapide' && A === this.h && hasMod(A.team, 'public+') ? 0.04 : 0);
+      if (rnd() < pca) { A.st.ca++; return this.shoot(A, D, ai, i, 'ca'); }
+    }
+    // Engagement rapide après un but encaissé
+    if (last && last.by === 1 - ai && last.kind === 'goal' && A.tac.att === 'rapide' && rnd() < ER_PROB[dsys]) {
+      return this.shoot(A, D, ai, i, 'er');
+    }
+    const man0 = this.short(D, i) - this.short(A, i);
+    const perso = this.field(A, i).filter(x => (x.p.a.collectif || 11) <= 7).length;
+    const pTo = 0.165 + (A.tac.att === 'rapide' ? 0.025 : -0.01) + TO_MATRIX[dsys][A.tac.att] - (this.avg(A, i, 'passes') - 12) * 0.006
+      + (D.tac.dstyle === 'homme' ? 0.008 : 0) + (A.tac.jeu === 'collectif' ? -0.01 + perso * 0.007 : 0) - this.fit(A, i) * 0.5 - (A.coh - 50) * 0.0006
+      + ((this.avg(D, i, 'contre') + this.avg(D, i, 'duelDef')) / 2 - 12) * 0.005
+      + (man0 < 0 ? 0.03 : man0 > 0 ? -0.02 : 0) + (D.tac.cons.includes('agressive') ? 0.015 : 0) + intensity(D) * 0.012 + (A.empty ? 0.02 : 0)
+      + (D === this.h && hasMod(D.team, 'public+') ? 0.015 : 0) + (A === this.a ? HOME.to : 0);
+    if (rnd() < pTo) {
+      const f = this.field(A, i);
+      A.st.to++;
+      this.last = { by: ai, kind: 'to' };
+      const tp = f.length ? wpick(f, x => 21 - this.eff(A, x.p, 'passes')) : null;
+      if (tp) this.ps(A, tp.p.id).to++;
+      this.push('to', ai, tp ? `Perte de balle de ${tp.p.name}` : 'Perte de balle', false, { att: ai, pid: tp ? tp.p.id : null, pos: tp ? tp.pos : null });
+      return;
+    }
+    for (let k = 0; k < 2; k++) {
+      if (rnd() < 0.21) {
+        const df = this.field(D, i);
+        if (df.length) {
+          const d = wpick(df, x => 21 - this.eff(D, x.p, 'discipline')).p;
+          const aggr = D.tac.cons.includes('agressive'), homme = D.tac.dstyle === 'homme';
+          const pEx = 0.19 + (intensity(D) > 0 ? 0.03 : 0.015) * intensity(D) + (12 - this.eff(D, d, 'discipline')) * 0.012 + (aggr ? (hasMod(D.team, 'discipline+') ? 0 : 0.05) : 0)
+            + (hasMod(D.team, 'discipline-') ? (aggr ? 0.03 : 0) + (homme ? 0.03 : 0) : 0)
+            + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex : 0);
+          if (this.short(D, i) < 2 && rnd() < pEx) this.exclude(D, 1 - ai, d, i);
+        }
+        if (rnd() < (0.22 + (this.avg(A, i, 'duel') - 12) * 0.01 + this.backMix(A, i).contact * 0.05) * (hasMod(A.team, 'arbitrage+') ? (A.tac.jeu === 'individuel' ? 1.9 : 1.6) : 1)) return this.shoot(A, D, ai, i, '7m');
+      }
+    }
+    return this.shoot(A, D, ai, i, null);
+  };
+
+  P.shoot = function (A, D, ai, i, kind) {
+    const onA = this.field(A, i);
+    if (!onA.length) return;
+    let zone = kind, p, skill;
+    const e = (pl, k) => this.eff(A, pl, k);
+    if (kind === '7m') {
+      p = onA.slice().sort((x, y) => e(y.p, 'penalty') - e(x.p, 'penalty'))[0].p;
+      skill = e(p, 'penalty');
+      A.st.seven++;
+    } else if (kind === 'ca' || kind === 'vide' || kind === 'er') {
+      p = wpick(onA, x => Math.pow(e(x.p, 'vitesse'), 2) * (x.pos.startsWith('Ai') ? 1.6 : 1)).p;
+      skill = (e(p, 'tirPres') + e(p, 'vitesse')) / 2;
+    } else {
+      const zw = Object.assign({}, ZONE_W[this.dsys]);
+      if (D.tac.dstyle === 'homme') { zw.percee *= 1.15; zw.aile *= 0.85; } else zw.aile *= 1.12;
+      if (A.tac.jeu === 'collectif') { zw.percee *= 0.85; zw.pivot *= 1.1; zw.aile *= 1.1; }
+      if (A.tac.jeu === 'individuel') zw.percee *= 1.3;
+      const base = { loin: 0.36, aile: 0.26, pivot: 0.13, percee: 0.25 };
+      if (A.tac.cons.includes('pivot')) zw.pivot *= 1.7;
+      if (A.tac.cons.includes('ailes')) zw.aile *= 1.7;
+      const mix = this.backMix(A, i);
+      zw.loin *= 1 + 0.7 * mix.loin - 0.45 * mix.contact;
+      zw.percee *= 1 + 0.7 * mix.contact - 0.45 * mix.loin;
+      const zones = ['loin', 'aile', 'pivot', 'percee'];
+      zone = wpick(zones, z => base[z] * zw[z]);
+      const byPos = (list) => onA.filter(x => list.includes(x.pos));
+      let cands;
+      if (zone === 'loin') cands = byPos(['ArG', 'ArD', 'DC']);
+      else if (zone === 'aile') cands = byPos(['AiG', 'AiD']);
+      else if (zone === 'pivot') cands = byPos(['Piv']);
+      else cands = byPos(['DC', 'ArG', 'ArD']);
+      if (!cands.length) { zone = 'percee'; cands = onA; }
+      const sk = (pl) => zone === 'loin' ? e(pl, 'tirLoin') : zone === 'aile' ? e(pl, 'tirAile')
+        : zone === 'pivot' ? e(pl, 'tirPres') * 0.7 + e(pl, 'position') * 0.3 : e(pl, 'tirPres') * 0.5 + e(pl, 'duel') * 0.5;
+      const jw = (pl) => A.tac.jeu === 'collectif' ? Math.pow(sk(pl), 0.8) * ((pl.a.collectif || 11) / 11)
+        : A.tac.jeu === 'individuel' ? Math.pow(sk(pl), 2) * ((21 - (pl.a.collectif || 11)) / 10) : Math.pow(sk(pl), 1.2);
+      const sw = (x) => !BACK_POS.includes(x.pos) ? 1 : zone === 'loin' ? { loin: 1.8, equilibre: 1, contact: 0.5 }[backStyle(x.p)] : zone === 'percee' ? { loin: 0.5, equilibre: 1, contact: 1.8 }[backStyle(x.p)] : 1;
+      p = wpick(cands, x => jw(x.p) * sw(x)).p;
+      skill = sk(p);
+      // Percée : le duel défensif peut provoquer un passage en force
+      if (zone === 'percee') {
+        const face = this.defFace(D, i, A.at[p.id] || p.pos, 'duelDef'), dd = face.v;
+        const pf = clamp(0.05 + (dd - e(p, 'duel')) * 0.012 + (backStyle(p) === 'contact' ? 0.015 : 0), 0.01, 0.16);
+        if (rnd() < pf) {
+          A.st.to++;
+          this.ps(A, p.id).to++;
+          this.last = { by: ai, kind: 'to' };
+          const blk = face.who || wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'duelDef'), 2)).p;
+          this.ps(D, blk.id).st = (this.ps(D, blk.id).st || 0) + 1;
+          this.push('to', ai, `Passage en force de ${p.name}, bien stoppé par ${blk.name}`, false, { att: ai, pid: p.id, zone: 'percee' });
+          return;
+        }
+      }
+    }
+    const gk = D.lineup.GB;
+    const gkSkill = kind === '7m' ? this.eff(D, gk, 'gk7m') : (this.eff(D, gk, 'reflexes') + this.eff(D, gk, 'placement')) / 2;
+    let pr = ZONE_BASE[zone];
+    if (kind !== 'vide') pr += 0.019 * (skill - gkSkill);
+    if (!kind) {
+      pr += ZONE_DEF[this.dsys][zone] || 0;
+      const dc = onA.find(x => x.pos === 'DC');
+      const vm = A.tac.jeu === 'collectif' ? 2 : A.tac.jeu === 'individuel' ? 0.5 : 1;
+      if (dc) pr += (e(dc.p, 'vision') - 12) * 0.004 * vm;
+      // Un arrière est à l'aise dans son registre naturel, et force à contre-emploi
+      if (BACK_POS.includes(A.at[p.id] || p.pos) && (zone === 'loin' || zone === 'percee')) {
+        const nat = autoStyle(p);
+        if (nat !== 'equilibre') pr += zone === (nat === 'loin' ? 'loin' : 'percee') ? 0.03 : -0.025;
+      }
+      const fpos = A.at[p.id] || p.pos;
+      if (zone === 'loin') pr -= (this.defFace(D, i, fpos, 'contre').v - 12) * 0.012;
+      if (zone === 'percee') { const f = this.defFace(D, i, fpos, 'duelDef'); pr -= (f.v - 12) * 0.026 - (f.hole ? 0.03 : 0); }
+      if (D.tac.dstyle === 'homme') {
+        if (zone === 'percee') {
+          const backs = onA.filter(x => ['ArG', 'ArD', 'DC'].includes(x.pos));
+          const da = backs.length ? backs.reduce((t, x) => t + e(x.p, 'duel'), 0) / backs.length : 12;
+          pr += (da - 12) * 0.03 + 0.02;
+        }
+        if (zone === 'aile') pr -= 0.03;
+      } else {
+        const wings = onA.filter(x => x.pos === 'AiG' || x.pos === 'AiD');
+        const wa = wings.length ? wings.reduce((a, x) => a + e(x.p, 'tirAile'), 0) / wings.length : 12;
+        if (zone === 'aile') pr += (wa - 12) * 0.025 + 0.01;
+        if (zone === 'percee') pr -= 0.03;
+      }
+    }
+    // Latéralité : à droite (ArD, AiD), un gaucher a le bon angle, un droitier tire sur son mauvais côté
+    const atPos = A.at[p.id] || p.pos;
+    if (kind !== '7m' && kind !== 'vide' && (atPos === 'ArD' || atPos === 'AiD')) {
+      const wing = atPos === 'AiD';
+      pr += p.hand === 'G' ? (wing ? 0.04 : 0.03) : (wing ? -0.03 : -0.02);
+    }
+    if (kind !== '7m' && kind !== 'vide') {
+      pr += this.fit(A, i) + (A.coh - 50) * 0.0006;
+      if (A.tac.jeu === 'collectif') pr += hasMod(A.team, 'vestiaire+') ? 0.01 : hasMod(A.team, 'vestiaire-') ? -0.01 : 0;
+      if (!kind && hasMod(D.team, 'cage+') && D.tac.dstyle === 'zone') pr -= 0.015;
+      if (!kind && hasMod(D.team, 'cage-') && D.tac.dstyle === 'homme') pr += 0.02;
+      if (A === this.h) pr += HOME.shot;
+      if (A === this.h && hasMod(A.team, 'public+')) pr += 0.03;
+      if (A === this.h && hasMod(A.team, 'public-')) pr -= 0.03;
+      if (!kind && hasMod(A.team, 'spectacle-') && A.tac.jeu !== 'collectif') pr -= 0.015;
+      if (A.boost > i) pr += 0.03;
+      pr += intensity(A) * 0.01;
+    }
+    const man = clamp(this.short(D, i) - this.short(A, i), -2, 2);
+    if (kind !== '7m' && kind !== 'vide') pr += man * 0.07;
+    const min = this.minute(i);
+    if (min >= 50 && Math.abs(A.score - D.score) <= 2) pr += (e(p, 'sangfroid') - 12) * 0.005 + (A.exp - 45) * 0.0006 + (hasMod(A.team, 'mental+') ? 0.03 : 0) - (hasMod(A.team, 'mental-') ? 0.03 : 0);
+    if (A.empty && !kind) pr += 0.05;
+    pr = clamp(pr, 0.05, 0.95);
+    // Geste spectaculaire (excentricité)
+    let geste = null;
+    if (kind !== '7m' && kind !== 'vide' && p.a.excentricite !== undefined) {
+      const exc = p.a.excentricite;
+      let pa = clamp((exc - 6) * 0.018, 0, 0.26) * (A.tac.jeu === 'individuel' ? (hasMod(A.team, 'spectacle+') ? 1.55 : 1.3) : A.tac.jeu === 'collectif' ? 0.8 : 1);
+      if (kind === 'ca' || kind === 'er') pa *= 1.4;
+      if (rnd() < pa) {
+        geste = pick(GESTES[zone] || GESTES.percee);
+        A.st.gest++;
+        const exec = clamp(0.56 + (exc - 10) * 0.02 + (skill - 12) * 0.015 + (hasMod(A.team, 'spectacle+') ? 0.12 : 0), 0.2, 0.9);
+        if (rnd() < exec) pr = Math.min(0.95, pr + 0.26);
+        else if (rnd() < 0.55) {
+          A.st.to++;
+          this.ps(A, p.id).to++;
+          this.last = { by: ai, kind: 'to' };
+          this.push('to', ai, `${geste} raté de ${p.name}, ballon perdu`, false, { geste: true, att: ai, pid: p.id, pos: atPos, zone });
+          return;
+        } else pr = 0;
+      }
+    }
+    A.st.shots++;
+    const pp = this.ps(A, p.id);
+    pp.sh++;
+    const H = this.h, W = this.a;
+    if (rnd() < pr) {
+      const before = H.score - W.score;
+      A.score++; A.st.goals++;
+      A.run = 0; D.run = (D.run || 0) + 1;
+      pp.g++;
+      this.ps(D, gk.id).fa++;
+      A.goals[p.id] = (A.goals[p.id] || 0) + 1;
+      if (kind === '7m') A.st.sevenG++;
+      if (kind === 'ca') A.st.caG++;
+      this.last = { by: ai, kind: 'goal' };
+      const after = H.score - W.score;
+      let key = kind === '7m' || kind === 'vide' || (H.score + W.score === 1) || !!geste;
+      if (min >= 50 && (Math.sign(before) !== Math.sign(after))) key = true;
+      if (geste) { A.st.gestOk++; A.boost = i + 8; }
+      this.push('but', ai, geste ? `${geste} de ${p.name} : but ${ZONE_TXT[zone]} !` : `But de ${p.name} ${ZONE_TXT[zone]}`, key, { pid: p.id, geste: !!geste, att: ai, pos: atPos, zone, shot: 'but' });
+    } else {
+      this.last = { by: ai, kind: 'miss' };
+      const cface = !kind && zone === 'loin' ? this.defFace(D, i, A.at[p.id] || p.pos, 'contre') : null;
+      const cpb = cface ? clamp(0.3 + (cface.v - 12) * 0.04, 0.1, 0.6) : 0;
+      if (cpb && rnd() < cpb) {
+        const blk = cface.who && rnd() < 0.7 ? cface.who : wpick(this.field(D, i), x => Math.pow(this.eff(D, x.p, 'contre'), 2)).p;
+        D.st.blocks = (D.st.blocks || 0) + 1;
+        this.ps(D, blk.id).bl = (this.ps(D, blk.id).bl || 0) + 1;
+        this.push('contre', 1 - ai, `Tir de ${p.name} contré par ${blk.name}`, false, { geste: !!geste, att: ai, pid: p.id, zone, shot: 'contre' });
+      } else if (kind === 'vide' || rnd() < 0.36) {
+        this.push('rate', ai, geste ? `${geste} manqué par ${p.name}` : `${p.name} manque le cadre ${ZONE_TXT[zone]}`, kind === '7m', { geste: !!geste, att: ai, pid: p.id, pos: atPos, zone, shot: 'rate' });
+      } else {
+        D.st.saves++;
+        D.saves[gk.id] = (D.saves[gk.id] || 0) + 1;
+        const gp = this.ps(D, gk.id);
+        gp.sv++; gp.fa++;
+        this.push('arret', 1 - ai, `Arrêt de ${gk.name} sur ${kind === '7m' ? 'le 7 m' : geste ? 'la ' + geste.toLowerCase() : 'un tir'} de ${p.name}`, kind === '7m', { att: ai, pid: p.id, pos: atPos, zone, shot: 'arret', gk: gk.id });
+      }
+    }
+  };
+
+  // Temps mort : coupe la série adverse (petit regain de réussite) et souffle pour les joueurs sur le terrain
+  P.timeout = function (si, why) {
+    const s = this.S[si], h = this.half();
+    if (this.done || s.to[h]) return false;
+    s.to[h] = 1;
+    s.boost = Math.max(s.boost, this.i + 6);
+    s.run = 0;
+    for (const x of this.on(s, this.i)) s.fat[x.p.id] = Math.max(0, s.fat[x.p.id] - 4);
+    this.push('tm', si, `Temps mort ${s.team.name}${why ? ' (' + why + ')' : ''}`, true, { ai: !!s.ai });
+    if (s.ai) this.adjust(si, true);
+    return true;
+  };
+  // Coach IA : temps morts sur les séries, fins de match serrées ou gros retard
+  P.coach = function (si, i) {
+    const s = this.S[si], o = this.S[1 - si];
+    if (!s.ai || this.done) return;
+    const min = this.minute(i), h = this.half(), diff = s.score - o.score;
+    if (!s.to[h] && min >= 5 && (min < 29 || min > 32)) {
+      let why = null;
+      if (s.run >= 3 && rnd() < 0.45) why = `${s.run} buts encaissés d'affilée`;
+      else if (h === 1 && min >= 55 && Math.abs(diff) <= 1 && rnd() < 0.08) why = 'pour préparer la dernière attaque';
+      else if (diff <= -5 && rnd() < 0.04) why = 'pour secouer son équipe';
+      if (why) { this.timeout(si, why); return; }
+    }
+    if ((i + si) % 4 === 0) this.adjust(si, false);
+  };
+  P.adjust = function (si, atTO) {
+    const s = this.S[si], o = this.S[1 - si], c = s.ai, i = this.i;
+    const min = this.minute(Math.min(i, this.N - 1)), diff = s.score - o.score, b = c.bold;
+    const say = (txt) => this.push('coach', si, `${s.team.name} ${txt}`, true, { ai: true });
+    // Gardien en difficulté : le coach tente l'autre
+    const gk = s.lineup.GB, gs = s.ps[gk.id];
+    if (!c.gk && min >= 12 && min <= 52 && gs && gs.fa >= 8 && gs.sv / gs.fa < (atTO ? 0.28 : 0.2)) {
+      const alt = s.bench.filter(x => x.pos === 'GB' && !s.red.has(x.id))[0];
+      if (alt) { this.swap(s, 'GB', alt); s.gkLock = true; c.gk = true; say(`change de gardien : ${alt.name} entre`); }
+    }
+    if (diff <= -(4 - b) && min >= 30 && s.tac.att !== 'rapide') { s.tac.att = 'rapide'; say('accélère : passage en jeu rapide pour revenir'); }
+    if (diff <= -(3 - b) && min >= 42 && s.tac.dstyle !== 'homme') { s.tac.dstyle = 'homme'; s.tac.int = Math.max(intensity(s), 1); say('défend désormais en homme à homme, avec plus d\'engagement'); }
+    if (diff <= -2 && min >= 54 && intensity(s) < 2) { s.tac.int = 2; say('demande à ses joueurs de tout donner'); }
+    if (diff >= 6 && min >= 45 && intensity(s) >= 0) { s.tac.int = -1; }
+    if (diff <= -2 && min >= 50 - b * 3 && !s.forceDef) s.forceDef = rnd() < 0.5 ? '5-1' : '4-2';
+    if (diff <= -1 && diff >= -3 && min >= 57 - b && !s.empty) { s.empty = true; say('sort son gardien : 7 contre 6'); }
+    if (s.empty && diff > 0) { s.empty = false; say('arrête le 7 contre 6'); }
+    if (diff >= 3 && (s.tac.att !== c.orig.att || s.tac.dstyle !== c.orig.dstyle || s.forceDef || intensity(s) > 0)) {
+      s.tac.att = c.orig.att; s.tac.dstyle = c.orig.dstyle; s.forceDef = null; s.empty = false; s.tac.int = 0;
+      say('a repris la main et revient à son plan de jeu');
+    }
+  };
+
+  P.result = function () {
+    const sideRes = (s) => ({
+      id: s.team.id, score: s.score, half: s.half, st: s.st, goals: s.goals, saves: s.saves,
+      fat: s.fat, played: Array.from(s.played), mins: s.mins, ps: s.ps, styleMin: s.styleMin
+    });
+    return { h: sideRes(this.h), a: sideRes(this.a), ev: this.ev };
+  };
+
+  // ---------- Saison ----------
+  function team(st, id) { return st.teams.find(t => t.id === id); }
+  function applyResult(st, r) {
+    const styleLog = [];
+    for (const side of [r.h, r.a]) {
+      const t = team(st, side.id);
+      const opp = side === r.h ? r.a : r.h;
+      const res = Math.sign(side.score - opp.score);
+      const xi = Object.values(t.lineup);
+      if (t.lastXI) {
+        const same = xi.filter(id => t.lastXI.includes(id)).length;
+        t.cohesion = clamp(Math.round((t.cohesion || 50) + (same - 5) * 1.5 + (res > 0 ? 2 : res < 0 ? -1 : 0)), 20, 95);
+      }
+      t.lastXI = xi;
+      for (const p of t.players) {
+        const f = side.fat[p.id] || 0;
+        p.fatigue = Math.round(f);
+        if (side.played.includes(p.id)) {
+          p.apps++;
+          p.form = clamp((p.form || 0) * 0.5 + res, -2, 2);
+          p.form = Math.round(p.form);
+        }
+        p.goals += side.goals[p.id] || 0;
+        p.lastMins = (side.mins && side.mins[p.id]) || 0;
+        // Le style joué façonne l'esprit collectif : jeu collectif = il monte, jeu individuel = il baisse
+        const sm = (side.styleMin && side.styleMin[p.id]) || 0;
+        if (p.pos !== 'GB' && p.a.collectif !== undefined && sm) {
+          const ageF = p.age < 23 ? 1.5 : p.age <= 30 ? 1 : 0.5;
+          if (rnd() < Math.min(1, Math.abs(sm) / 60) * 0.18 * ageF) {
+            const dir = Math.sign(sm), before = p.a.collectif;
+            p.a.collectif = clamp(before + dir, 1, 20);
+            if (p.a.collectif !== before) styleLog.push({ team: t.id, id: p.id, name: p.name, pos: p.pos, d: dir, v: p.a.collectif });
+          }
+        }
+        p.mins = (p.mins || 0) + p.lastMins;
+        p.saves += side.saves[p.id] || 0;
+        // Historique : [journée, note, min, buts, tirs, arrêts, tirs subis, pertes, exclusions, adversaire, résultat]
+        const q = (side.ps && side.ps[p.id]) || {};
+        (p.hist = p.hist || []).push([st.round + 1, Math.round(p.ovr * 10) / 10, Math.round(p.lastMins), q.g || 0, q.sh || 0, q.sv || 0, q.fa || 0, q.to || 0, q.ex || 0, opp.id, res]);
+      }
+    }
+      return styleLog;
+  }
+  function recover(st) {
+    for (const t of st.teams) {
+      const r = FAT.recover + (hasMod(t, 'soins+') ? 10 : 0) - (hasMod(t, 'soins-') ? 7 : 0);
+      for (const p of t.players) p.fatigue = Math.max(0, p.fatigue - r);
+    }
+  }
+  // ---------- Entraînement ----------
+  const TRAIN = {
+    equilibre: { label: 'Équilibré', attrs: FIELD.map(f => f[0]) },
+    tir: { label: 'Tir', attrs: ['tirLoin', 'tirPres', 'tirAile', 'penalty'] },
+    collectif: { label: 'Jeu collectif', attrs: ['passes', 'vision', 'position'] },
+    physique: { label: 'Physique', attrs: ['vitesse', 'endurance', 'duel'] },
+    defense: { label: 'Défense', attrs: ['contre', 'duelDef', 'discipline', 'sangfroid'] }
+  };
+  const INTENSITY = {
+    legere: { label: 'Légère', mult: 0.5, rec: 10 },
+    normale: { label: 'Normale', mult: 1, rec: 0 },
+    intense: { label: 'Intense', mult: 1.6, rec: -12 }
+  };
+  // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
+  function matchXP(p) {
+    const m = p.lastMins === undefined ? 20 : p.lastMins;
+    let f = m < 20 ? 0.7 + 0.3 * (m / 20) : Math.min(1.3, 1 + 0.3 * (m - 20) / 25);
+    if (p.age < 23) f = 1 + (f - 1) * 2;
+    return Math.round(f * 100) / 100;
+  }
+  function train(t, focus, intensity) {
+    const F = TRAIN[focus] || TRAIN.equilibre, I = INTENSITY[intensity] || INTENSITY.normale;
+    const sm = hasMod(t, 'staff+') ? 1.8 : hasMod(t, 'staff-') ? 0.4 : 1;
+    const log = [];
+    for (const p of t.players) {
+      const ageF = p.age < 23 ? 1.4 : p.age <= 28 ? 1 : p.age <= 31 ? 0.5 : 0.2;
+      const posA = POS_ATTRS[p.pos];
+      const keys = p.pos === 'GB' ? posA : focus === 'equilibre' ? posA : F.attrs.filter(k => posA.includes(k));
+      const rate = (p.pos === 'GB' ? 0.05 : focus === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
+      for (const k of keys) {
+        if (p.a[k] < 20 && rnd() < rate * ageF * I.mult * sm * matchXP(p)) {
+          p.a[k]++;
+          log.push({ id: p.id, name: p.name, pos: p.pos, k, v: p.a[k] });
+        }
+      }
+      p.ovr = overall(p);
+      if (p.pot !== undefined) p.pot = Math.max(p.pot, p.ovr);
+      if (p.hist && p.hist.length) p.hist[p.hist.length - 1][1] = Math.round(p.ovr * 10) / 10;
+      let rec = I.rec;
+      if (intensity === 'intense') rec = hasMod(t, 'soins+') ? -6 : hasMod(t, 'soins-') ? -18 : rec;
+      p.fatigue = clamp(p.fatigue - rec, 0, 100);
+    }
+    return log;
+  }
+
+  function aiPrepare(t) {
+    autoLineup(t);
+    aiStyle(t);
+  }
+  function standings(st) {
+    const rows = {};
+    for (const t of st.teams) rows[t.id] = { id: t.id, j: 0, g: 0, n: 0, p: 0, bp: 0, bc: 0, pts: 0 };
+    const games = [];
+    for (const rd of st.results) for (const g of rd) games.push(g);
+    for (const g of games) {
+      const H = rows[g.h], A = rows[g.a];
+      H.j++; A.j++;
+      H.bp += g.hs; H.bc += g.as; A.bp += g.as; A.bc += g.hs;
+      if (g.hs > g.as) { H.g++; A.p++; H.pts += 2; }
+      else if (g.hs < g.as) { A.g++; H.p++; A.pts += 2; }
+      else { H.n++; A.n++; H.pts++; A.pts++; }
+    }
+    const list = Object.values(rows);
+    const byPts = {};
+    for (const r of list) (byPts[r.pts] = byPts[r.pts] || []).push(r);
+    for (const k in byPts) {
+      const grp = byPts[k];
+      const ids = new Set(grp.map(r => r.id));
+      for (const r of grp) r.h2h = 0;
+      if (grp.length > 1) {
+        for (const g of games) {
+          if (ids.has(g.h) && ids.has(g.a)) {
+            rows[g.h].h2h += g.hs - g.as;
+            rows[g.a].h2h += g.as - g.hs;
+          }
+        }
+      }
+    }
+    list.sort((x, y) => y.pts - x.pts || y.h2h - x.h2h || (y.bp - y.bc) - (x.bp - x.bc) || y.bp - x.bp);
+    return list;
+  }
+  function scorers(st, n) {
+    const all = [];
+    for (const t of st.teams) for (const p of t.players) if (p.goals) all.push({ p, t });
+    all.sort((x, y) => y.p.goals - x.p.goals);
+    return all.slice(0, n || 10);
+  }
+
+  const API = {
+    setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
+    newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+  };
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+  else root.HB = API;
+})(typeof window !== 'undefined' ? window : globalThis);
