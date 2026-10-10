@@ -1119,38 +1119,44 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
 </section>`;
   }
   function leagueYouthPanel() {
-    const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
-    const all = (G.leagueYouth || []).filter((l) => l.ok).concat(mine).sort((a, b) => b.round - a.round || a.team.localeCompare(b.team));
-    const prop = (G.leagueYouth || []).length;
-    // Filtres : clubs (menu déroulant à cases), niveau et potentiel minimum en étoiles
-    const F = U.ly || (U.ly = { teams: [], lv: 0, pot: 0, open: false });
-    const shown = all.filter((l) => {
+    // Toutes les propositions des centres de la ligue : recrutées et refusées (les tiennes comprises)
+    const mine = (G.youthLog || []).map((l) => { const ok = /^Recruté/.test(l.decision); return { round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, ok, dec: ok ? null : l.decision, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }; });
+    const every = (G.leagueYouth || []).map((l) => ({ ...l, out: l.ok ? l.out : null })).concat(mine).sort((a, b) => b.round - a.round || (b.ok - a.ok) || a.team.localeCompare(b.team));
+    const recruited = every.filter((l) => l.ok), nRef = every.length - recruited.length;
+    // Filtres : clubs (menu déroulant à cases), niveau et potentiel minimum en étoiles, jeunes refusés
+    const F = U.ly || (U.ly = { teams: [], lv: 0, pot: 0, open: false, ref: true });
+    if (F.ref === undefined) F.ref = true;
+    const base = F.ref ? every : recruited;
+    const shown = base.filter((l) => {
       if (F.teams.length && !F.teams.includes(l.team)) return false;
-      const f = l.id ? findPlayer(l.id) : null, q = f ? f.p : { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
+      const f = l.ok && l.id ? findPlayer(l.id) : null, q = f ? f.p : { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
       if (F.lv && H.stars(q.ovr, sref()) < F.lv) return false;
       if (F.pot && H.potRange(q, sref()).lo < F.pot) return false; // partie pleine des étoiles : l'estimation sûre du staff
       return true;
     });
     const clubs = G.teams.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
     const starOpts = (k, lab, tip) => `<label class="lyf" title="${tip}">${lab} <select data-lyf="${k}">${[[0, 'Tous'], [2, '2 ★ et +'], [3, '3 ★ et +'], [4, '4 ★ et +'], [4.5, '4½ ★ et +'], [5, '5 ★']].map(([v, l]) => `<option value="${v}"${F[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
+    const active = F.teams.length || F.lv || F.pot;
     const filters = `<div class="row lyfilters">
         <details class="ddrop"${F.open ? ' open' : ''}><summary>Clubs : ${F.teams.length ? (F.teams.length === 1 ? esc(T(F.teams[0]).name) : F.teams.length + ' clubs') : 'tous'}</summary>
           <div class="ddmenu"><div class="row" style="gap:8px;margin-bottom:6px"><button class="btn sm" data-act="lyall">Tous</button><button class="btn sm" data-act="lyme">Seulement le mien</button></div>
           ${clubs.map((t) => `<label class="ddopt"><input type="checkbox" data-lyteam="${t.id}"${F.teams.includes(t.id) ? ' checked' : ''}> ${badge(t, true)} ${esc(t.name)}</label>`).join('')}</div></details>
         ${starOpts('lv', 'Niveau', 'Niveau actuel')}${starOpts('pot', 'Potentiel', 'Selon la partie pleine des étoiles de potentiel, hors marge d\'incertitude')}
-        ${F.teams.length || F.lv || F.pot ? `<span class="muted">${shown.length} sur ${all.length}</span><button class="btn sm" data-act="lyreset">Effacer les filtres</button>` : ''}</div>`;
+        <label class="lyf"><input type="checkbox" data-lyref${F.ref ? ' checked' : ''}> Afficher les jeunes refusés</label>
+        ${active ? `<span class="muted">${shown.length} sur ${base.length}</span><button class="btn sm" data-act="lyreset">Effacer les filtres</button>` : ''}</div>`;
     const rows = shown.map((l) => {
-      const t = T(l.team), f = l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
+      const t = T(l.team), f = l.ok && l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
       const q = p || { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
-      const who = p ? plink(p) : `<span class="muted" title="N'est plus dans le championnat">${esc(l.name)}</span>`;
-      return `<tr class="${l.team === G.userId ? 'me' : ''}"><td class="r">J${l.round}</td><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${who}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${l.out ? esc(l.out) + ' libéré' : '—'}</td></tr>`;
+      const who = p ? plink(p) : `<span class="muted" title="${l.ok ? "N'est plus dans le championnat" : 'Pas gardé par le club'}">${esc(l.name)}</span>`;
+      const dec = l.ok ? (l.out ? `Recruté · ${esc(l.out)} libéré` : 'Recruté') : `<span class="tag refused">${esc(l.dec || 'Refusé')}</span>`;
+      return `<tr class="${l.team === G.userId ? 'me' : ''}${l.ok ? '' : ' refused'}"><td class="r">J${l.round}</td><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${who}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${dec}</td></tr>`;
     }).join('');
-    const byClub = all.reduce((a, l) => (a[l.team] = (a[l.team] || 0) + 1, a), {});
+    const byClub = recruited.reduce((a, l) => (a[l.team] = (a[l.team] || 0) + 1, a), {});
     const top = Object.entries(byClub).sort((a, b) => b[1] - a[1])[0];
-    return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Recrues des centres de formation · ${LEAGUE}</h3>
-        <span class="muted">${all.length} jeune${all.length > 1 ? 's' : ''} recruté${all.length > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
-      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est prometteur ; à 16 joueurs, il libère le plus faible du poste seulement si le jeune vaut nettement mieux.${prop ? ` ${prop - (all.length - mine.length)} jeune${prop - (all.length - mine.length) > 1 ? 's' : ''} refusé${prop - (all.length - mine.length) > 1 ? 's' : ''} par les clubs adverses.` : ''} Niveau et potentiel : étoiles par rapport à ton club, valeurs actuelles.</p>
-      ${all.length ? filters : ''}${all.length && !shown.length ? '<p class="muted" style="margin:0">Aucune recrue ne correspond à ces filtres.</p>' : ''}${shown.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Départ</th></tr></thead><tbody>${rows}</tbody></table></div>` : all.length ? '' : `<p class="muted" style="margin:0">Aucun jeune recruté pour l'instant : les premiers sortent des centres après la journée 5.</p>`}</section>`;
+    return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Jeunes des centres de formation · ${LEAGUE}</h3>
+        <span class="muted">${recruited.length} recruté${recruited.length > 1 ? 's' : ''}, ${nRef} refusé${nRef > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
+      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est nettement meilleur que le plus faible du poste ; à 16 joueurs, il libère ce dernier seulement si le jeune vaut nettement mieux. Niveau et potentiel : étoiles par rapport à ton club ; valeurs actuelles pour les recrues, à la sortie du centre pour les refusés.</p>
+      ${every.length ? filters : ''}${every.length && !shown.length ? '<p class="muted" style="margin:0">Aucun jeune ne correspond à ces filtres.</p>' : ''}${shown.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div>` : every.length ? '' : `<p class="muted" style="margin:0">Aucun jeune sorti des centres pour l'instant : les premiers arrivent après la journée 5.</p>`}</section>`;
   }
 
   // ---------- Ville ----------
@@ -1700,7 +1706,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'nclose': hideNotify(); return;
       case 'lyall': U.ly.teams = []; U.ly.open = true; render(); return;
       case 'lyme': U.ly.teams = [G.userId]; U.ly.open = true; render(); return;
-      case 'lyreset': U.ly = { teams: [], lv: 0, pot: 0, open: false }; render(); return;
+      case 'lyreset': U.ly = { teams: [], lv: 0, pot: 0, open: false, ref: U.ly.ref }; render(); return;
       case 'dotrain': doTraining(); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
@@ -1816,10 +1822,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   document.addEventListener('change', (e) => {
     const ir = e.target.closest && e.target.closest('input[data-int]');
     if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
-    const ly = e.target.closest('[data-lyteam], select[data-lyf]');
+    const ly = e.target.closest('[data-lyteam], select[data-lyf], [data-lyref]');
     if (ly && G) {
       const F = U.ly;
-      if (ly.dataset.lyteam) { const id = ly.dataset.lyteam; F.teams = ly.checked ? F.teams.concat(id) : F.teams.filter((x) => x !== id); F.open = true; }
+      if (ly.hasAttribute('data-lyref')) F.ref = ly.checked;
+      else if (ly.dataset.lyteam) { const id = ly.dataset.lyteam; F.teams = ly.checked ? F.teams.concat(id) : F.teams.filter((x) => x !== id); F.open = true; }
       else F[ly.dataset.lyf] = Number(ly.value);
       render();
       return;
