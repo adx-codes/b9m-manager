@@ -117,7 +117,7 @@
     { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100', color2: '#2f5d7c', fans: { h: 2, a: 1, name: "Les Retraités de la Prom" }, academy: 2 },
     { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20', color2: '#e0c060', fans: { h: 4, a: 4, name: "Les Verts de Rage" }, academy: 3 },
     { id: 'GRE', name: 'Grenoble Tacos HB', city: 'Grenoble', rep: 4, color: '#b8860b', color2: '#3d5a80', fans: { h: 3, a: 2, name: "Les Gratinés" }, academy: 3 },
-    { id: 'ANG', name: 'Angers Redbox HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f', fans: { h: 3, a: 2, name: "Les Abonnés" }, academy: 3 },
+    { id: 'ANG', name: 'Angers Redbox HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f', fans: { h: 3, a: 2, name: "Les Pouces Bleus" }, academy: 3 },
     { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a', fans: { h: 2, a: 2, name: "Les Moutardes au Nez" }, academy: 2 },
     { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a', fans: { h: 3, a: 2, name: "Les Bibendums" }, academy: 2 }
   ];

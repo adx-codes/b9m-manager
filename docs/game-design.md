@@ -45,7 +45,7 @@ Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées pa
 | Marseille Calanques HB | Marseille | 3 | Les Sardines du Vieux-Port | 4 | 3 | 2 |
 | Lille Beffroi HB | Lille | 3 | Les Fricadelles du Beffroi | 4 | 3 | 3 |
 | Strasbourg Rhin HB | Strasbourg | 3 | Les Choucroutés | 3 | 2 | 3 |
-| Angers Redbox HB | Angers | 3 | Les Abonnés | 3 | 2 | 3 |
+| Angers Redbox HB | Angers | 3 | Les Pouces Bleus | 3 | 2 | 3 |
 | Clermont Volcans HB | Clermont-Ferrand | 3 | Les Bibendums | 3 | 2 | 2 |
 | Nice Baie des Anges | Nice | 2 | Les Retraités de la Prom | 2 | 1 | 2 |
 | Saint-Étienne Forez HB | Saint-Étienne | 2 | Les Verts de Rage | 4 | 4 | 3 |
