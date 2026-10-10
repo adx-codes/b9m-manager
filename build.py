@@ -9,8 +9,8 @@ ui = (root / "src/ui.js").read_text(encoding="utf-8")
 body = shell.replace("/*ENGINE*/", engine).replace("/*UI*/", ui)
 cut = body.index("</style>") + len("</style>")
 html = (
-    '<!doctype html>\n<html lang="fr">\n<head>\n<meta charset="utf-8">\n'
-    '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+    '<!doctype html>\n<html lang="fr" data-theme="dark">\n<head>\n<meta charset="utf-8">\n'
+    '<meta name="viewport" content="width=device-width, initial-scale=1">\n<meta name="color-scheme" content="dark">\n'
     + body[:cut] + "\n</head>\n<body>\n" + body[cut:] + "\n</body>\n</html>\n"
 )
 (root / "index.html").write_text(html, encoding="utf-8")

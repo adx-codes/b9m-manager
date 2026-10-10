@@ -399,7 +399,7 @@ Note d'un match : 6 de base, +0,55 par but, −0,3 par tir manqué, −0,45 par 
 
 ## Identité visuelle
 
-L'écran de choix du club est neutre (graphite). Une fois la saison lancée, l'interface prend les couleurs du club, volontairement atténuées : sa couleur comme base (boutons, terrain, tableau de score) et une couleur de contraste choisie pour chaque club en touches (zone des 6 m, score, onglet actif). Par exemple Rennes graphite et rouge, Nantes vert et jaune, Dijon moutarde et cassis.
+Le jeu s'affiche toujours en mode sombre, quels que soient les réglages du navigateur. L'écran de choix du club est neutre (graphite). Une fois la saison lancée, l'interface prend les couleurs du club, volontairement atténuées : sa couleur comme base (boutons, terrain, tableau de score) et une couleur de contraste choisie pour chaque club en touches (zone des 6 m, score, onglet actif). Par exemple Rennes graphite et rouge, Nantes vert et jaune, Dijon moutarde et cassis.
 
 **La Cité du hand :** l'accueil est une ville isométrique au nom de la ville du club. Les noms des bâtiments n'apparaissent qu'au survol. Le bonus et le malus s'ouvrent depuis une pastille « + − » à côté du nom du club, et la ville est accessible par une icône maison en haut à gauche.
 
