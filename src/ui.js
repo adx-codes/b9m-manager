@@ -414,14 +414,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tired = starters.filter((p) => p.fatigue > 28);
     const tac = t.tactic;
     return `<section class="board">${boardTeams(h, a, '–', '–')}<div class="meta"><span>Journée ${G.round + 1} · ${home ? 'à domicile' : "à l'extérieur"}</span><span>Salle de ${esc(h.city)}</span></div></section>
-      ${betCard(h, a)}
-      <div class="grid2">
+      <div class="grid3">
         <section class="panel"><h3>Ton plan de match</h3>
           <div style="display:grid;gap:12px">
             <div class="opt"><span class="label">Attaque · ${ATT_TXT[tac.att][0]} · jeu ${H.JEU[tac.jeu].toLowerCase()}</span><p>${ATT_TXT[tac.att][1]}. Identité de l'équipe : ${fitInfo(t).id.label.toLowerCase()} (${fitInfo(t).txt}).</p></div>
             <div class="opt"><span class="label">Défense · ${H.DSTYLE[tac.dstyle]}</span><p>${rulesLine(tac.rules)}.</p></div>
             <div class="opt"><span class="label">Consignes</span><p>${tac.cons.length ? tac.cons.map((c) => CONS[c]).join(' · ') : 'Aucune consigne'}</p></div>
-            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +2 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
+            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +3,5 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
             <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
@@ -439,6 +438,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             ${faceHtml(t, opp)}
           </div>
         </section>
+        <aside class="side">${betCard(h, a)}</aside>
       </div>
       <section class="panel"><h3>Effectif adverse · ${esc(opp.name)}</h3>
         <p class="legend" style="margin:0 0 8px">Les notes de tous leurs joueurs, pour préparer ton plan : repère leurs meilleurs tireurs, leurs ailiers et leurs duellistes. Clique sur un en-tête pour trier.</p>
@@ -952,12 +952,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     const share = o ? (() => { const v = [o.pw, o.pd, o.pl].map((p) => Math.pow(p, 2)), t = v.reduce((x, y) => x + y, 0); const r = v.map((x) => Math.round((x / t) * 100)); r[1] = 100 - r[0] - r[2]; return r; })() : [0, 0, 0];
     const fav = o ? [o.ow, o.od, o.ol].indexOf(Math.min(o.ow, o.ol)) : -1;
-    const cell = (k, lab, odd, pct) => `<div class="betcell${k === fav ? ' fav' : ''}"><div class="betbtn" title="${o ? `Probabilité estimée : ${Math.round([o.pw, o.pd, o.pl][k] * 100)} %` : ''}"><span class="bl">${esc(lab)}</span><b class="num">${o ? odd.toFixed(2).replace('.', ',') : '…'}</b></div>
-        <div class="betpct"><span class="num">${o ? pct + ' %' : ''}</span><span class="bbar"><span style="width:${pct}%"></span></span></div></div>`;
+    const short3 = (t) => t.id;
+    const cell = (k, lab, full, odd, pct) => `<div class="betcell${k === fav ? ' fav' : ''}" title="${esc(full)}${o ? ` · probabilité estimée ${Math.round([o.pw, o.pd, o.pl][k] * 100)} % · ${pct} % des parieurs` : ''}"><span class="bl">${esc(lab)}</span><b class="num">${o ? odd.toFixed(2).replace('.', ',') : '…'}</b></div>`;
     return `<section class="panel betcard" aria-label="Cotes Bet9M">
-      <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">${LEAGUE} · J${G.round + 1}</span><span class="spacer"></span><span class="muted" style="font-size:0.78rem">${o ? 'Part des parieurs sous les cotes' : 'Les bookmakers font leurs calculs…'}</span></div>
-      <div class="betrow">${cell(0, h.name, o && o.ow, share[0])}${cell(1, 'Match nul', o && o.od, share[1])}${cell(2, a.name, o && o.ol, share[2])}</div>
-      <p class="legend" style="margin:8px 0 0">Cotes fictives, tirées de 200 matchs simulés avec les effectifs et les tactiques du moment. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
+      <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">J${G.round + 1}</span></div>
+      <div class="betrow">${cell(0, short3(h), h.name, o && o.ow, share[0])}${cell(1, 'Nul', 'Match nul', o && o.od, share[1])}${cell(2, short3(a), a.name, o && o.ol, share[2])}</div>
+      <p class="betnote">Cotes fictives. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));

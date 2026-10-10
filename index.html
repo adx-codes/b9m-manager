@@ -94,6 +94,10 @@ main { padding-block: 22px 0; display: grid; gap: 20px; }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; min-width: 0; }
 .panel > h3 { margin-bottom: 12px; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+/* Préparation du match : plan, adversaire, et une colonne étroite pour les petits encarts (Bet9M…) */
+.grid3 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px; gap: 20px; align-items: start; }
+.grid3 .side { display: grid; gap: 14px; align-content: start; position: sticky; top: 130px; }
+@media (max-width: 1100px) { .grid3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .grid3 .side { grid-column: 1 / -1; position: static; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); } }
 @media (max-width: 820px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
 .btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 9px 14px; font-weight: 600; font-size: 0.92rem; }
 .btn:hover { border-color: var(--muted); }
@@ -472,20 +476,18 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .mnote.nt3 { background: var(--sunk); }
 .mnote.nt1 { background: color-mix(in srgb, var(--bad) 28%, var(--surface)); }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; color: #fff; }
-/* Bet9M : bookmaker fictif */
-.betcard { max-width: 860px; }
-.bethead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.betlogo { display: inline-flex; align-items: baseline; justify-content: center; padding-top: 5px; box-sizing: border-box; width: 30px; height: 30px; border-radius: 8px; background: var(--board); color: var(--board-fg); font-family: var(--f-display); font-weight: 800; font-size: 1rem; letter-spacing: -0.02em; }
-.betlogo i { font-style: normal; color: var(--star); font-size: 0.72rem; margin-left: 1px; }
-.bethead b { font-family: var(--f-display); font-size: 1.1rem; letter-spacing: 0.02em; }
-.betrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-.betbtn { display: grid; justify-items: center; gap: 2px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--sunk); cursor: help; }
-.betbtn .bl { font-size: 0.82rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.betbtn b { font-family: var(--f-display); font-size: 1.45rem; line-height: 1.05; }
-.betcell.fav .betbtn { border-color: var(--star); box-shadow: 0 0 0 1px var(--star) inset; }
-.betpct { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; align-items: center; margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
-.bbar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
-.bbar span { display: block; height: 100%; background: var(--good); }
+/* Bet9M : bookmaker fictif, petit encart clin d'œil dans la colonne de droite */
+.betlogo { display: inline-flex; align-items: baseline; justify-content: center; width: 22px; height: 22px; padding-top: 3px; box-sizing: border-box; border-radius: 6px; background: var(--board); color: var(--board-fg); font-family: var(--f-display); font-weight: 800; font-size: 0.78rem; letter-spacing: -0.02em; }
+.betlogo i { font-style: normal; color: var(--star); font-size: 0.56rem; margin-left: 1px; }
+.betcard { padding: 12px 14px; }
+.bethead { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 0.82rem; }
+.bethead b { font-family: var(--f-display); font-size: 0.95rem; letter-spacing: 0.02em; }
+.betrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.betcell { display: grid; justify-items: center; gap: 1px; padding: 5px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--sunk); cursor: help; }
+.betcell .bl { font-size: 0.7rem; color: var(--muted); font-weight: 600; letter-spacing: 0.03em; }
+.betcell b { font-family: var(--f-display); font-size: 1.05rem; line-height: 1.1; }
+.betcell.fav { border-color: var(--star); }
+.betnote { margin: 6px 0 0; font-size: 0.72rem; color: var(--muted); line-height: 1.35; }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
 .fline .nw { overflow: hidden; text-overflow: ellipsis; }
@@ -2234,14 +2236,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tired = starters.filter((p) => p.fatigue > 28);
     const tac = t.tactic;
     return `<section class="board">${boardTeams(h, a, '–', '–')}<div class="meta"><span>Journée ${G.round + 1} · ${home ? 'à domicile' : "à l'extérieur"}</span><span>Salle de ${esc(h.city)}</span></div></section>
-      ${betCard(h, a)}
-      <div class="grid2">
+      <div class="grid3">
         <section class="panel"><h3>Ton plan de match</h3>
           <div style="display:grid;gap:12px">
             <div class="opt"><span class="label">Attaque · ${ATT_TXT[tac.att][0]} · jeu ${H.JEU[tac.jeu].toLowerCase()}</span><p>${ATT_TXT[tac.att][1]}. Identité de l'équipe : ${fitInfo(t).id.label.toLowerCase()} (${fitInfo(t).txt}).</p></div>
             <div class="opt"><span class="label">Défense · ${H.DSTYLE[tac.dstyle]}</span><p>${rulesLine(tac.rules)}.</p></div>
             <div class="opt"><span class="label">Consignes</span><p>${tac.cons.length ? tac.cons.map((c) => CONS[c]).join(' · ') : 'Aucune consigne'}</p></div>
-            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +2 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
+            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +3,5 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
             <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
@@ -2259,6 +2260,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             ${faceHtml(t, opp)}
           </div>
         </section>
+        <aside class="side">${betCard(h, a)}</aside>
       </div>
       <section class="panel"><h3>Effectif adverse · ${esc(opp.name)}</h3>
         <p class="legend" style="margin:0 0 8px">Les notes de tous leurs joueurs, pour préparer ton plan : repère leurs meilleurs tireurs, leurs ailiers et leurs duellistes. Clique sur un en-tête pour trier.</p>
@@ -2772,12 +2774,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     const share = o ? (() => { const v = [o.pw, o.pd, o.pl].map((p) => Math.pow(p, 2)), t = v.reduce((x, y) => x + y, 0); const r = v.map((x) => Math.round((x / t) * 100)); r[1] = 100 - r[0] - r[2]; return r; })() : [0, 0, 0];
     const fav = o ? [o.ow, o.od, o.ol].indexOf(Math.min(o.ow, o.ol)) : -1;
-    const cell = (k, lab, odd, pct) => `<div class="betcell${k === fav ? ' fav' : ''}"><div class="betbtn" title="${o ? `Probabilité estimée : ${Math.round([o.pw, o.pd, o.pl][k] * 100)} %` : ''}"><span class="bl">${esc(lab)}</span><b class="num">${o ? odd.toFixed(2).replace('.', ',') : '…'}</b></div>
-        <div class="betpct"><span class="num">${o ? pct + ' %' : ''}</span><span class="bbar"><span style="width:${pct}%"></span></span></div></div>`;
+    const short3 = (t) => t.id;
+    const cell = (k, lab, full, odd, pct) => `<div class="betcell${k === fav ? ' fav' : ''}" title="${esc(full)}${o ? ` · probabilité estimée ${Math.round([o.pw, o.pd, o.pl][k] * 100)} % · ${pct} % des parieurs` : ''}"><span class="bl">${esc(lab)}</span><b class="num">${o ? odd.toFixed(2).replace('.', ',') : '…'}</b></div>`;
     return `<section class="panel betcard" aria-label="Cotes Bet9M">
-      <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">${LEAGUE} · J${G.round + 1}</span><span class="spacer"></span><span class="muted" style="font-size:0.78rem">${o ? 'Part des parieurs sous les cotes' : 'Les bookmakers font leurs calculs…'}</span></div>
-      <div class="betrow">${cell(0, h.name, o && o.ow, share[0])}${cell(1, 'Match nul', o && o.od, share[1])}${cell(2, a.name, o && o.ol, share[2])}</div>
-      <p class="legend" style="margin:8px 0 0">Cotes fictives, tirées de 200 matchs simulés avec les effectifs et les tactiques du moment. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
+      <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">J${G.round + 1}</span></div>
+      <div class="betrow">${cell(0, short3(h), h.name, o && o.ow, share[0])}${cell(1, 'Nul', 'Match nul', o && o.od, share[1])}${cell(2, short3(a), a.name, o && o.ol, share[2])}</div>
+      <p class="betnote">Cotes fictives. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
