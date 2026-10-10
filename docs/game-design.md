@@ -15,7 +15,7 @@ Le MVP est un jeu de gestion de handball jouable dans le navigateur : on dirige 
 3. Lancer le match : simulation, puis score et événements clés.
 4. Voir les résultats de la journée et le classement mis à jour.
 
-**Dans le MVP (prototype jouable) :** un championnat de 16 équipes, effectifs générés, ville isométrique comme accueil, bonus et malus de club, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
+**Dans le MVP (prototype jouable) :** un championnat de 16 équipes (la SparLigue), effectifs générés, ville isométrique comme accueil, bonus et malus de club, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
 
 **Hors MVP :** mercato, finances, staff, coupes, blessures longues, saisons multiples, joueurs réels. Ces briques sont déjà représentées dans la ville par des bâtiments grisés.
 
@@ -426,7 +426,7 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 **Tranché :**
 
 - 16 clubs, 30 journées (12 clubs et 22 journées au départ).
-- Niveau simulé : pro (type Starligue), handball masculin, match en direct accéléré avec temps morts.
+- Niveau simulé : pro (type Starligue, rebaptisée SparLigue dans le jeu), handball masculin, match en direct accéléré avec temps morts.
 - Clubs fictifs, un par grande ville française, Rennes inclus.
 - Vision de jeu au demi-centre ; excentricité en risque / récompense.
 - Défense en 6-0 par défaut, bascules 5-1 et 4-2 réglées par le coach ; deux réglages par secteur.

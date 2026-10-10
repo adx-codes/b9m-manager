@@ -1786,6 +1786,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   function pot(p, o = {}) { return potbar(H.potRange(p, sref()), o); }
   // Niveau seul, pour une valeur sur 20 (note à un poste, note diminuée par la fatigue)
   function vstars(v, o = {}) { const s = H.stars(v, sref()); return sbar(s, { sm: o.sm, red: o.red, title: o.title || `${H.starLabel(s)} (${sfmt(s)})` }); }
+  // Nom du championnat : clin d'œil à l'ancienne « Lidl Starligue »
+  const LEAGUE = 'SparLigue';
   const short = (name) => { const p = name.split(' '); return p[0][0] + '. ' + p.slice(1).join(' '); };
   const DEF_TXT = {
     '6-0': ['Protège la zone, limite les tirs de près', 'Laisse tirer de loin'],
@@ -2035,8 +2037,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="start" ${ready ? '' : 'disabled'}>Lancer la saison</button><span class="muted">${ready ? `${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} · ${esc(H.modInfo(d.b + '+').name)} · ${esc(H.modInfo(d.m + '-').name)}` : 'Choisis un bonus et un malus pour lancer la saison.'}</span></div></section>`;
   }
   function renderHome() {
-    return `<section class="hero"><span class="label">Prototype · saison 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
-      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
+    return `<section class="hero"><span class="label">Prototype · ${LEAGUE} 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
+      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis la ${LEAGUE}, un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
       <p class="devnote">À jouer sur ordinateur ou tablette (de préférence en paysage) : l'interface n'est pas faite pour les téléphones.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
       ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
@@ -2058,7 +2060,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       : U.post && U.view === 'post' && U.tab === 'match' ? `<button class="btn primary nextbtn" data-act="tab" data-id="championnat">Résultats et classement →</button>`
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
-    const pos = G.results.length ? `${ord(rank())} du championnat` : 'Avant la 1re journée';
+    const pos = G.results.length ? `${ord(rank())} de la ${LEAGUE}` : 'Avant la 1re journée';
     const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
@@ -2532,7 +2534,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const top = t.players.slice().sort((x, y) => y.goals - x.goals)[0];
     const champ = T(s[0].id);
     const verdict = pos === 1 ? 'Champion de France ! Le titre est pour toi.' : pos <= 3 ? 'Sur le podium : une saison réussie.' : pos <= 6 ? 'Une place dans la première moitié du tableau.' : pos <= 9 ? 'Une saison difficile, le maintien est assuré.' : 'Saison galère : il faudra tout reconstruire.';
-    return `<section class="board"><div class="teams"><div class="team">${badge(t)}<span class="tn">${esc(t.name)}</span></div><div class="score"><span>${ord(pos)}</span></div><div class="team away"><span class="tn">${r.pts} pts</span></div></div><div class="meta"><span>Fin de saison · ${r.g} victoire${r.g > 1 ? 's' : ''}, ${r.n} nul${r.n > 1 ? 's' : ''}, ${r.p} défaite${r.p > 1 ? 's' : ''}</span><span>Champion : ${esc(champ.name)}</span></div></section>
+    return `<section class="board"><div class="teams"><div class="team">${badge(t)}<span class="tn">${esc(t.name)}</span></div><div class="score"><span>${ord(pos)}</span></div><div class="team away"><span class="tn">${r.pts} pts</span></div></div><div class="meta"><span>Fin de saison · ${r.g} victoire${r.g > 1 ? 's' : ''}, ${r.n} nul${r.n > 1 ? 's' : ''}, ${r.p} défaite${r.p > 1 ? 's' : ''}</span><span>Champion de ${LEAGUE} : ${esc(champ.name)}</span></div></section>
       <section class="panel"><h3>Bilan</h3><div style="display:grid;gap:12px"><p style="margin:0">${verdict}</p>
         <p class="muted" style="margin:0">${r.bp} buts marqués, ${r.bc} encaissés. Meilleur buteur du club : ${esc(top.name)} (${top.goals} buts).</p>
         <div class="row"><button class="btn primary" data-act="replay">Rejouer une saison avec ce club</button><button class="btn" data-act="resetYes">Changer de club</button></div></div></section>`;
@@ -3138,8 +3140,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const next = G.round < G.sched.length ? G.sched[G.round].map(([h, a]) => ({ h, a })) : null;
     const sc = H.scorers(G, 10);
     return `<div class="grid2">
-      <section class="panel"><h3>Classement</h3><div class="scroll"><table><thead><tr><th class="r">#</th><th>Club</th><th class="r">J</th><th class="r">G</th><th class="r">N</th><th class="r">P</th><th class="r">BP</th><th class="r">BC</th><th class="r">Diff</th><th class="r">Pts</th></tr></thead><tbody>${table}</tbody></table></div>
-        <p class="legend">Victoire 2 pts, nul 1, défaite 0. Départage : points, différence de buts particulière, différence générale, buts marqués.</p></section>
+      <section class="panel"><h3>Classement de la ${LEAGUE}</h3><div class="scroll"><table><thead><tr><th class="r">#</th><th>Club</th><th class="r">J</th><th class="r">G</th><th class="r">N</th><th class="r">P</th><th class="r">BP</th><th class="r">BC</th><th class="r">Diff</th><th class="r">Pts</th></tr></thead><tbody>${table}</tbody></table></div>
+        <p class="legend">Victoire 2 pts, nul 1, défaite 0 (ici, les points ne sont jamais en promo). Départage : points, différence de buts particulière, différence générale, buts marqués.</p></section>
       <div style="display:grid;gap:20px;min-width:0">
         ${last ? `<section class="panel"><h3>Journée ${G.results.length}</h3><div class="scroll"><table><tbody>${last.map(resultRow).join('')}</tbody></table></div></section>` : ''}
         ${next ? `<section class="panel"><h3>Journée ${G.round + 1} · à venir</h3><div class="scroll"><table><tbody>${next.map(resultRow).join('')}</tbody></table></div></section>` : ''}

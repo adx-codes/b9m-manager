@@ -33,5 +33,6 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 - Les changements de joueurs se font uniquement en pause ; pas de message dans le fil du match pour les changements.
 - Les clins d'œil (ville, légendes) restent visuels et discrets, sans mécanique de collection.
 - Noms de légendes : reconnaissables mais pas trop proches des vrais noms.
+- Jeux de mots bienvenus là où ils tombent bien (noms, petites légendes, messages), sans en faire trop : un clin d'œil de temps en temps, jamais dans les infos utiles au jeu. Le championnat s'appelle la SparLigue (clin d'œil à la Lidl Starligue).
 - Jeu pensé pour PC et tablette, pas pour mobile : on peut utiliser la largeur (conteneur à 1 440 px).
 - Ne jamais afficher la note sur 20 ni le potentiel chiffré : tout passe par les étoiles (`stars`, `potRange` dans engine.js ; `pstars`, `vstars` dans ui.js).
