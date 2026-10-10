@@ -24,7 +24,7 @@
   --digit: #f0f0ee;
   --iso-ground: #d9e2d6; --iso-campus: #cfdcc9; --iso-road: #b8c2ca; --iso-mark: #f4f7f9; --iso-grey: #c3cbd2; --iso-roof: #a9b3bc;
   --iso-win: #eef4f8; --iso-tree: #a6b8ab; --iso-trunk: #8a8f86; --iso-edge: rgba(15,30,44,0.35); --iso-door: #2a3540; --iso-pitch: #9fb1c0;
-  --iso-gym: #21867a; --iso-youth: #c2557a; --iso-office: #c99a2e; --iso-press: #b8433a;
+  --iso-gym: #21867a; --iso-youth: #c2557a; --iso-office: #c99a2e; --iso-press: #b8433a; --iso-club: #5f7f52;
   --iso-side: #e9eef0; --iso-unit: #b4bdc5; --iso-lamp: #f6c453; --iso-glow: 0; --iso-water: #7fb6d6; --iso-stone: #d6dbdf; --iso-tree2: #8fa597; --iso-turf: #9cc29a; --iso-bed: #c9a7a0; --iso-glass: #bcd5e6; --iso-pole: #6b7781; --iso-gridline: rgba(15,30,44,0.05);
   --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
@@ -42,7 +42,7 @@
     --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
     --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --tv: #6a58a0; --tv-soft: #221d2e; --bet: #d0564c; --bet-soft: #2c1b1a; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
- --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
+ --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f; --iso-club: #5d7651;
     color-scheme: dark;
   }
 }
@@ -52,7 +52,7 @@
   --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
   --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --tv: #6a58a0; --tv-soft: #221d2e; --bet: #d0564c; --bet-soft: #2c1b1a; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
- --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
+ --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f; --iso-club: #5d7651;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -581,6 +581,14 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 #notif.short { font-size: 0.86rem; padding-block: 9px; border-left-color: var(--board-dim); }
 #notif.short .nbadge { width: 30px; height: 30px; font-size: 0.7rem; }
 @media (prefers-reduced-motion: reduce) { #notif { transition: none; } }
+
+.pips { display: inline-flex; gap: 3px; vertical-align: middle; cursor: help; }
+.pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.pips i.on { background: var(--accent); }
+.traits { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 0.85rem; }
+.trait { display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem; }
+.fansname { font-weight: 600; width: 100%; }
+.banner { border-top: 4px solid; border-bottom: 4px solid; border-radius: 4px; padding: 14px 16px; text-align: center; color: #fff; font-family: var(--f-display); font-size: 1.35rem; letter-spacing: 0.04em; text-transform: uppercase; }
 </style>
 
 <div class="wrap" id="app"></div>

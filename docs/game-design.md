@@ -15,7 +15,7 @@ Le MVP est un jeu de gestion de handball jouable dans le navigateur : on dirige 
 3. Lancer le match : simulation, puis score et événements clés.
 4. Voir les résultats de la journée et le classement mis à jour.
 
-**Dans le MVP (prototype jouable) :** un championnat de 16 équipes (la SparLigue), effectifs générés, ville isométrique comme accueil, bonus et malus de club, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
+**Dans le MVP (prototype jouable) :** un championnat de 16 équipes (la SparLigue), effectifs générés, ville isométrique comme accueil, bonus et malus de club, supporters et centre de formation propres à chaque club, Club house, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
 
 **Hors MVP :** mercato, finances, staff, coupes, blessures longues, saisons multiples, joueurs réels. Ces briques sont déjà représentées dans la ville par des bâtiments grisés.
 
@@ -23,7 +23,7 @@ Le MVP est un jeu de gestion de handball jouable dans le navigateur : on dirige 
 
 Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées par saison.
 
-- **Clubs :** nom, ville, note de réputation (1 à 5) qui règle le niveau moyen de l'effectif généré.
+- **Clubs :** nom, ville, note de réputation (1 à 5) qui règle le niveau moyen de l'effectif généré, et trois caractéristiques fixes (voir Caractéristiques des clubs).
 - **Effectif :** 14 joueurs par club, dont 2 gardiens.
 - **Calendrier :** généré en round-robin, une journée = un match par club.
 - **Points :** victoire 2, nul 1, défaite 0 (barème LNH).
@@ -32,24 +32,40 @@ Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées pa
 
 **Les 16 clubs (fictifs, un par grande ville, chacun avec une couleur et une couleur de contraste) :**
 
-| Club | Ville | Réputation (1 à 5) |
-| --- | --- | --- |
-| Lutèce Handball | Paris | 5 |
-| Montpellier Écusson HB | Montpellier | 5 |
-| Lyon Confluence HB | Lyon | 4 |
-| Toulouse Briques Roses | Toulouse | 4 |
-| Les Éléphants de Nantes | Nantes | 4 |
-| Bordeaux Garonne HB | Bordeaux | 4 |
-| Grenoble Bastille HB | Grenoble | 4 |
-| Rennes Hermine HB | Rennes | 3 |
-| Marseille Calanques HB | Marseille | 3 |
-| Lille Beffroi HB | Lille | 3 |
-| Strasbourg Rhin HB | Strasbourg | 3 |
-| Angers Ardoise HB | Angers | 3 |
-| Clermont Volcans HB | Clermont-Ferrand | 3 |
-| Nice Baie des Anges | Nice | 2 |
-| Saint-Étienne Forez HB | Saint-Étienne | 2 |
-| Dijon Moutarde HB | Dijon | 2 |
+| Club | Ville | Réputation (1 à 5) | Supporters | Domicile | Déplacement | Centre de formation |
+| --- | --- | --- | --- | --- | --- | --- |
+| Lutèce Handball | Paris | 5 | Les Râleurs du Périph | 3 | 2 | 4 |
+| Montpellier Écusson HB | Montpellier | 5 | Les Éternels Étudiants | 4 | 3 | 5 |
+| Lyon Confluence HB | Lyon | 4 | Les Bouchons Lyonnais | 3 | 2 | 3 |
+| Toulouse Briques Roses | Toulouse | 4 | Les Chocolatines Ultras | 4 | 3 | 3 |
+| Les Éléphants de Nantes | Nantes | 4 | Les Bretons Contrariés | 5 | 4 | 4 |
+| Bordeaux Garonne HB | Bordeaux | 4 | Les Grands Crus | 3 | 2 | 3 |
+| Grenoble Bastille HB | Grenoble | 4 | Les Bulles de la Bastille | 3 | 2 | 3 |
+| Rennes Hermine HB | Rennes | 3 | Les Galettes-Saucisses | 4 | 3 | 3 |
+| Marseille Calanques HB | Marseille | 3 | Les Sardines du Vieux-Port | 4 | 3 | 2 |
+| Lille Beffroi HB | Lille | 3 | Les Fricadelles du Beffroi | 4 | 3 | 3 |
+| Strasbourg Rhin HB | Strasbourg | 3 | Les Choucroutés | 3 | 2 | 3 |
+| Angers Ardoise HB | Angers | 3 | Les Quarts d'Heure Angevins | 3 | 2 | 3 |
+| Clermont Volcans HB | Clermont-Ferrand | 3 | Les Bibendums | 3 | 2 | 2 |
+| Nice Baie des Anges | Nice | 2 | Les Retraités de la Prom | 2 | 1 | 2 |
+| Saint-Étienne Forez HB | Saint-Étienne | 2 | Les Verts de Rage | 4 | 4 | 3 |
+| Dijon Moutarde HB | Dijon | 2 | Les Moutardes au Nez | 2 | 2 | 2 |
+
+## Caractéristiques des clubs
+
+Chaque club a trois notes de 1 à 5, les mêmes à chaque partie et indépendantes de la réputation (valeurs dans le tableau des clubs). Elles s'affichent en pastilles, avec l'effet au survol : profil d'équipe, fiche de l'adversaire, choix du club, Club house et Centre de formation.
+
+| Caractéristique | Effet |
+| --- | --- |
+| Ferveur à domicile | Bonus au tir à domicile : +2 % (1) à +5 % (5), soit 0,75 point par niveau |
+| Supporters en déplacement | À l'extérieur, réduit le handicap du visiteur (pertes de balle, exclusions, fatigue du trajet) : 0 % (1) à −50 % (5), 12,5 % par niveau |
+| Centre de formation | Moins de 23 ans de l'effectif de départ et jeunes du centre : −1 (1) à +1 (5) en niveau et en potentiel, 0,5 par niveau ; pépites (+3 de potentiel) de 6 % (1) à 20 % (5) des jeunes du centre. Sans effet sur les légendes |
+
+Chaque groupe de supporters a un nom (Les Galettes-Saucisses à Rennes, Les Bretons Contrariés à Nantes, Les Moutardes au Nez à Dijon…), affiché sur la bannière du Club house.
+
+Mesuré (3 000 matchs entre deux copies d'une même équipe) : 59 % des points à domicile pour Nice (ferveur 2) contre 63 % pour Nantes (5) ; Nantes à domicile contre des visiteurs niçois (1) : 65 % ; Nice à domicile contre des visiteurs nantais (4) : 58 %. Sur 16 saisons, la part des points à domicile ne bouge pas (56,4 % contre 56,5 %), mais le favori 4 étoiles contre un 2 étoiles monte de 86 % à 89,5 % (les petits clubs ont les supporters et les centres les plus modestes) : à surveiller.
+
+Mesuré (60 parties) : les jeunes du centre valent en moyenne 1,7 ★ (potentiel 3,8 ★) avec un centre à 2, 2 ★ (4,2 ★) à 3, 2,3 ★ (4,5 ★) à 4 et 2,6 ★ (4,75 ★) à 5.
 
 ## Joueurs
 
@@ -117,7 +133,7 @@ Génération : excentricité centrée sur 9 avec une forte dispersion, esprit co
 
 **Temps de jeu et progression :** les minutes du dernier match multiplient la progression de la semaine, de ×0,7 sans jouer à ×1,3 au-delà de 45 minutes. Effet doublé avant 23 ans (×0,4 à ×1,6). Les moins de 23 ans portent l'icône 🌱 pendant les matchs.
 
-**Niveau selon l'âge :** le niveau de base du club (selon sa réputation) est ajusté par l'âge du joueur. Les clubs gardent le même niveau moyen, ce sont les profils qui changent.
+**Niveau selon l'âge :** le niveau de base du club (selon sa réputation) est ajusté par l'âge du joueur. Les clubs gardent le même niveau moyen, ce sont les profils qui changent. Les moins de 23 ans prennent en plus le décalage du centre de formation du club (−1 à +1 en niveau et en potentiel).
 
 | Âge | Ajustement | Note moyenne | Potentiel moyen |
 | --- | --- | --- | --- |
@@ -133,7 +149,7 @@ Génération : excentricité centrée sur 9 avec une forte dispersion, esprit co
 
 **Noms :** chaque club a des noms typiques de sa région (Bretagne, Ouest, Nord, Alsace, Paris, Provence, Sud-Ouest, Alpes, Auvergne, Bourgogne). Environ 12 % de joueurs étrangers (Danemark, Allemagne, Norvège, Espagne, Croatie, Serbie, Suède, Islande), avec leur drapeau. Pas d'homonymes dans un effectif.
 
-**Jeunes du centre :** niveau calé sur le club, pour pouvoir entrer dans la rotation : attributs du poste autour de la référence étoiles du club moins 2,4 points (les autres 1,8 plus bas, écart type 2), soit le plus souvent 1½ à 2½ étoiles, parfois 3 ou plus ; potentiel = note + 1,5 à 5,5 points, une vraie pépite (+3) environ une fois sur 8.
+**Jeunes du centre :** niveau calé sur le club, pour pouvoir entrer dans la rotation : attributs du poste autour de la référence étoiles du club moins 2,4 points, plus le décalage du centre de formation (−1 à +1 ; les autres attributs 1,8 plus bas, écart type 2), soit le plus souvent 1½ à 2½ étoiles, parfois 3 ou plus ; potentiel = note + 1,5 à 5,5 points (±0,5 selon le centre), une vraie pépite (+3) dans 6 % à 20 % des cas selon le centre.
 
 **Légendes (regens) :** 20 jeunes aux noms qui rappellent des légendes, au même poste (Thomas Omeyrac, Nikolaï Karabatov, Mikael Hanstrup, Uli Gensmeier, Luca Abalone, Bertrand Gillot…). Trois sont dispersées chez des clubs adverses au début de partie, puis environ un jeune sur cinq du centre de formation en est une. Attributs clés relevés, potentiel de 16,5 à 19,5, aucun signe distinctif. Chaque nom n'apparaît qu'une fois par partie.
 
@@ -207,9 +223,7 @@ Au lancement, on choisit son club, puis un bonus parmi 3 tirés au hasard et un 
 
 | Domaine | Bonus | Malus |
 | --- | --- | --- |
-| Public | Un chaudron les soirs de match : +3 % au tir à domicile, plus de pertes adverses | Trois pelés et un tondu : −3 % au tir à domicile |
 | Staff | Un staff bac+12 : progression ×1,8 | Le staff joue à Fortnite : progression ×0,4 |
-| Formation | La génération dorée : moins de 23 ans et jeunes du centre +1 partout | Les cadets sont encore au goûter : −1 partout |
 | Vestiaire | Barbecue tous les dimanches : cohésion de départ 75 | Deux groupes WhatsApp : cohésion de départ 35 |
 | Soins | Le kiné a des mains de fée : −20 % de fatigue en match, +10 de récupération | Le kiné est parti à Ibiza : −7 de récupération |
 | Cage | Un mur dans les cages : gardiens +1 réflexes et placement | Des mains en beurre doux : −1 |
@@ -218,9 +232,12 @@ Au lancement, on choisit son club, puis un bonus parmi 3 tirés au hasard et un 
 | Mental | Des nerfs d'acier : +4 sang-froid, +3 % au tir en fin serrée | Les jambes en coton à la 55e : −4 et −3 % |
 | Physique | Ils ne transpirent jamais : +2 vitesse et endurance | La raclette de la veille : +8 de fatigue au coup d'envoi |
 | Arbitrage | Les arbitres sont des cousins : +60 % de 7 m obtenus | L'arbitre a une dent contre nous : plus d'exclusions |
+| Vidéo | L'analyste dort au bureau : défenseurs +1 en contre et duel défensif dans les face-à-face, gardiens +1 sur les 7 m | La clé USB est restée à l'hôtel : −1 |
+| Déplacements | Le car a des sièges massants : à l'extérieur, pas de fatigue du trajet, handicap du visiteur divisé par deux | Retour en TER Intercités : à l'extérieur, +10 de fatigue au coup d'envoi, handicap ×1,5, −6 de récupération après un déplacement |
+| Capitanat | Un capitaine qui hausse le ton : temps morts plus efficaces (regain sur 10 possessions, −7 de fatigue), 12 % d'exclusions en moins | Le brassard tourne chaque semaine : regain sur 3 possessions, −2 de fatigue, 12 % d'exclusions en plus |
 | Calendrier | Un calendrier en pente douce : 5 premières journées contre les plus faibles, +10 cohésion | Le calendrier du diable : contre les plus forts, −10 cohésion |
 
-Plusieurs effets dépendent du plan de jeu (jeu rapide avec Physique, défense agressive avec Discipline ou Arbitrage). Le staff le rappelle dans ses conseils en tactique, en entraînement et avant chaque match. Chaque duo vaut 1 à 3 points sur une saison, pour que ce choix ne pèse pas plus que la gestion de l'équipe. Hors tirage : renseignement, latéralité et finances, à ajouter avec le mercato.
+Public et Formation ne sont plus tirés : ils sont remplacés par les caractéristiques fixes des clubs (supporters, centre de formation). Dans les anciennes sauvegardes, ils sont convertis en Vidéo, Déplacements ou Capitanat (même signe). Mesuré (60 à 120 saisons d'un club 3 étoiles, ±0,6 point) : Vidéo +1,9 / −1,0 point, Déplacements +0,5 à +1,8 / −1,2, Capitanat +1,8 / −0,7. Plusieurs effets dépendent du plan de jeu (jeu rapide avec Physique, défense agressive avec Discipline, Arbitrage ou Capitanat, homme à homme avec Vidéo). Le staff le rappelle dans ses conseils en tactique, en entraînement et avant chaque match. Chaque duo vaut 1 à 3 points sur une saison, pour que ce choix ne pèse pas plus que la gestion de l'équipe. Hors tirage : renseignement, latéralité et finances, à ajouter avec le mercato.
 
 ## Moteur de match
 
@@ -296,7 +313,7 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 Le coach IA monte d'un cran en homme à homme, demande de tout donner s'il est mené en fin de match, et lève le pied avec 6 buts d'avance.
 
-**Avantage du terrain :** l'équipe qui reçoit a +3,5 % de réussite au tir ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus. Le bonus ou malus Public s'ajoute.
+**Avantage du terrain :** l'équipe qui reçoit a +2 à +5 % de réussite au tir selon la ferveur de son public ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus, un handicap réduit par ses supporters en déplacement (jusqu'à −50 %) et modifié par le bonus ou malus Déplacements.
 
 **Cotes Bet9M (préparation du match) :** un bookmaker fictif, clin d'œil à Beyond9M, affiche les cotes victoire, nul, défaite. Elles viennent de 200 matchs simulés sur des copies des deux équipes (effectifs, fatigue et tactiques du moment), le nul lissé vers 7,5 %, avec une marge de bookmaker de 7 %. Sous chaque cote, la part des parieurs (proportionnelle au carré de la probabilité : le public suit le favori). Calculées une fois par journée et gardées dans la sauvegarde ; purement indicatives, sans effet sur le match.
 
@@ -334,7 +351,7 @@ L'âge module tout : ×1,4 avant 23 ans, ×1 jusqu'à 28, ×0,5 jusqu'à 31, ×0
 
 ## Centre de formation
 
-Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, niveau d'un joueur de rotation du club (le plus souvent 1½ à 2½ étoiles), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le bonus ou malus Formation ajoute ou retire 1 partout.
+Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, niveau d'un joueur de rotation du club (le plus souvent 1½ à 2½ étoiles), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le niveau du centre de formation du club (1 à 5, affiché en tête de l'écran) décale niveau et potentiel de −1 à +1 et règle la part de pépites.
 
 - **Le recruter :** il rejoint le groupe. À 16 joueurs, on choisit qui part parmi ceux de son poste. La feuille de match reste à 14, le staff place les autres en tribune.
 - **Le laisser partir :** il est refusé.
@@ -342,7 +359,7 @@ Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un je
 
 Le centre garde l'historique des jeunes proposés et de la décision prise. Les jeunes recrutés portent l'étiquette J dans l'effectif.
 
-**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, avec le même bonus ou malus Formation et le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les légendes ne sortent pas des centres IA (les 3 placées en début de partie suffisent).
+**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, réglé par son propre centre de formation, avec le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les légendes ne sortent pas des centres IA (les 3 placées en début de partie suffisent).
 
 **Récap de la SparLigue :** sous le centre, un encart liste tous les jeunes recrutés dans le championnat (IA et joueur), du plus récent au plus ancien : journée, club, joueur (fiche cliquable), âge, niveau et potentiel en étoiles à jour, joueur libéré le cas échéant. En tête, le nombre de recrues et le club le plus friand ; le nombre de jeunes refusés par les adversaires est indiqué dans la légende.
 
@@ -361,6 +378,7 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 | Kiosque | Championnat | Classement et points | Classement, résultats, journée suivante, buteurs |
 | Siège du club (gris) | À venir | Mercato et finances | — |
 | Centre de formation | Formation | Prochain jeune | Jeune proposé, décompte jusqu'au prochain, jeunes du club, historique des décisions |
+| Club house | Supporters | Nom des supporters | Bannière aux couleurs du club, ferveur à domicile et supporters en déplacement (pastilles, effet au survol), spécialité de la buvette, tribunes de toute la SparLigue |
 | Infirmerie (gris) | À venir | Blessures et soins | — |
 | Boutique (gris) | À venir | Supporters et recettes | — |
 
@@ -385,7 +403,7 @@ L'écran de choix du club est neutre (graphite). Une fois la saison lancée, l'i
 
 **La Cité du hand :** l'accueil est une ville isométrique au nom de la ville du club. Les noms des bâtiments n'apparaissent qu'au survol. Le bonus et le malus s'ouvrent depuis une pastille « + − » à côté du nom du club, et la ville est accessible par une icône maison en haut à gauche.
 
-**Clins d'œil (purement visuels) :** un panneau « Beyond 9M », une affiche « 95 » bleu-blanc-rouge, un voyant rouge sur le bureau du coach, un pot de résine, un chat sur le vestiaire, un pigeon sur le kiosque, un vrai terrain de hand de quartier avec un petit arrière en bleu, et le car de l'équipe aux couleurs du club devant la salle.
+**Clins d'œil (purement visuels) :** un panneau « Beyond 9M », une affiche « 95 » bleu-blanc-rouge, un voyant rouge sur le bureau du coach, un pot de résine, un chat sur le vestiaire, le Club house avec la bannière des supporters, sa buvette et un parasol aux couleurs du club, un pigeon sur le kiosque, un vrai terrain de hand de quartier avec un petit arrière en bleu, et le car de l'équipe aux couleurs du club devant la salle.
 
 ## Équilibrage
 
@@ -447,6 +465,7 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 - Défense en 6-0 par défaut, bascules 5-1 et 4-2 réglées par le coach ; deux réglages par secteur.
 - Esprit collectif comme attribut joueur, identité d'équipe calculée, jeu choisi par le coach ; il évolue avec le style joué.
 - Bonus et malus : un parmi 3 de chaque, noms drôles, un de chaque pour les clubs IA.
+- Supporters (domicile, déplacement) et centre de formation fixes par club, à la place des bonus et malus Public et Formation.
 - Centre de formation : un jeune toutes les 5 journées, potentiel estimé en fourchette, décision du coach ; les clubs IA ont la même mécanique, récap des recrues de la SparLigue.
 - Notes affichées en étoiles (sur 5, relatives au club, potentiel incertain chez les jeunes) ; note sur 20 masquée.
 - Postes secondaires à 85 % ; latéralité avec effet réel au tir à droite.

@@ -104,22 +104,22 @@
   const starLabel = (s) => STAR_LABEL.find(([m]) => s >= m)[1];
   const potLabel = (s) => POT_LABEL.find(([m]) => s >= m)[1];
   const CLUBS = [
-    { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a' },
-    { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b' },
-    { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a', color2: '#d9b45a' },
-    { id: 'TLS', name: 'Toulouse Briques Roses', city: 'Toulouse', rep: 4, color: '#c2185b', color2: '#5fb3a1' },
-    { id: 'NAN', name: 'Les Éléphants de Nantes', city: 'Nantes', rep: 4, color: '#2e7d32', color2: '#e3c35a' },
-    { id: 'BDX', name: 'Bordeaux Garonne HB', city: 'Bordeaux', rep: 4, color: '#6a1b4d', color2: '#d8b46a' },
-    { id: 'REN', name: 'Rennes Hermine HB', city: 'Rennes', rep: 3, color: '#111111', color2: '#c8453b' },
-    { id: 'MRS', name: 'Marseille Calanques HB', city: 'Marseille', rep: 3, color: '#1b8bb4', color2: '#e7b75a' },
-    { id: 'LIL', name: 'Lille Beffroi HB', city: 'Lille', rep: 3, color: '#c62828', color2: '#5b7fa8' },
-    { id: 'STR', name: 'Strasbourg Rhin HB', city: 'Strasbourg', rep: 3, color: '#455a9a', color2: '#e2b45c' },
-    { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100', color2: '#2f5d7c' },
-    { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20', color2: '#e0c060' },
-    { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b', color2: '#3d5a80' },
-    { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f' },
-    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a' },
-    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a' }
+    { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a', fans: { h: 3, a: 2, name: "Les Râleurs du Périph" }, academy: 4 },
+    { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b', fans: { h: 4, a: 3, name: "Les Éternels Étudiants" }, academy: 5 },
+    { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a', color2: '#d9b45a', fans: { h: 3, a: 2, name: "Les Bouchons Lyonnais" }, academy: 3 },
+    { id: 'TLS', name: 'Toulouse Briques Roses', city: 'Toulouse', rep: 4, color: '#c2185b', color2: '#5fb3a1', fans: { h: 4, a: 3, name: "Les Chocolatines Ultras" }, academy: 3 },
+    { id: 'NAN', name: 'Les Éléphants de Nantes', city: 'Nantes', rep: 4, color: '#2e7d32', color2: '#e3c35a', fans: { h: 5, a: 4, name: "Les Bretons Contrariés" }, academy: 4 },
+    { id: 'BDX', name: 'Bordeaux Garonne HB', city: 'Bordeaux', rep: 4, color: '#6a1b4d', color2: '#d8b46a', fans: { h: 3, a: 2, name: "Les Grands Crus" }, academy: 3 },
+    { id: 'REN', name: 'Rennes Hermine HB', city: 'Rennes', rep: 3, color: '#111111', color2: '#c8453b', fans: { h: 4, a: 3, name: "Les Galettes-Saucisses" }, academy: 3 },
+    { id: 'MRS', name: 'Marseille Calanques HB', city: 'Marseille', rep: 3, color: '#1b8bb4', color2: '#e7b75a', fans: { h: 4, a: 3, name: "Les Sardines du Vieux-Port" }, academy: 2 },
+    { id: 'LIL', name: 'Lille Beffroi HB', city: 'Lille', rep: 3, color: '#c62828', color2: '#5b7fa8', fans: { h: 4, a: 3, name: "Les Fricadelles du Beffroi" }, academy: 3 },
+    { id: 'STR', name: 'Strasbourg Rhin HB', city: 'Strasbourg', rep: 3, color: '#455a9a', color2: '#e2b45c', fans: { h: 3, a: 2, name: "Les Choucroutés" }, academy: 3 },
+    { id: 'NCE', name: 'Nice Baie des Anges', city: 'Nice', rep: 2, color: '#e65100', color2: '#2f5d7c', fans: { h: 2, a: 1, name: "Les Retraités de la Prom" }, academy: 2 },
+    { id: 'STE', name: 'Saint-Étienne Forez HB', city: 'Saint-Étienne', rep: 2, color: '#1b5e20', color2: '#e0c060', fans: { h: 4, a: 4, name: "Les Verts de Rage" }, academy: 3 },
+    { id: 'GRE', name: 'Grenoble Bastille HB', city: 'Grenoble', rep: 4, color: '#b8860b', color2: '#3d5a80', fans: { h: 3, a: 2, name: "Les Bulles de la Bastille" }, academy: 3 },
+    { id: 'ANG', name: 'Angers Ardoise HB', city: 'Angers', rep: 3, color: '#4a5a6a', color2: '#d98c5f', fans: { h: 3, a: 2, name: "Les Quarts d'Heure Angevins" }, academy: 3 },
+    { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a', fans: { h: 2, a: 2, name: "Les Moutardes au Nez" }, academy: 2 },
+    { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a', fans: { h: 3, a: 2, name: "Les Bibendums" }, academy: 2 }
   ];
   // Noms : un clin d'œil aux régions des clubs, quelques joueurs venus d'ailleurs
   const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Mehdi', 'Ibrahima', 'Florian', 'Arthur', 'Samuel', 'Elias', 'Raphaël', 'Karim', 'Moussa', 'Nicolas', 'Julien'];
@@ -163,9 +163,10 @@
     percee: ['Tir à la hanche', 'Chabala'], ca: ['Chabala', 'Kung-fu', 'Tir dans le dos'], er: ['Chabala', 'Tir à la hanche']
   };
   const MODS = {
-    public: { label: 'Public', plus: ['Un chaudron les soirs de match', "À domicile, le public pousse : +3 % de réussite au tir et l'adversaire perd plus de ballons."], minus: ['Trois pelés et un tondu', "À domicile, l'ambiance est glaciale : −3 % de réussite au tir."] },
+    video: { label: 'Vidéo', plus: ["L'analyste dort au bureau", "Les tireurs adverses n'ont plus de secrets : défenseurs à +1 en contre et en duel défensif dans les face-à-face, gardiens à +1 sur les 7 m."], minus: ["La clé USB est restée à l'hôtel", 'On découvre les adversaires sur le terrain : défenseurs à −1 en contre et en duel défensif dans les face-à-face, gardiens à −1 sur les 7 m.'] },
     staff: { label: 'Staff', plus: ['Un staff bac+12', "Progression à l'entraînement ×1,8."], minus: ['Le staff joue à Fortnite', "Progression à l'entraînement ×0,4."] },
-    formation: { label: 'Formation', plus: ['La génération dorée', 'Les moins de 23 ans, et les jeunes du centre, arrivent avec +1 dans tous leurs attributs.'], minus: ['Les cadets sont encore au goûter', 'Les moins de 23 ans, et les jeunes du centre, arrivent avec −1 dans tous leurs attributs.'] },
+    deplacements: { label: 'Déplacements', plus: ['Le car a des sièges massants', "À l'extérieur, aucune fatigue du trajet, et le handicap du visiteur (pertes de balle, exclusions) est divisé par deux."], minus: ['Retour en TER Intercités', "À l'extérieur, 10 points de fatigue en plus au coup d'envoi, un handicap du visiteur (pertes de balle, exclusions) ×1,5, et 6 points récupérés en moins après chaque déplacement."] },
+    capitanat: { label: 'Capitanat', plus: ['Un capitaine qui hausse le ton', 'Temps morts plus efficaces (regain au tir sur 10 possessions au lieu de 6, 7 points de fatigue en moins au lieu de 4), et il parle aux arbitres : 12 % d\'exclusions en moins.'], minus: ['Le brassard tourne chaque semaine', "Temps morts moins écoutés (regain au tir sur 3 possessions, 2 points de fatigue en moins seulement), et personne ne calme le jeu : 12 % d'exclusions en plus."] },
     vestiaire: { label: 'Vestiaire', plus: ['Barbecue tous les dimanches', 'Cohésion de départ à 75.'], minus: ['Deux groupes WhatsApp', 'Cohésion de départ à 35.'] },
     soins: { label: 'Soins', plus: ['Le kiné a des mains de fée', '20 % de fatigue en moins pendant les matchs, et 10 points récupérés en plus entre deux journées.'], minus: ['Le kiné est parti à Ibiza', '7 points de fatigue récupérés en moins entre deux journées.'] },
     cage: { label: 'Cage', plus: ['Un mur dans les cages', 'Gardiens à +1 en réflexes et en placement.'], minus: ['Des mains en beurre doux', 'Gardiens à −1 en réflexes et en placement.'] },
@@ -177,6 +178,16 @@
     calendrier: { label: 'Calendrier', plus: ['Un calendrier en pente douce', 'Les 5 premières journées contre les clubs les plus faibles (aller et retour), et un bon départ soude le groupe : +10 de cohésion.'], minus: ['Le calendrier du diable', 'Les 5 premières journées contre les clubs les plus forts (aller et retour), et le groupe doute : −10 de cohésion.'] }
   };
   const hasMod = (t, key) => !!(t && t.mods && t.mods.includes(key));
+  // Caractéristiques fixes de chaque club (les mêmes à chaque partie) : supporters et centre de formation, de 1 à 5
+  const clubOf = (t) => CLUBS.find(c => c.id === (t && t.id)) || {};
+  const fansOf = (t) => clubOf(t).fans || { h: 3, a: 2, name: 'Les Supporters' };
+  const academyOf = (t) => clubOf(t).academy || 3;
+  // Décalage de niveau et de potentiel des jeunes : −1 (centre à 1) à +1 (centre à 5)
+  const academyOff = (t) => (academyOf(t) - 3) * 0.5;
+  // Ferveur à domicile : de +2 % (1) à +5 % (5) de réussite au tir
+  const homeShot = (t) => 0.02 + (fansOf(t).h - 1) * 0.0075;
+  // Supporters en déplacement : réduisent le handicap du visiteur, de 0 % (1) à 50 % (5)
+  const awayCut = (t) => (fansOf(t).a - 1) * 0.125;
   function modInfo(key) {
     const d = key.slice(0, -1), sign = key.slice(-1), m = MODS[d];
     if (!m) return null;
@@ -185,10 +196,7 @@
   }
   function applyGenMods(t) {
     const add = (p, k, v) => { if (p.a[k] !== undefined) p.a[k] = clamp(p.a[k] + v, 1, 20); };
-    const traits = ['excentricite', 'collectif'];
     for (const p of t.players) {
-      const fv = hasMod(t, 'formation+') ? 1 : hasMod(t, 'formation-') ? -1 : 0;
-      if (fv && p.age < 23) for (const k in p.a) if (!traits.includes(k)) add(p, k, fv);
       if (p.pos === 'GB') {
         const v = hasMod(t, 'cage+') ? 1 : hasMod(t, 'cage-') ? -1 : 0;
         if (v) { add(p, 'reflexes', v); add(p, 'placement', v); }
@@ -242,10 +250,10 @@
   let pid = 0;
   // Niveau selon l'âge : les très jeunes un peu en dessous (mais avec du potentiel), les plus de 31 ans un peu au-dessus
   const AGE_LEVEL = (age) => age <= 20 ? -1.5 : age <= 23 ? -0.8 : age <= 27 ? 0.15 : age <= 31 ? 0.5 : 0.7;
-  function makePlayer(pos, level, teamId) {
+  function makePlayer(pos, level, teamId, youthOff) {
     const a = {};
     const age = ri(18, 35);
-    level += AGE_LEVEL(age);
+    level += AGE_LEVEL(age) + (youthOff && age < 23 ? youthOff : 0);
     const keys = Object.keys(WEIGHTS[pos]);
     const r = (m) => clamp(Math.round(m + gauss() * 1.8), 1, 20);
     if (pos === 'GB') {
@@ -275,15 +283,16 @@
     };
     p.ovr = overall(p);
     p.pot = potFor(p);
+    if (youthOff && age < 23) p.pot = Math.round(clamp(Math.max(p.ovr, p.pot + youthOff), 1, 20) * 10) / 10;
     p.ovr0 = p.ovr;
     return p;
   }
   function makeTeam(club) {
     const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[club.rep];
-    const players = [];
+    const players = [], yo = club.academy ? (club.academy - 3) * 0.5 : 0;
     for (const pos of POS) {
-      players.push(makePlayer(pos, base + 1, club.id));
-      players.push(makePlayer(pos, base - 0.8, club.id));
+      players.push(makePlayer(pos, base + 1, club.id, yo));
+      players.push(makePlayer(pos, base - 0.8, club.id, yo));
     }
     // Pas d'homonymes dans un même effectif
     const seen = new Set();
@@ -343,6 +352,15 @@
         t.mods.push(other + (sign === '+' ? '-' : '+'));
       }
     }
+    // Anciens domaines Public et Formation : remplacés par un nouveau domaine (même signe)
+    for (const t of st.teams) if (t.mods && t.mods.some(k => /^(public|formation)[+-]$/.test(k))) {
+      t.mods = t.mods.map(k => {
+        if (!/^(public|formation)[+-]$/.test(k)) return k;
+        const used = t.mods.map(x => x.slice(0, -1)), free = ['video', 'deplacements', 'capitanat'].filter(d => !used.includes(d));
+        const d = free.length ? pick(free) : pick(pool.filter(x => !used.includes(x)));
+        return d + k.slice(-1);
+      });
+    }
     if (!st.youthLog) st.youthLog = [];
     if (!st.leagueYouth) st.leagueYouth = [];
     if (!st.legends) st.legends = [];
@@ -395,14 +413,12 @@
     const p = makePlayer(pos, 10, t.id);
     // Loterie, mais réaliste : niveau calé sur celui du club (un joueur de rotation, environ 2 étoiles), attributs du poste
     // autour de la référence du club moins 2,4, les autres plus bas ; traits de personnalité libres
-    const keys = Object.keys(WEIGHTS[pos]), lvl = starRef(t) - 2.4;
+    const off = academyOff(t), keys = Object.keys(WEIGHTS[pos]), lvl = starRef(t) - 2.4 + off;
     for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round((keys.includes(k) ? lvl : lvl - 1.8) + gauss() * 2), 2, 17);
-    const fv = hasMod(t, 'formation+') ? 1 : hasMod(t, 'formation-') ? -1 : 0;
-    if (fv) for (const k in p.a) if (k !== 'excentricite' && k !== 'collectif') p.a[k] = clamp(p.a[k] + fv, 1, 20);
     p.age = ri(17, 19);
     p.ovr = overall(p);
-    // Marge de progression : 1,5 à 5,5 points, et une vraie pépite de temps en temps (+3 en plus)
-    p.pot = Math.round(clamp(p.ovr + 1.5 + rnd() * 4 + (rnd() < 0.12 ? 3 : 0), 1, 18.5) * 10) / 10;
+    // Marge de progression : 1,5 à 5,5 points (±0,5 selon le centre), et une pépite (+3 en plus) de 6 % (centre à 1) à 20 % (centre à 5)
+    p.pot = Math.round(clamp(p.ovr + 1.5 + off * 0.5 + rnd() * 4 + (rnd() < 0.06 + (academyOf(t) - 1) * 0.035 ? 3 : 0), 1, 18.5) * 10) / 10;
     if (L) legendize(p, L, st);
     p.youth = true;
     { let k = 0; while (t.players.some(x => x.name === p.name) && k++ < 20) Object.assign(p, makeName(t.id)); }
@@ -577,8 +593,12 @@
     this.h = makeSide(home);
     this.a = makeSide(away);
     this.S = [this.h, this.a];
+    // Avantage du terrain : ferveur du public qui reçoit ; handicap du visiteur réduit par ses supporters en déplacement
+    this.homeShot = homeShot(home);
+    this.awayK = (1 - awayCut(away)) * (hasMod(away, 'deplacements+') ? 0.5 : hasMod(away, 'deplacements-') ? 1.5 : 1);
     // Déplacement : l'équipe visiteuse démarre un peu plus fatiguée
-    for (const id in this.a.fat) this.a.fat[id] = Math.min(100, this.a.fat[id] + HOME.travel);
+    const trip = hasMod(away, 'deplacements+') ? 0 : HOME.travel * (1 - awayCut(away)) + (hasMod(away, 'deplacements-') ? 10 : 0);
+    for (const id in this.a.fat) this.a.fat[id] = Math.min(100, this.a.fat[id] + trip);
     // Coach IA : toute équipe qui n'est pas celle du joueur. Tempérament : réagit plus ou moins tôt
     this.S.forEach(s => {
       s.ai = opts.user !== undefined && s.team.id === opts.user ? null : { bold: rnd() < 0.5 ? 1 : 0, orig: { att: s.tac.att, dstyle: s.tac.dstyle }, gk: false };
@@ -647,7 +667,9 @@
     const map = {};
     for (const x of this.field(D, i)) map[x.pos] = x.p;
     const fpos = FACING[attPos] || 'DC', idx = DLINE.indexOf(fpos);
-    const val = (pos) => { const pl = map[pos]; if (!pl) return null; const v = this.eff(D, pl, k); return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
+    // Vidéo : les tireurs adverses étudiés (ou non) avant le match
+    const vid = hasMod(D.team, 'video+') ? 1 : hasMod(D.team, 'video-') ? -1 : 0;
+    const val = (pos) => { const pl = map[pos]; if (!pl) return null; const v = this.eff(D, pl, k) + vid; return pos.startsWith('Ai') ? 12 + (v - 12) * 0.5 : v; };
     const own = val(fpos);
     const nb = [DLINE[idx - 1], DLINE[idx + 1]].filter(Boolean).map((pos) => ({ pos, v: val(pos) })).filter((x) => x.v !== null);
     let ws = 0, sum = 0;
@@ -838,7 +860,7 @@
     if (last && last.by === 1 - ai && last.kind === 'to') {
       const pca = 0.32 + intensity(A) * 0.03 + (A.tac.att === 'rapide' ? 0.12 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * 0.015
         + (dsys === '4-2' ? 0.03 : 0) + (dsys === '6-0' ? -0.05 : 0)
-        + (A.tac.att === 'rapide' && hasMod(A.team, 'physique+') ? 0.05 : 0) + (A.tac.att === 'rapide' && A === this.h && hasMod(A.team, 'public+') ? 0.04 : 0);
+        + (A.tac.att === 'rapide' && hasMod(A.team, 'physique+') ? 0.05 : 0);
       if (rnd() < pca) { A.st.ca++; return this.shoot(A, D, ai, i, 'ca'); }
     }
     // Engagement rapide après un but encaissé
@@ -851,7 +873,7 @@
       + (D.tac.dstyle === 'homme' ? 0.008 : 0) + (A.tac.jeu === 'collectif' ? -0.01 + perso * 0.007 : 0) - this.fit(A, i) * 0.5 - (A.coh - 50) * 0.0006
       + ((this.avg(D, i, 'contre') + this.avg(D, i, 'duelDef')) / 2 - 12) * 0.005
       + (man0 < 0 ? 0.03 : man0 > 0 ? -0.02 : 0) + (D.tac.cons.includes('agressive') ? 0.015 : 0) + intensity(D) * 0.012 + (A.empty ? 0.02 : 0)
-      + (D === this.h && hasMod(D.team, 'public+') ? 0.015 : 0) + (A === this.a ? HOME.to : 0);
+      + (A === this.a ? HOME.to * this.awayK : 0);
     if (rnd() < pTo) {
       const f = this.field(A, i);
       A.st.to++;
@@ -870,10 +892,11 @@
           const aggr = D.tac.cons.includes('agressive'), homme = D.tac.dstyle === 'homme';
           const pEx = 0.19 + (intensity(D) > 0 ? 0.03 : 0.015) * intensity(D) + (12 - this.eff(D, d, 'discipline')) * 0.012 + (aggr ? (hasMod(D.team, 'discipline+') ? 0 : 0.05) : 0)
             + (hasMod(D.team, 'discipline-') ? (aggr ? 0.03 : 0) + (homme ? 0.03 : 0) : 0)
-            + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex : 0);
+            + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex * this.awayK : 0);
           // Une exclusion au plus par possession ; déjà à 5, la défense se calme (beaucoup moins de doubles exclusions)
           const sh = this.short(D, i);
-          if (!exNow && sh < 2 && rnd() < pEx * (sh ? 0.35 : 1)) { this.exclude(D, 1 - ai, d, i); exNow = true; }
+          const capx = hasMod(D.team, 'capitanat+') ? 0.88 : hasMod(D.team, 'capitanat-') ? 1.12 : 1;
+          if (!exNow && sh < 2 && rnd() < pEx * capx * (sh ? 0.35 : 1)) { this.exclude(D, 1 - ai, d, i); exNow = true; }
         }
         if (rnd() < (0.22 + (this.avg(A, i, 'duel') - 12) * 0.01 + this.backMix(A, i).contact * 0.05) * (hasMod(A.team, 'arbitrage+') ? (A.tac.jeu === 'individuel' ? 1.9 : 1.6) : 1)) return this.shoot(A, D, ai, i, '7m');
       }
@@ -936,7 +959,7 @@
       }
     }
     const gk = D.lineup.GB;
-    const gkSkill = kind === '7m' ? this.eff(D, gk, 'gk7m') : (this.eff(D, gk, 'reflexes') + this.eff(D, gk, 'placement')) / 2;
+    const gkSkill = kind === '7m' ? this.eff(D, gk, 'gk7m') + (hasMod(D.team, 'video+') ? 1 : hasMod(D.team, 'video-') ? -1 : 0) : (this.eff(D, gk, 'reflexes') + this.eff(D, gk, 'placement')) / 2;
     let pr = ZONE_BASE[zone];
     if (kind !== 'vide') pr += 0.019 * (skill - gkSkill);
     if (!kind) {
@@ -977,9 +1000,7 @@
       if (A.tac.jeu === 'collectif') pr += hasMod(A.team, 'vestiaire+') ? 0.01 : hasMod(A.team, 'vestiaire-') ? -0.01 : 0;
       if (!kind && hasMod(D.team, 'cage+') && D.tac.dstyle === 'zone') pr -= 0.015;
       if (!kind && hasMod(D.team, 'cage-') && D.tac.dstyle === 'homme') pr += 0.02;
-      if (A === this.h) pr += HOME.shot;
-      if (A === this.h && hasMod(A.team, 'public+')) pr += 0.03;
-      if (A === this.h && hasMod(A.team, 'public-')) pr -= 0.03;
+      if (A === this.h) pr += this.homeShot;
       if (!kind && hasMod(A.team, 'spectacle-') && A.tac.jeu !== 'collectif') pr -= 0.015;
       if (A.boost > i) pr += 0.03;
       pr += intensity(A) * 0.01;
@@ -1060,10 +1081,11 @@
     const s = this.S[si], h = this.half();
     if (this.done || s.to[h]) return false;
     s.to[h] = 1;
-    s.boost = Math.max(s.boost, this.i + 6);
+    const cap = hasMod(s.team, 'capitanat+') ? 1 : hasMod(s.team, 'capitanat-') ? -1 : 0;
+    s.boost = Math.max(s.boost, this.i + (cap > 0 ? 10 : cap < 0 ? 3 : 6));
     s.run = 0; s.press = 0;
     this.lastTO = { si, i: this.i };
-    for (const x of this.on(s, this.i)) s.fat[x.p.id] = Math.max(0, s.fat[x.p.id] - 4);
+    for (const x of this.on(s, this.i)) s.fat[x.p.id] = Math.max(0, s.fat[x.p.id] - (cap > 0 ? 7 : cap < 0 ? 2 : 4));
     this.push('tm', si, `Temps mort ${s.team.name}${why ? ' (' + why + ')' : ''}`, true, { ai: !!s.ai });
     if (s.ai) this.adjust(si, true);
     return true;
@@ -1213,7 +1235,8 @@
   }
   function recover(st) {
     for (const t of st.teams) {
-      const r = FAT.recover + (hasMod(t, 'soins+') ? 10 : 0) - (hasMod(t, 'soins-') ? 7 : 0);
+      const lastRd = st.sched[st.round - 1] || [], away = lastRd.some(([, a]) => a === t.id);
+      const r = FAT.recover + (hasMod(t, 'soins+') ? 10 : 0) - (hasMod(t, 'soins-') ? 7 : 0) - (away && hasMod(t, 'deplacements-') ? 6 : 0);
       for (const p of t.players) p.fatigue = Math.max(0, p.fatigue - r);
     }
   }
@@ -1309,7 +1332,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

@@ -17,6 +17,21 @@
   const me = () => T(G.userId);
   const badge = (t, sm) => `<span class="badge${sm ? ' sm' : ''}" style="background:${t.color}" aria-hidden="true">${t.id}</span>`;
   const stars = (n) => `<span class="stars" aria-label="Réputation ${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
+  // Caractéristiques fixes des clubs (supporters, centre de formation) : pastilles de 1 à 5, effet au survol
+  const pips = (n, tip, lbl) => `<span class="pips" title="${esc(tip)}" role="img" aria-label="${esc(lbl || '')} ${n} sur 5">${[1, 2, 3, 4, 5].map((k) => `<i${k <= n ? ' class="on"' : ''}></i>`).join('')}</span>`;
+  const pctTxt = (v) => (Math.round(v * 1000) / 10).toString().replace('.', ',') + ' %';
+  const signed = (v) => (v > 0 ? '+' : v < 0 ? '−' : '') + String(Math.abs(v)).replace('.', ',');
+  const fanTips = (t) => ({
+    h: `Ferveur à domicile : +${pctTxt(H.homeShot(t))} de réussite au tir quand ils reçoivent.`,
+    a: `Supporters en déplacement : à l'extérieur, le handicap du visiteur (pertes de balle, exclusions, fatigue du trajet) est réduit de ${Math.round(H.awayCut(t) * 100)} %.`,
+    f: `Centre de formation : jeunes du centre et moins de 23 ans à ${signed(H.academyOff(t))} en niveau et en potentiel ; environ une vraie pépite sur ${Math.round(100 / (6 + (H.academyOf(t) - 1) * 3.5))} jeunes.`
+  });
+  function traitsHtml(t, opts) {
+    const f = H.fansOf(t), tip = fanTips(t);
+    const rows = [['Domicile', pips(f.h, tip.h, 'Ferveur à domicile')], ['Déplacement', pips(f.a, tip.a, 'Supporters en déplacement')]];
+    if (!(opts && opts.noAcademy)) rows.push(['Formation', pips(H.academyOf(t), tip.f, 'Centre de formation')]);
+    return `<div class="traits">${opts && opts.noName ? '' : `<span class="fansname">${esc(f.name)}</span>`}${rows.map(([l, v]) => `<span class="trait"><span class="muted">${l}</span>${v}</span>`).join('')}</div>`;
+  }
   // Étoiles des joueurs : relatives au niveau de ton club, demi-étoiles, jamais la note chiffrée
   const sref = () => H.starRef(me());
   const sfmt = (s) => (s >= 1 ? String(Math.floor(s)) : '') + (s % 1 ? '½' : '') + ' ★';
@@ -259,7 +274,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const app = document.getElementById('app');
     applyTheme();
     if (!G) { app.innerHTML = renderHome() + deviceModal(); return; }
-    const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
+    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
     app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
@@ -277,9 +292,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     };
     const ready = d.b && d.m;
     const club = H.CLUBS.find((c) => c.id === U.newClub);
-    return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="row">${badge(club)}<div><b style="font-family:var(--f-display);font-size:1.25rem">${esc(club.name)}</b><br><span class="muted">${esc(club.city)} · ${stars(club.rep)}</span></div></div><button class="btn" data-act="step1">← Changer de club</button></div>
+    return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:14px"><div class="row">${badge(club)}<div><b style="font-family:var(--f-display);font-size:1.25rem">${esc(club.name)}</b><br><span class="muted">${esc(club.city)} · ${stars(club.rep)}</span></div>${traitsHtml(club)}</div><button class="btn" data-act="step1">← Changer de club</button></div>
       <h3>Bonus et malus du club</h3>
-      <p class="muted" style="margin:0 0 14px">Le hasard t'en propose trois de chaque : choisis un bonus et un malus. Ils durent toute la saison. Les clubs adverses reçoivent chacun un bonus ou un malus au hasard.</p>
+      <p class="muted" style="margin:0 0 14px">Le hasard t'en propose trois de chaque : choisis un bonus et un malus. Ils durent toute la saison. Les clubs adverses reçoivent chacun un bonus et un malus au hasard. Supporters et centre de formation, eux, sont propres au club.</p>
       <div class="modgrid"><div class="modcol"><span class="label good">Ton bonus</span>${d.bonus.map((k) => card(k, '+', 'pickb', d.b)).join('')}</div>
         <div class="modcol"><span class="label bad">Ton malus</span>${d.malus.map((k) => card(k, '-', 'pickm', d.m)).join('')}</div></div>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="start" ${ready ? '' : 'disabled'}>Lancer la saison</button><span class="muted">${ready ? `${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} · ${esc(H.modInfo(d.b + '+').name)} · ${esc(H.modInfo(d.m + '-').name)}` : 'Choisis un bonus et un malus pour lancer la saison.'}</span></div></section>`;
@@ -289,7 +304,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis la ${LEAGUE}, un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
       <p class="devnote">À jouer sur ordinateur ou tablette (de préférence en paysage) : l'interface n'est pas faite pour les téléphones.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
-      ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
+      ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}" title="${esc(`${c.fans.name} · domicile ${c.fans.h}/5 · déplacement ${c.fans.a}/5 · centre de formation ${c.academy}/5`)}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="step2">Continuer avec ${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} →</button><span class="muted">La réputation fixe le niveau moyen de l'effectif généré.</span></div></section>`}`;
   }
 
@@ -343,6 +358,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="tp"><span class="label">Identité de jeu</span><b>${fi.id.label} <span class="num muted">${fi.id.v.toFixed(1)}/20</span></b>${meter(fi.id.v, 20, 'var(--court)')}<span class="legend">Moyenne de l'esprit collectif des 6 joueurs de champ titulaires. Elle évolue avec le style joué : le jeu collectif la fait monter, le jeu individuel baisser. Style choisi : ${H.JEU[t.tactic.jeu].toLowerCase()}, <span class="${fi.cls}">${fi.txt}</span>.</span></div>
       <div class="tp"><span class="label">Cohésion</span><b class="num">${coh}/100</b>${meter(coh, 100, 'var(--iso-gym)')}<span class="legend">Monte quand les mêmes titulaires enchaînent les matchs, baisse quand tu changes beaucoup. Joue sur les passes et la réussite.</span></div>
       <div class="tp"><span class="label">Particularités du club</span>${(t.mods || []).length ? t.mods.map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('') : '<span class="legend">Aucune (partie commencée avant les bonus et malus).</span>'}</div>
+      <div class="tp"><span class="label">Supporters et formation</span>${traitsHtml(t)}<span class="legend">Propres au club, les mêmes à chaque partie. Détail au survol des pastilles.</span></div>
       <div class="tp"><span class="label">Expérience</span><b class="num">${exp}/100</b>${meter(exp, 100, 'var(--iso-office)')}<span class="legend">Âge et matchs joués des titulaires. Aide dans les fins de match serrées et limite les exclusions.</span></div>
     </div>`;
   }
@@ -350,12 +366,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tac = t.tactic, tr = G.training, out = [];
     const add = (mod, st, text, w) => { if (H.hasMod(t, mod) && (where === 'match' || w.includes(where))) out.push({ mod, st, text }); };
     const aggr = tac.cons.includes('agressive'), homme = tac.dstyle === 'homme';
-    add('public+', tac.att === 'rapide' ? 'good' : 'info', tac.att === 'rapide' ? 'À domicile, ton jeu rapide profite du chaudron : +4 % de contre-attaques.' : 'Passe en jeu rapide à domicile : le public pousse les contre-attaques (+4 %).', ['tactique']);
-    add('public-', 'info', 'À domicile, le public ne te portera pas : un jeu placé limite les pertes de balle.', ['tactique']);
+    add('video+', homme ? 'good' : 'info', homme ? "En homme à homme, chaque défenseur est seul : l'analyse vidéo pèse encore plus dans ses face-à-face." : "Tes défenseurs connaissent les tireurs adverses (+1 dans les face-à-face) ; ton gardien aussi sur les 7 m.", ['tactique']);
+    add('video-', homme ? 'bad' : 'info', homme ? "En homme à homme, tes défenseurs découvrent seuls leur vis-à-vis (−1) : la défense collective limite la casse." : "Sans vidéo, tes défenseurs partent à −1 dans les face-à-face : la défense collective les fait s'entraider.", ['tactique']);
+    add('deplacements+', 'info', "À l'extérieur, ton car te met dans les meilleures conditions : pas de fatigue du trajet, et moitié moins de handicap.", ['tactique']);
+    add('deplacements-', tr.intensity === 'intense' ? 'bad' : 'info', tr.intensity === 'intense' ? "Semaine intense après un retour en TER : tes joueurs vont arriver cuits. Pense à l'intensité normale ou légère." : "Après un déplacement, tes joueurs récupèrent moins : fais tourner, surtout le match suivant.", ['training', 'tactique']);
+    add('capitanat+', aggr ? 'good' : 'info', aggr ? 'Ton capitaine parle aux arbitres : la défense agressive te coûte moins d\'exclusions.' : 'Garde tes temps morts pour casser les séries : avec ton capitaine, ils durent plus longtemps.', ['tactique']);
+    add('capitanat-', aggr ? 'bad' : 'info', aggr ? 'Personne ne calme le jeu : défense agressive et brassard tournant, ça fait beaucoup d\'exclusions.' : 'Tes temps morts portent peu : ne compte pas dessus pour renverser un match.', ['tactique']);
     add('staff+', tr.focus !== 'equilibre' ? 'good' : 'info', tr.focus !== 'equilibre' ? 'Ton staff bac+12 est encore meilleur sur un focus ciblé (×1,1 en plus).' : 'Choisis un focus ciblé : ton staff y est encore meilleur (×1,1 en plus).', ['training']);
     add('staff-', 'info', 'Avec un staff qui joue à Fortnite, les jeunes sous leur potentiel restent ta meilleure source de progrès.', ['training']);
-    add('formation+', 'info', 'Fais jouer tes jeunes : tant qu\'ils sont sous leur potentiel, ils progressent jusqu\'à 3 fois plus vite.', ['training', 'tactique']);
-    add('formation-', 'info', 'Tes jeunes partent de plus bas : compte sur tes cadres et sur le centre de formation.', ['training']);
     add('vestiaire+', tac.jeu === 'collectif' ? 'good' : 'info', tac.jeu === 'collectif' ? 'Groupe soudé + jeu collectif : +1 % au tir.' : 'Ton groupe soudé gagne +1 % au tir en jeu collectif.', ['tactique']);
     add('vestiaire-', tac.jeu === 'collectif' ? 'bad' : 'info', tac.jeu === 'collectif' ? 'Deux groupes WhatsApp et jeu collectif : −1 % au tir. Garde un 7 stable pour remonter la cohésion.' : 'Évite le jeu collectif (−1 % au tir) et garde un 7 stable pour remonter la cohésion.', ['tactique']);
     add('soins+', tr.intensity === 'intense' ? 'good' : 'info', tr.intensity === 'intense' ? 'Ton kiné encaisse la semaine intense : fatigue supplémentaire divisée par deux.' : 'Tu peux te permettre l\'intensité intense : ton kiné divise la fatigue en plus par deux.', ['training']);
@@ -420,7 +438,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">Attaque · ${ATT_TXT[tac.att][0]} · jeu ${H.JEU[tac.jeu].toLowerCase()}</span><p>${ATT_TXT[tac.att][1]}. Identité de l'équipe : ${fitInfo(t).id.label.toLowerCase()} (${fitInfo(t).txt}).</p></div>
             <div class="opt"><span class="label">Défense · ${H.DSTYLE[tac.dstyle]}</span><p>${rulesLine(tac.rules)}.</p></div>
             <div class="opt"><span class="label">Consignes</span><p>${tac.cons.length ? tac.cons.map((c) => CONS[c]).join(' · ') : 'Aucune consigne'}</p></div>
-            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? 'Ton public te porte : +3,5 % de réussite au tir, moins de ballons perdus, et un arbitre un peu plus clément avec ta défense.' : "Déplacement : tes joueurs partent avec 4 points de fatigue en plus, l'adversaire tire mieux devant son public et l'arbitre siffle plus sévèrement ta défense. Évite la défense agressive."}</p></div>
+            <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? `${esc(H.fansOf(t).name)} te portent : +${pctTxt(H.homeShot(t))} de réussite au tir. ${esc(opp.name)} perd plus de ballons et prend plus d'exclusions${H.awayCut(opp) ? `, un peu moins grâce à ses supporters en déplacement (−${Math.round(H.awayCut(opp) * 100)} %)` : ''}.` : `Chez ${esc(H.fansOf(opp).name)}, l'adversaire tire mieux (+${pctTxt(H.homeShot(opp))}) et l'arbitre siffle plus sévèrement ta défense : évite la défense agressive. ${H.awayCut(t) ? `Tes supporters en déplacement réduisent ce handicap de ${Math.round(H.awayCut(t) * 100)} %.` : 'Tes supporters ne se déplacent pas : tu pars avec tout le handicap.'}`}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
             <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
@@ -431,7 +449,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
             ${oppForm(opp)}
             <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
-            <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+            <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${traitsHtml(opp)}${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             ${(() => { const mv = opp.players.filter((p) => p.mvp).sort((x, y) => y.mvp - x.mvp); return mv.length ? `<div class="opt"><span class="label">MVP dans leur effectif</span>${mv.slice(0, 3).map((p) => `<div class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted">${p.mvp} fois MVP${p.mvpBoost === G.round ? ' · en confiance' : ''}</span></div>`).join('')}</div>` : ''; })()}
             <div class="opt"><span class="label">Joueurs à surveiller</span>
               ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span>${vstars(p.ovr, { sm: true })}</div>`).join('')}
@@ -928,7 +946,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const left = nr ? nr - G.round : 0;
     const youths = t.players.filter((p) => p.youth);
     return `<div class="grid2">
-      <section class="panel"><h3>Centre de formation</h3>
+      <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
           <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à 16 joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
       </section>
@@ -1015,7 +1033,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     ]));
     if (o) { const fav = o.ow <= o.ol ? [h, o.ow] : [a, o.ol]; fx.push(`Bet9M donne ${fav[0].name} favori à ${fav[1].toFixed(2).replace('.', ',')}. Moi je ne parie jamais, Tom. Sauf sur une chose : ça va se jouer dans les dix dernières minutes.`); }
     if (Math.abs(rgap) >= 2) { const big = rgap > 0 ? h : a, small = rgap > 0 ? a : h; fx.unshift(`${big.name} a plus de banc, plus de talent, plus de tout. Mais attention : ${small.name} n'a rien à perdre, et une équipe qui n'a rien à perdre, ça peut tout gagner. Ou rien. On va voir.`); }
-    if (hasModC(h, 'public+')) fx.push(`À ${h.city}, le public pousse fort, Tom. Ici, tu marques un but, la salle t'en donne un deuxième dans la tête.`);
+    if (H.fansOf(h).h >= 5) fx.push(`À ${h.city}, ${H.fansOf(h).name.replace(/^Les /, 'les ')} poussent fort, Tom. Ici, tu marques un but, la salle t'en donne un deuxième dans la tête.`);
+    else if (H.fansOf(a).a >= 4 && R() < 0.5) fx.push(`Attention, Tom : ${H.fansOf(a).name.replace(/^Les /, 'les ')} ont fait le déplacement en nombre. À ${h.city}, ce soir, on ne sait plus trop qui reçoit.`);
     const leg = h.players.concat(a.players).find((p) => p.legend);
     if (leg && R() < 0.4) fx.unshift(`Et ce jeune ${leg.name}… ce nom me dit quelque chose, Tom. Non ? Bon. Ça me reviendra à la mi-temps.`);
     if (!fx.length || !played) fx.push(pk([`Début de saison, Tom : personne ne sait rien, donc tout le monde a un avis. Moi le premier.`, `Premier match, c'est toujours piège. Les jambes sont neuves, les gardiens aussi, et les arbitres… on verra.`]));
@@ -1153,6 +1172,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
       { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
       { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
+      { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', sub: H.fansOf(t).name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters' },
       { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement' }
     ];
   }
@@ -1276,6 +1296,35 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     add(8.6, 4.95, bwrap(pl.formation, isoBox(fo) + parapet(fo) + winL(fo, 1, 6, WIN, 0.8) + winR(fo, 1, 2, WIN, 0.6) + door(8.4, 8.9, 5.6, 8) + unit(7.3, 4.5, 18) + unit(9.6, 4.6, 18, 0.8)));
     for (const [gx, gy2] of [[10.45, 3.35], [11.6, 3.35]]) add(gx, gy2, isoBox({ x: gx, y: gy2, w: 0.12, d: 0.3, h: 4, c: 'var(--iso-mark)' }));
 
+    // Club house des supporters : bannière aux couleurs du club, buvette en façade, une table en terrasse
+    {
+      const ch = { x: 3.05, y: 7.35, w: 1.65, d: 1.4, h: 21, c: 'var(--iso-club)' };
+      shade(ch);
+      const fy = ch.y + ch.d;
+      // Nom des supporters sur deux lignes équilibrées (coupure aux espaces et après les traits d'union)
+      const words = H.fansOf(t).name.toUpperCase().split(/(?<=-)|\s+/).filter(Boolean);
+      const join = (ws) => ws.join(' ').replace(/- /g, '-');
+      let lines = [join(words)];
+      for (let k = 1; k < words.length; k++) { const c = [join(words.slice(0, k)), join(words.slice(k))]; if (Math.max(...c.map((l) => l.length)) < Math.max(...lines.map((l) => l.length))) lines = c; }
+      const bx0 = ch.x + 0.1, bx1 = ch.x + ch.w - 0.1, z0 = 9.6, z1 = 20.3;
+      const fs = Math.min(5, ((bx1 - bx0) * 35.8 - 5) / (Math.max(...lines.map((l) => l.length)) * 0.7));
+      let club = isoBox(ch) + parapet(ch) + winR(ch, 2, 2, WIN, 0.6) + unit(ch.x + 0.2, ch.y + 0.25, ch.h, 0.8)
+        // Bannière : couleur du club, liserés de contraste, nom des supporters
+        + poly([P(bx0, fy, z0), P(bx1, fy, z0), P(bx1, fy, z1), P(bx0, fy, z1)], t.color, EDGE)
+        + poly([P(bx0, fy, z0), P(bx1, fy, z0), P(bx1, fy, z0 + 0.8), P(bx0, fy, z0 + 0.8)], t.color2)
+        + poly([P(bx0, fy, z1 - 0.8), P(bx1, fy, z1 - 0.8), P(bx1, fy, z1), P(bx0, fy, z1)], t.color2)
+        + lines.map((l, k) => skewText(bx0 + 0.06, fy, lines.length > 1 ? (k ? z0 + 1.3 : z1 - 1 - fs * 0.75) : (z0 + z1) / 2 - fs * 0.37, l, fs, '#fff')).join('');
+      // Buvette en façade : comptoir éclairé, auvent rayé, enseigne
+      club += poly([P(ch.x + 0.25, fy, 2.6), P(ch.x + 1.1, fy, 2.6), P(ch.x + 1.1, fy, 6.4), P(ch.x + 0.25, fy, 6.4)], 'var(--iso-lamp)', 'fill-opacity="0.85"')
+        + poly([P(ch.x + 0.2, fy, 2.2), P(ch.x + 1.15, fy, 2.2), P(ch.x + 1.15, fy, 3), P(ch.x + 0.2, fy, 3)], 'var(--iso-stone)', EDGE)
+        + door(ch.x + 1.25, ch.x + 1.5, fy, 7);
+      for (let k = 0; k < 5; k++) { const x0 = ch.x + 0.2 + k * 0.19; club += poly([P(x0, fy, 8.6), P(x0 + 0.19, fy, 8.6), P(x0 + 0.19, fy + 0.1, 8), P(x0, fy + 0.1, 8)], k % 2 ? '#f4f4f4' : t.color, EDGE); }
+      club += skewText(ch.x + 0.34, fy, 3.4, 'BUVETTE', 2.6, '#3a2a20');
+      // Terrasse : table haute et parasol aux couleurs du club
+      { const [tx, ty] = P(4.45, 9.3, 0), [px, py] = P(4.45, 9.3, 12);
+        club += `<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="var(--iso-pole)" stroke-width="0.9"/><ellipse cx="${tx.toFixed(1)}" cy="${(ty - 4.5).toFixed(1)}" rx="3" ry="1.4" fill="var(--iso-stone)" ${EDGE}/><path d="M${(px - 8).toFixed(1)} ${(py + 3).toFixed(1)} Q${px.toFixed(1)} ${(py - 4).toFixed(1)} ${(px + 8).toFixed(1)} ${(py + 3).toFixed(1)} Z" fill="${t.color2}" ${EDGE}/>`; }
+      add(ch.x + ch.w / 2, ch.y + ch.d / 2 + 0.3, bwrap(pl.clubhouse, club));
+    }
     // Bâtiments grisés à venir
     const gh = Object.fromEntries(GHOSTS.map((g) => [g.key, g]));
     const si = { x: 1, y: 1, w: 1.6, d: 1.6, h: 62, c: G1 };
@@ -1295,7 +1344,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     // Décor : immeubles, maisons
     const deco = [
       { x: 3, y: 1, w: 1.4, d: 2.2, h: 44, win: [5, 2, 4, 3], units: 2 }, { x: 0.8, y: 3.6, w: 2.2, d: 1.4, h: 30, win: [3, 4, 3, 2], units: 1 },
-      { x: 3.4, y: 4, w: 1.2, d: 1.2, h: 52, win: [6, 2, 6, 2], units: 1 }, { x: 3.4, y: 7.5, w: 1, d: 0.8, h: 12, roof: 9, house: true },
+      { x: 3.4, y: 4, w: 1.2, d: 1.2, h: 52, win: [6, 2, 6, 2], units: 1 }, 
       { x: 10.8, y: 4.4, w: 1, d: 0.9, h: 13, roof: 9, house: true }, { x: 3.5, y: 11.2, w: 0.9, d: 0.6, h: 11, roof: 8, house: true },
       { x: 0.5, y: 7.4, w: 0.9, d: 0.8, h: 12, roof: 8, house: true }
     ];
@@ -1309,7 +1358,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       add(b.x + b.w / 2, b.y + b.d / 2, `<g class="deco">${s}</g>`);
     }
     // Végétation, mobilier, voitures
-    const trees = [[4.6, 0.5, 1], [0.4, 0.5, 0.9], [0.4, 5.4, 0.85], [4.7, 5.4, 0.9], [6.6, 0.6, 1], [11.6, 0.5, 0.9], [11.5, 5.5, 0.95], [6.5, 5.6, 0.85], [2.6, 7.4, 0.9], [4.7, 8.9, 1], [4.7, 11.4, 1], [6.5, 11.5, 0.9], [6.5, 7.5, 0.95], [11.6, 7.4, 0.9], [0.4, 9.2, 0.85], [2.65, 5.45, 0.8]];
+    const trees = [[4.6, 0.5, 1], [0.4, 0.5, 0.9], [0.4, 5.4, 0.85], [4.7, 5.4, 0.9], [6.6, 0.6, 1], [11.6, 0.5, 0.9], [11.5, 5.5, 0.95], [6.5, 5.6, 0.85], [2.6, 7.4, 0.9], [4.7, 11.4, 1], [6.5, 11.5, 0.9], [6.5, 7.5, 0.95], [11.6, 7.4, 0.9], [0.4, 9.2, 0.85], [2.65, 5.45, 0.8]];
     for (const [x, y, s] of trees) add(x, y, `<g class="deco">${tree(x, y, s)}</g>`);
     for (const [x, y, s] of [[4.6, 2.9, 0.9], [0.35, 2.6, 1], [4.65, 10.2, 0.85], [11.75, 6.2, 0.8], [6.45, 3.6, 0.85]]) add(x, y, `<g class="deco">${conifer(x, y, s)}</g>`);
     for (const [x, y] of [[6.75, 10.65], [7.4, 10.65], [9.7, 10.65], [10.3, 10.65], [1.45, 7.6], [0.9, 8.6], [2.85, 3.3]]) add(x, y, `<g class="deco">${bush(x, y)}</g>`);
@@ -1367,6 +1416,25 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderCity() {
     const t = me();
     return `<section class="panel citypanel"><div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(t.city)} · la Cité du hand</h3><span class="legend">Clique sur un bâtiment pour y entrer. Les bâtiments gris arriveront plus tard.</span></div>${renderCityMap()}</section>`;
+  }
+
+  // ---------- Club house : les supporters ----------
+  const BUVETTE = { PAR: 'jambon-beurre à 9 €', MTP: 'tielle sétoise', LYO: 'saucisson brioché', TLS: 'saucisse de Toulouse', NAN: 'petit-beurre trempé dans le muscadet', BDX: 'canelés', REN: 'galette-saucisse', MRS: 'panisses', LIL: 'fricadelle-frites', STR: 'bretzel', NCE: 'socca', STE: 'râpée', GRE: 'gratin en barquette', ANG: 'quernons d\'ardoise', DIJ: 'pain d\'épices', CLE: 'truffade' };
+  function renderClubhouse() {
+    const t = me(), f = H.fansOf(t), tip = fanTips(t);
+    const rows = G.teams.slice().sort((a, b) => H.fansOf(b).h - H.fansOf(a).h || H.fansOf(b).a - H.fansOf(a).a || a.name.localeCompare(b.name, 'fr'));
+    return `<div class="grid2">
+      <section class="panel"><h3>Club house</h3>
+        <div class="banner" style="background:${t.color};border-color:${t.color2}"><span>${esc(f.name)}</span></div>
+        <div style="display:grid;gap:12px;margin-top:14px">
+          <div class="opt"><span class="label">Ferveur à domicile</span><div class="row" style="gap:10px">${pips(f.h, tip.h, 'Ferveur à domicile')}<span>+${pctTxt(H.homeShot(t))} de réussite au tir à domicile.</span></div></div>
+          <div class="opt"><span class="label">Supporters en déplacement</span><div class="row" style="gap:10px">${pips(f.a, tip.a, 'Supporters en déplacement')}<span>${H.awayCut(t) ? `Handicap du visiteur réduit de ${Math.round(H.awayCut(t) * 100)} % (pertes de balle, exclusions, fatigue du trajet).` : 'Personne ne fait le déplacement : tu subis tout le handicap du visiteur.'}</span></div></div>
+          <div class="opt"><span class="label">À la buvette</span><p style="margin:0">Spécialité de la maison : ${esc(BUVETTE[t.id] || 'merguez-frites')}.</p></div>
+        </div>
+        <p class="legend">Les supporters sont propres au club, les mêmes à chaque partie.</p></section>
+      <section class="panel"><h3>Les tribunes de la ${LEAGUE}</h3><div class="scroll"><table><thead><tr><th>Club</th><th>Supporters</th><th title="Ferveur à domicile">Dom.</th><th title="Supporters en déplacement">Ext.</th></tr></thead><tbody>
+        ${rows.map((o) => { const fo = H.fansOf(o), tp = fanTips(o); return `<tr${o.id === t.id ? ' class="me"' : ''}><td class="nw">${badge(o, true)} ${esc(o.name)}</td><td>${esc(fo.name)}</td><td>${pips(fo.h, tp.h, 'Ferveur à domicile')}</td><td>${pips(fo.a, tp.a, 'Supporters en déplacement')}</td></tr>`; }).join('')}
+      </tbody></table></div><p class="legend">Au survol des pastilles, l'effet sur les matchs.</p></section></div>`;
   }
 
   // ---------- Tactique ----------
