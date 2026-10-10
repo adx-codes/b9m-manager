@@ -948,7 +948,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const o = G.odds && G.odds.key === key ? G.odds : null;
     if (!o && !U.oddsBusy) {
       U.oddsBusy = true;
-      setTimeout(() => { const r = H.odds(h, a, 200); G.odds = { key, ...r }; U.oddsBusy = false; save(); if (U.tab === 'match' && U.view === 'pre') render(); }, 60);
+      setTimeout(() => { if (U.view !== 'pre' || U.tab !== 'match') { U.oddsBusy = false; return; } const r = H.odds(h, a, 200); G.odds = { key, ...r }; U.oddsBusy = false; save(); if (U.tab === 'match' && U.view === 'pre') render(); }, 60);
     }
     const share = o ? (() => { const v = [o.pw, o.pd, o.pl].map((p) => Math.pow(p, 2)), t = v.reduce((x, y) => x + y, 0); const r = v.map((x) => Math.round((x / t) * 100)); r[1] = 100 - r[0] - r[2]; return r; })() : [0, 0, 0];
     const fav = o ? [o.ow, o.od, o.ol].indexOf(Math.min(o.ow, o.ol)) : -1;
