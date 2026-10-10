@@ -375,7 +375,9 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 - attributs et points gagnés depuis le début de saison ;
 - tableau match par match.
 
-Note d'un match : 6 de base, +0,55 par but, −0,3 par tir manqué, −0,45 par perte, −0,5 par exclusion, +0,3 au-delà de 40 minutes. Pour un gardien : 6 + 0,35 × (arrêts − un tiers des tirs subis). Bornée entre 2 et 10.
+Note d'un match : 6 de base, +0,55 par but, −0,3 par tir manqué, −0,45 par perte, −0,5 par exclusion, +0,3 au-delà de 40 minutes. Pour un gardien : 6 + 0,75 × (arrêts − un tiers des tirs subis), +0,2 au-delà de 25 minutes. Bornée entre 2 et 10.
+
+**MVP du match :** à chaque match de la SparLigue (le tien comme ceux des IA), le joueur des deux équipes avec la meilleure note, parmi ceux qui ont joué au moins 15 minutes, avec +0,5 pour les vainqueurs ; égalité départagée aux buts (aux arrêts pour un gardien). Répartition mesurée : environ 10 % de gardiens, les arrières et demi-centres le plus souvent. Petit boost « Confiance de MVP » pour le match suivant : +1 de forme (plafond +2, donc pas de cumul) et 8 points de fatigue en moins. Affichage : encart avec couronne en fin de match (note, ligne de stats, minutes, nombre de titres), couronne près de la forme dans l'effectif pendant le match boosté, compteur dans la fiche joueur, MVP de l'adversaire dans la préparation du match, tableau « MVP de la saison » dans le championnat (titres de MVP, comme les buteurs) et MVP de la saison dans le bilan.
 
 ## Identité visuelle
 

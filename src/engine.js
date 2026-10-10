@@ -1131,6 +1131,44 @@
 
   // ---------- Saison ----------
   function team(st, id) { return st.teams.find(t => t.id === id); }
+  // Note de match sur 10 (aussi affichée dans la fiche joueur)
+  function noteOf(pos, min, g, sh, sv, fa, to, ex) {
+    if (min < 3) return null;
+    const r = pos === 'GB' ? 6 + (sv - 0.33 * fa) * GK_NOTE + (min >= 25 ? 0.2 : 0) : 6 + 0.55 * g - 0.3 * (sh - g) - 0.45 * to - 0.5 * ex + (min >= 40 ? 0.3 : 0);
+    return Math.max(2, Math.min(10, Math.round(r * 10) / 10));
+  }
+  const GK_NOTE = 0.75;
+  const MVP_BOOST = { form: 1, rest: 8 };
+  // MVP du match : meilleure note parmi les joueurs des deux équipes ayant joué 15 minutes, +0,5 pour les vainqueurs.
+  // Petit boost pour le match suivant : +1 de forme (plafond +2, donc pas de cumul) et 8 points de fatigue en moins.
+  // Compté pour le titre de MVP de la saison.
+  function pickMvp(st, r) {
+    let best = null;
+    for (const side of [r.h, r.a]) {
+      const t = team(st, side.id), opp = side === r.h ? r.a : r.h, won = side.score > opp.score;
+      for (const id of side.played) {
+        const p = t.players.find(x => x.id === id), min = (side.mins || {})[id] || 0;
+        if (!p || min < 15) continue;
+        const q = (side.ps || {})[id] || {};
+        const n = noteOf(p.pos, min, q.g || 0, q.sh || 0, q.sv || 0, q.fa || 0, q.to || 0, q.ex || 0);
+        const sc = n + (won ? 0.5 : 0) + (p.pos === 'GB' ? q.sv || 0 : q.g || 0) * 0.001 + min * 0.00001;
+        if (!best || sc > best.sc) best = { sc, p, t, n, q, min };
+      }
+    }
+    if (!best) return null;
+    best.p.mvp = (best.p.mvp || 0) + 1;
+    best.p.form = Math.min(2, (best.p.form || 0) + MVP_BOOST.form);
+    best.p.fatigue = Math.max(0, (best.p.fatigue || 0) - MVP_BOOST.rest);
+    best.p.mvpBoost = st.round + 1;
+    const q = best.q;
+    return { id: best.p.id, name: best.p.name, pos: best.p.pos, team: best.t.id, note: best.n, min: Math.round(best.min), g: q.g || 0, sh: q.sh || 0, sv: q.sv || 0, fa: q.fa || 0, to: q.to || 0, ex: q.ex || 0, n: best.p.mvp };
+  }
+  function mvps(st, n) {
+    const all = [];
+    for (const t of st.teams) for (const p of t.players) if (p.mvp) all.push({ p, t });
+    all.sort((x, y) => y.p.mvp - x.p.mvp || (y.p.goals + y.p.saves) - (x.p.goals + x.p.saves));
+    return all.slice(0, n || 10);
+  }
   function applyResult(st, r) {
     const styleLog = [];
     for (const side of [r.h, r.a]) {
@@ -1170,7 +1208,8 @@
         (p.hist = p.hist || []).push([st.round + 1, Math.round(p.ovr * 10) / 10, Math.round(p.lastMins), q.g || 0, q.sh || 0, q.sv || 0, q.fa || 0, q.to || 0, q.ex || 0, opp.id, res]);
       }
     }
-      return styleLog;
+    r.mvp = pickMvp(st, r);
+    return styleLog;
   }
   function recover(st) {
     for (const t of st.teams) {
@@ -1270,7 +1309,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

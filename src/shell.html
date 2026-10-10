@@ -498,6 +498,15 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .tvlines b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .tvlines b.tom, .tvlines b.fx { color: var(--tv); }
 .tvcard .betnote { padding: 0 12px 10px; }
+/* MVP */
+.crown { width: 18px; height: 14px; display: inline-block; vertical-align: -2px; }
+.mvpcard { border-color: color-mix(in srgb, var(--star) 55%, var(--line)); background: color-mix(in srgb, var(--star) 7%, var(--surface)); }
+.mvphead { display: flex; align-items: center; gap: 8px; color: var(--star); margin-bottom: 6px; }
+.mvphead .crown { width: 24px; height: 18px; }
+.mvphead .label { color: var(--star); }
+.mvpname { font-family: var(--f-display); font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+.mvpname .plink { font: inherit; }
+.mvpmini { color: var(--star); display: inline-flex; }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
 .fline .nw { overflow: hidden; text-overflow: ellipsis; }

@@ -36,6 +36,8 @@
   function vstars(v, o = {}) { const s = H.stars(v, sref()); return sbar(s, { sm: o.sm, red: o.red, title: o.title || `${H.starLabel(s)} (${sfmt(s)})` }); }
   // Nom du championnat : clin d'œil à l'ancienne « Lidl Starligue »
   const LEAGUE = 'SparLigue';
+  // Petite couronne du MVP
+  const CROWN = '<svg class="crown" viewBox="0 0 24 18" aria-hidden="true"><path d="M2 15 L3.5 4.5 L8.5 9.5 L12 2 L15.5 9.5 L20.5 4.5 L22 15 Z" fill="currentColor"/><rect x="2" y="15.5" width="20" height="2.2" rx="1" fill="currentColor"/></svg>';
   const short = (name) => { const p = name.split(' '); return p[0][0] + '. ' + p.slice(1).join(' '); };
   const DEF_TXT = {
     '6-0': ['Protège la zone, limite les tirs de près', 'Laisse tirer de loin'],
@@ -99,9 +101,7 @@
   }
   function matchNote(p, h) {
     const [, , min, g, sh, sv, fa, to, ex] = h;
-    if (min < 3) return null;
-    const r = p.pos === 'GB' ? 6 + (sv - 0.33 * fa) * 0.35 + (min >= 25 ? 0.2 : 0) : 6 + 0.55 * g - 0.3 * (sh - g) - 0.45 * to - 0.5 * ex + (min >= 40 ? 0.3 : 0);
-    return Math.max(2, Math.min(10, Math.round(r * 10) / 10));
+    return H.noteOf(p.pos, min, g, sh, sv, fa, to, ex);
   }
   const noteCls = (n) => n === null ? 'muted' : n >= 7.5 ? 'nt5' : n >= 6.5 ? 'nt4' : n >= 5.5 ? 'nt3' : 'nt1';
   function sheetChart(p) {
@@ -138,7 +138,7 @@
     const tile = (l, v, sub) => `<div class="stile"><span class="label">${l}</span><b class="num">${v}</b>${sub ? `<span class="muted">${sub}</span>` : ''}</div>`;
     const tiles = [tile('Matchs joués', played.length || p.apps || 0, `${hs.length} journée${hs.length > 1 ? 's' : ''}`), tile('Min / match', played.length ? Math.round(sum(2) / played.length) : '–', `${Math.round(sum(2))} min au total`)]
       .concat(gk ? [tile('Arrêts', sum(5), pct(sum(5), sum(6)) + ' des tirs'), tile('Tirs subis', sum(6))] : [tile('Buts', sum(3), `${sum(4)} tirs · ${pct(sum(3), sum(4))}`), tile('Pertes de balle', sum(7)), tile('Exclusions', sum(8))])
-      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10')]);
+      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
     const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
     const a0 = p.a0 || p.a;
     const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
@@ -432,6 +432,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             ${oppForm(opp)}
             <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
             <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+            ${(() => { const mv = opp.players.filter((p) => p.mvp).sort((x, y) => y.mvp - x.mvp); return mv.length ? `<div class="opt"><span class="label">MVP dans leur effectif</span>${mv.slice(0, 3).map((p) => `<div class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted">${p.mvp} fois MVP${p.mvpBoost === G.round ? ' · en confiance' : ''}</span></div>`).join('')}</div>` : ''; })()}
             <div class="opt"><span class="label">Joueurs à surveiller</span>
               ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span>${vstars(p.ovr, { sm: true })}</div>`).join('')}
             </div>
@@ -654,14 +655,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // Fin de journée : matchs des autres, récupération, entraînement, centre de formation
   function playRound(r) {
     G.lastStyle = { round: G.round + 1, log: r ? H.applyResult(G, r).filter((x) => x.team === G.userId) : [] };
-    const rd = r ? [{ h: r.h.id, a: r.a.id, hs: r.h.score, as: r.a.score }] : [];
+    const rd = r ? [{ h: r.h.id, a: r.a.id, hs: r.h.score, as: r.a.score, mvp: r.mvp ? r.mvp.id : null }] : [];
     const playing = new Set();
     for (const [h, a] of G.sched[G.round]) {
       playing.add(h); playing.add(a);
       if (r && h === r.h.id && a === r.a.id) continue;
       const rr = new H.Match(T(h), T(a)).run();
       H.applyResult(G, rr);
-      rd.push({ h, a, hs: rr.h.score, as: rr.a.score });
+      rd.push({ h, a, hs: rr.h.score, as: rr.a.score, mvp: rr.mvp ? rr.mvp.id : null });
     }
     G.results.push(rd);
     for (const p of me().players) delete p.matchStyle;
@@ -746,7 +747,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const r = m.result();
     playRound(r);
     const pack = (s) => ({ id: s.id, score: s.score, half: s.half, st: s.st, goals: s.goals, saves: s.saves, ps: s.ps, mins: s.mins });
-    G.last = { h: pack(r.h), a: pack(r.a), ev: r.ev.filter((e) => e.key), side: U.side, round: G.round };
+    G.last = { h: pack(r.h), a: pack(r.a), ev: r.ev.filter((e) => e.key), side: U.side, round: G.round, mvp: r.mvp || null };
     U.post = G.last;
     U.m = null;
     U.view = 'post';
@@ -769,6 +770,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="grid2">
         <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
         <div style="display:grid;gap:20px;min-width:0">
+          ${p.mvp ? mvpCard(p.mvp) : ''}
           <section class="panel"><h3>Tes buteurs</h3>${sc.length ? sc.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos">${x.p.pos}</span><span>${esc(x.p.name)}</span><span class="spacer" style="flex:1"></span><b class="num">${x.n}</b></div>`).join('') : '<p class="muted">Aucun but.</p>'}
             ${gk.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos gb">GB</span><span>${esc(x.p.name)}</span><span style="flex:1"></span><span class="num muted">${x.n} arrêt${x.n > 1 ? 's' : ''}</span></div>`).join('')}</section>
           <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${h.id}</span><span class="label">${a.id}</span></div>${statsHtml(p.h.st, p.a.st)}</section>
@@ -776,6 +778,15 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         </div>
       </div>
       ${p.h.ps ? perfSection(h, a, p.h, p.a) : ''}`;
+  }
+  function mvpCard(m) {
+    const f = findPlayer(m.id), t = T(m.team), mine = m.team === G.userId;
+    const line = m.pos === 'GB' ? `${m.sv} arrêt${m.sv > 1 ? 's' : ''} sur ${m.fa} tirs (${m.fa ? Math.round((m.sv / m.fa) * 100) : 0} %)` : `${m.g}/${m.sh} au tir${m.to ? ` · ${m.to} perte${m.to > 1 ? 's' : ''}` : ' · aucune perte'}${m.ex ? ` · ${m.ex} exclusion${m.ex > 1 ? 's' : ''}` : ''}`;
+    return `<section class="panel mvpcard${mine ? ' mine' : ''}"><div class="mvphead">${CROWN}<span class="label">MVP du match</span><span class="spacer"></span><span class="mnote nt5" title="Note du match sur 10">${String(m.note).replace('.', ',')}</span></div>
+      <div class="mvpname">${f ? plink(f.p) : esc(m.name)}</div>
+      <div class="row" style="gap:8px"><span class="pos${m.pos === 'GB' ? ' gb' : ''}">${m.pos}</span>${badge(t, true)}<span class="muted">${esc(t.name)}</span></div>
+      <p style="margin:8px 0 0">${line} · ${m.min} min</p>
+      <p class="legend" style="margin:6px 0 0">${m.n > 1 ? `${m.n}e titre de MVP cette saison. ` : 'Premier titre de MVP cette saison. '}Confiance de MVP au prochain match : +1 de forme et un peu plus de récupération.</p></section>`;
   }
   function renderEnd() {
     const s = H.standings(G);
@@ -788,6 +799,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<section class="board"><div class="teams"><div class="team">${badge(t)}<span class="tn">${esc(t.name)}</span></div><div class="score"><span>${ord(pos)}</span></div><div class="team away"><span class="tn">${r.pts} pts</span></div></div><div class="meta"><span>Fin de saison · ${r.g} victoire${r.g > 1 ? 's' : ''}, ${r.n} nul${r.n > 1 ? 's' : ''}, ${r.p} défaite${r.p > 1 ? 's' : ''}</span><span>Champion de ${LEAGUE} : ${esc(champ.name)}</span></div></section>
       <section class="panel"><h3>Bilan</h3><div style="display:grid;gap:12px"><p style="margin:0">${verdict}</p>
         <p class="muted" style="margin:0">${r.bp} buts marqués, ${r.bc} encaissés. Meilleur buteur du club : ${esc(top.name)} (${top.goals} buts).</p>
+        ${(() => { const m = H.mvps(G, 1)[0]; return m ? `<p class="row" style="margin:0;gap:8px"><span class="mvpmini">${CROWN}</span>MVP de la saison : <b>${esc(m.p.name)}</b> (${esc(m.t.name)}), ${m.p.mvp} fois MVP du match.</p>` : ''; })()}
         <div class="row"><button class="btn primary" data-act="replay">Rejouer une saison avec ce club</button><button class="btn" data-act="resetYes">Changer de club</button></div></div></section>`;
   }
 
@@ -835,7 +847,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
-        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
+        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r nw">${p.mvpBoost === G.round ? `<span class="mvpmini" title="Confiance de MVP : +1 de forme pour ce match">${CROWN}</span> ` : ''}${formTxt(p.form)}</td>
         <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
@@ -1493,7 +1505,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }).join('');
     const last = G.results[G.results.length - 1];
     const next = G.round < G.sched.length ? G.sched[G.round].map(([h, a]) => ({ h, a })) : null;
-    const sc = H.scorers(G, 10);
+    const sc = H.scorers(G, 10), mv = H.mvps(G, 10);
     return `<div class="grid2">
       <section class="panel"><h3>Classement de la ${LEAGUE}</h3><div class="scroll"><table><thead><tr><th class="r">#</th><th>Club</th><th class="r">J</th><th class="r">G</th><th class="r">N</th><th class="r">P</th><th class="r">BP</th><th class="r">BC</th><th class="r">Diff</th><th class="r">Pts</th></tr></thead><tbody>${table}</tbody></table></div>
         <p class="legend">Victoire 2 pts, nul 1, défaite 0 (ici, les points ne sont jamais en promo). Départage : points, différence de buts particulière, différence générale, buts marqués.</p></section>
@@ -1501,6 +1513,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         ${last ? `<section class="panel"><h3>Journée ${G.results.length}</h3><div class="scroll"><table><tbody>${last.map(resultRow).join('')}</tbody></table></div></section>` : ''}
         ${next ? `<section class="panel"><h3>Journée ${G.round + 1} · à venir</h3><div class="scroll"><table><tbody>${next.map(resultRow).join('')}</tbody></table></div></section>` : ''}
         <section class="panel"><h3>Meilleurs buteurs</h3>${sc.length ? `<div class="scroll"><table><tbody>${sc.map((x, i) => `<tr class="${x.t.id === G.userId ? 'me' : ''}"><td class="r">${i + 1}</td><td>${esc(x.p.name)} <span class="pos">${x.p.pos}</span></td><td>${badge(x.t, true)}</td><td class="r"><b>${x.p.goals}</b></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">Le classement des buteurs apparaît après la 1re journée.</p>'}</section>
+        <section class="panel"><h3 class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span>MVP de la saison</h3>${mv.length ? `<div class="scroll"><table><tbody>${mv.map((x, i) => `<tr class="${x.t.id === G.userId ? 'me' : ''}"><td class="r">${i + 1}</td><td>${plink(x.p)} <span class="pos${x.p.pos === 'GB' ? ' gb' : ''}">${x.p.pos}</span></td><td>${badge(x.t, true)}</td><td class="r"><b>${x.p.mvp}</b></td></tr>`).join('')}</tbody></table></div><p class="legend" style="margin:8px 0 0">Nombre de titres de MVP du match : meilleure note sur 10 parmi les joueurs des deux équipes (15 minutes jouées au moins), avec un petit bonus pour les vainqueurs.</p>` : '<p class="muted" style="margin:0">Le premier MVP sera désigné à la fin de la 1re journée.</p>'}</section>
       </div></div>`;
   }
 
