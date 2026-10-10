@@ -244,7 +244,7 @@ P(but) = base_{zone} + k \cdot (tir - gardien) + bonus_{tactique} - malus_{fatig
 
 Base indicative par zone : contre-attaque 0,80 ; aile 0,60 ; pivot 0,70 ; 9 m 0,45 ; 7 m 0,75. Le résultat est borné entre 0,05 et 0,95.
 
-**Exclusions :** l'équipe joue à 6 pendant 4 possessions environ, avec un malus en défense. Une troisième exclusion d'un même joueur vaut carton rouge.
+**Exclusions :** l'équipe joue à 6 pendant 2 minutes de jeu (environ 3 à 4 possessions des deux équipes), avec un malus en défense. Une exclusion au plus par possession ; déjà en infériorité, la défense se calme (risque divisé par trois), si bien qu'on joue à 4 contre 6 environ une fois tous les 5 à 6 matchs. Une troisième exclusion d'un même joueur vaut carton rouge : il est remplacé et l'équipe joue à 6 pendant 2 minutes, comme pour une exclusion simple.
 
 **Fatigue :** chaque possession sur le terrain en coûte (moins avec une bonne endurance), le banc en fait récupérer. Dès 28, les attributs baissent de 0,9 % par point, jusqu'à −45 %. Détail plus bas, dans Match en direct.
 

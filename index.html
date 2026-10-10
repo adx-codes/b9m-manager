@@ -1382,10 +1382,10 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     D.ex2[p.id] = (D.ex2[p.id] || 0) + 1;
     D.st.excl++;
     this.ps(D, p.id).ex++;
-    D.excl.push({ id: p.id, until: i + 8 });
+    // 2 minutes de jeu réelles : environ N/30 possessions (N possessions pour 60 minutes)
+    D.excl.push({ id: p.id, until: i + 1 + Math.round(this.N / 30) });
     if (D.ex2[p.id] >= 3) {
       D.red.add(p.id);
-      D.excl.push({ id: 'red-' + p.id, until: i + 8 });
       const pos = Object.keys(D.lineup).find(k => D.lineup[k] && D.lineup[k].id === p.id);
       const rep = D.bench.find(b => b.pos === pos && !D.red.has(b.id));
       if (rep && pos) {
@@ -1443,6 +1443,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       this.push('to', ai, tp ? `Perte de balle de ${tp.p.name}` : 'Perte de balle', false, { att: ai, pid: tp ? tp.p.id : null, pos: tp ? tp.pos : null });
       return;
     }
+    let exNow = false;
     for (let k = 0; k < 2; k++) {
       if (rnd() < 0.21) {
         const df = this.field(D, i);
@@ -1452,7 +1453,9 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
           const pEx = 0.19 + (intensity(D) > 0 ? 0.03 : 0.015) * intensity(D) + (12 - this.eff(D, d, 'discipline')) * 0.012 + (aggr ? (hasMod(D.team, 'discipline+') ? 0 : 0.05) : 0)
             + (hasMod(D.team, 'discipline-') ? (aggr ? 0.03 : 0) + (homme ? 0.03 : 0) : 0)
             + (hasMod(D.team, 'arbitrage-') && (aggr || homme) ? 0.02 : 0) + (dsys === '4-2' ? 0.03 : 0) - (D.exp - 45) * 0.0008 + (hasMod(D.team, 'arbitrage-') ? 0.05 : 0) + (D === this.a ? HOME.ex : 0);
-          if (this.short(D, i) < 2 && rnd() < pEx) this.exclude(D, 1 - ai, d, i);
+          // Une exclusion au plus par possession ; déjà à 5, la défense se calme (beaucoup moins de doubles exclusions)
+          const sh = this.short(D, i);
+          if (!exNow && sh < 2 && rnd() < pEx * (sh ? 0.35 : 1)) { this.exclude(D, 1 - ai, d, i); exNow = true; }
         }
         if (rnd() < (0.22 + (this.avg(A, i, 'duel') - 12) * 0.01 + this.backMix(A, i).contact * 0.05) * (hasMod(A.team, 'arbitrage+') ? (A.tac.jeu === 'individuel' ? 1.9 : 1.6) : 1)) return this.shoot(A, D, ai, i, '7m');
       }
