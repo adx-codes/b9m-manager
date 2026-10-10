@@ -233,6 +233,17 @@ tr.click:hover td { background: var(--sunk); }
 .city .sl2 { font-family: var(--f-body); font-size: 11.5px; fill: var(--muted); }
 .city .sign.ghost .sl1 { fill: var(--muted); }
 .city .isotxt { font-family: var(--f-display); letter-spacing: 0.08em; }
+/* Filtres des recrues de la ligue */
+.lyfilters { gap: 14px; margin: 0 0 10px; align-items: center; }
+.lyf { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 0.9rem; }
+.lyf select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+.ddrop { position: relative; }
+.ddrop summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: 5px 30px 5px 10px; background: var(--surface); font-size: 0.9rem; position: relative; }
+.ddrop summary::-webkit-details-marker { display: none; }
+.ddrop summary::after { content: "▾"; position: absolute; right: 10px; color: var(--muted); }
+.ddrop .ddmenu { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 260px; max-height: 340px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+.btn.sm { padding: 4px 10px; font-size: 0.82rem; }
+.ddopt { display: flex; gap: 8px; align-items: center; padding: 4px 2px; cursor: pointer; font-size: 0.9rem; }
 /* Vie de la ville et survol */
 .city .bld .body { transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease; }
 .city .bld:hover .body { filter: brightness(1.07); }
@@ -2356,7 +2367,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
     const pos = G.results.length ? `${ord(rank())} de la ${LEAGUE}` : 'Avant la 1re journée';
-    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
+    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
       <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
@@ -3135,7 +3146,24 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
     const all = (G.leagueYouth || []).filter((l) => l.ok).concat(mine).sort((a, b) => b.round - a.round || a.team.localeCompare(b.team));
     const prop = (G.leagueYouth || []).length;
-    const rows = all.map((l) => {
+    // Filtres : clubs (menu déroulant à cases), niveau et potentiel minimum en étoiles
+    const F = U.ly || (U.ly = { teams: [], lv: 0, pot: 0, open: false });
+    const shown = all.filter((l) => {
+      if (F.teams.length && !F.teams.includes(l.team)) return false;
+      const f = l.id ? findPlayer(l.id) : null, q = f ? f.p : { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
+      if (F.lv && H.stars(q.ovr, sref()) < F.lv) return false;
+      if (F.pot && H.potRange(q, sref()).lo < F.pot) return false; // partie pleine des étoiles : l'estimation sûre du staff
+      return true;
+    });
+    const clubs = G.teams.slice().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+    const starOpts = (k, lab, tip) => `<label class="lyf" title="${tip}">${lab} <select data-lyf="${k}">${[[0, 'Tous'], [2, '2 ★ et +'], [3, '3 ★ et +'], [4, '4 ★ et +'], [4.5, '4½ ★ et +'], [5, '5 ★']].map(([v, l]) => `<option value="${v}"${F[k] === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>`;
+    const filters = `<div class="row lyfilters">
+        <details class="ddrop"${F.open ? ' open' : ''}><summary>Clubs : ${F.teams.length ? (F.teams.length === 1 ? esc(T(F.teams[0]).name) : F.teams.length + ' clubs') : 'tous'}</summary>
+          <div class="ddmenu"><div class="row" style="gap:8px;margin-bottom:6px"><button class="btn sm" data-act="lyall">Tous</button><button class="btn sm" data-act="lyme">Seulement le mien</button></div>
+          ${clubs.map((t) => `<label class="ddopt"><input type="checkbox" data-lyteam="${t.id}"${F.teams.includes(t.id) ? ' checked' : ''}> ${badge(t, true)} ${esc(t.name)}</label>`).join('')}</div></details>
+        ${starOpts('lv', 'Niveau', 'Niveau actuel')}${starOpts('pot', 'Potentiel', 'Selon la partie pleine des étoiles de potentiel, hors marge d\'incertitude')}
+        ${F.teams.length || F.lv || F.pot ? `<span class="muted">${shown.length} sur ${all.length}</span><button class="btn sm" data-act="lyreset">Effacer les filtres</button>` : ''}</div>`;
+    const rows = shown.map((l) => {
       const t = T(l.team), f = l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
       const q = p || { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
       const who = p ? plink(p) : `<span class="muted" title="N'est plus dans le championnat">${esc(l.name)}</span>`;
@@ -3146,7 +3174,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Recrues des centres de formation · ${LEAGUE}</h3>
         <span class="muted">${all.length} jeune${all.length > 1 ? 's' : ''} recruté${all.length > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
       <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est prometteur ; à 16 joueurs, il libère le plus faible du poste seulement si le jeune vaut nettement mieux.${prop ? ` ${prop - (all.length - mine.length)} jeune${prop - (all.length - mine.length) > 1 ? 's' : ''} refusé${prop - (all.length - mine.length) > 1 ? 's' : ''} par les clubs adverses.` : ''} Niveau et potentiel : étoiles par rapport à ton club, valeurs actuelles.</p>
-      ${all.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Départ</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<p class="muted" style="margin:0">Aucun jeune recruté pour l'instant : les premiers sortent des centres après la journée 5.</p>`}</section>`;
+      ${all.length ? filters : ''}${all.length && !shown.length ? '<p class="muted" style="margin:0">Aucune recrue ne correspond à ces filtres.</p>' : ''}${shown.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Départ</th></tr></thead><tbody>${rows}</tbody></table></div>` : all.length ? '' : `<p class="muted" style="margin:0">Aucun jeune recruté pour l'instant : les premiers sortent des centres après la journée 5.</p>`}</section>`;
   }
 
   // ---------- Ville ----------
@@ -3684,6 +3712,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   document.addEventListener('click', (e) => {
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
+    // Menu des clubs : se ferme au clic ailleurs, mémorise son état d'ouverture
+    if (U.ly) { const dd = e.target.closest('.ddrop'); if (!dd) { U.ly.open = false; const o = document.querySelector('.ddrop[open]'); if (o) o.open = false; } else if (e.target.closest('summary')) U.ly.open = !dd.open; }
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;
     const act = b.dataset.act, id = b.dataset.id;
@@ -3692,6 +3722,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
       case 'nclose': hideNotify(); return;
+      case 'lyall': U.ly.teams = []; U.ly.open = true; render(); return;
+      case 'lyme': U.ly.teams = [G.userId]; U.ly.open = true; render(); return;
+      case 'lyreset': U.ly = { teams: [], lv: 0, pot: 0, open: false }; render(); return;
       case 'dotrain': doTraining(); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
@@ -3807,6 +3840,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   document.addEventListener('change', (e) => {
     const ir = e.target.closest && e.target.closest('input[data-int]');
     if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
+    const ly = e.target.closest('[data-lyteam], select[data-lyf]');
+    if (ly && G) {
+      const F = U.ly;
+      if (ly.dataset.lyteam) { const id = ly.dataset.lyteam; F.teams = ly.checked ? F.teams.concat(id) : F.teams.filter((x) => x !== id); F.open = true; }
+      else F[ly.dataset.lyf] = Number(ly.value);
+      render();
+      return;
+    }
     const rs = e.target.closest('select[data-rule]');
     if (rs && G) {
       const v = rs.value;

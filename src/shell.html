@@ -227,6 +227,17 @@ tr.click:hover td { background: var(--sunk); }
 .city .sl2 { font-family: var(--f-body); font-size: 11.5px; fill: var(--muted); }
 .city .sign.ghost .sl1 { fill: var(--muted); }
 .city .isotxt { font-family: var(--f-display); letter-spacing: 0.08em; }
+/* Filtres des recrues de la ligue */
+.lyfilters { gap: 14px; margin: 0 0 10px; align-items: center; }
+.lyf { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 0.9rem; }
+.lyf select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+.ddrop { position: relative; }
+.ddrop summary { list-style: none; cursor: pointer; border: 1px solid var(--line); border-radius: 6px; padding: 5px 30px 5px 10px; background: var(--surface); font-size: 0.9rem; position: relative; }
+.ddrop summary::-webkit-details-marker { display: none; }
+.ddrop summary::after { content: "▾"; position: absolute; right: 10px; color: var(--muted); }
+.ddrop .ddmenu { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; min-width: 260px; max-height: 340px; overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+.btn.sm { padding: 4px 10px; font-size: 0.82rem; }
+.ddopt { display: flex; gap: 8px; align-items: center; padding: 4px 2px; cursor: pointer; font-size: 0.9rem; }
 /* Vie de la ville et survol */
 .city .bld .body { transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease; }
 .city .bld:hover .body { filter: brightness(1.07); }
