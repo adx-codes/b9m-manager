@@ -1451,6 +1451,18 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       { const [tx, ty] = P(4.45, 9.3, 0), [px, py] = P(4.45, 9.3, 12);
         club += `<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="var(--iso-pole)" stroke-width="0.9"/><ellipse cx="${tx.toFixed(1)}" cy="${(ty - 4.5).toFixed(1)}" rx="3" ry="1.4" fill="var(--iso-stone)" ${EDGE}/><path d="M${(px - 8).toFixed(1)} ${(py + 3).toFixed(1)} Q${px.toFixed(1)} ${(py - 4).toFixed(1)} ${(px + 8).toFixed(1)} ${(py + 3).toFixed(1)} Z" fill="${t.color2}" ${EDGE}/>`; }
       add(ch.x + ch.w / 2, ch.y + ch.d / 2 + 0.3, bwrap(pl.clubhouse, club));
+      { const [gx, gy] = P(4.6, 9.0, 0);
+        add(4.6, 9.0, `<g class="deco bbq" transform="translate(${gx.toFixed(1)} ${gy.toFixed(1)})">
+          <ellipse cx="0" cy="0.5" rx="5" ry="2.2" fill="#000" fill-opacity="0.18"/>
+          <path d="M-3 -5 L-4 0.5 M3 -5 L4 0.5 M0 -4 L0 1.5" stroke="var(--iso-pole)" stroke-width="0.9" stroke-linecap="round"/>
+          <path d="M-5 -7 A5 3.4 0 0 0 5 -7 Z" fill="#2b2d30"/>
+          <ellipse cx="0" cy="-7" rx="5" ry="2.1" fill="#3a2420"/>
+          <ellipse class="ember" cx="0" cy="-7" rx="4.2" ry="1.6" fill="#d8643c"/>
+          <path d="M-3.8 -7.6 H3.8 M-4 -6.4 H4" stroke="#9aa0a6" stroke-width="0.4"/>
+          <rect x="-3" y="-8.2" width="3" height="1.1" rx="0.55" fill="#8a4b2a"/><rect x="0.6" y="-7.4" width="3" height="1.1" rx="0.55" fill="#9a5530"/>
+          <circle class="glow ember-glow" cx="0" cy="-8" r="7" fill="#f2a066" opacity="0.18"/>
+          ${[0, 1.4, 2.8].map((dl) => `<circle class="smoke bbq-smoke" cx="0" cy="-10" r="1.8" style="animation-delay:${-dl}s"/>`).join('')}
+        </g>`); }
     }
     // Bâtiments grisés à venir
     const gh = Object.fromEntries(GHOSTS.map((g) => [g.key, g]));
@@ -1461,7 +1473,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: G1 };
     shade(inf);
     add(3.85, 10.25, gwrap(gh.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
-      + poly([P(3.75, 10.9, 10), P(4.05, 10.9, 10), P(4.05, 10.9, 20), P(3.75, 10.9, 20)], 'var(--iso-mark)') + poly([P(3.6, 10.9, 13.5), P(4.2, 10.9, 13.5), P(4.2, 10.9, 16.5), P(3.6, 10.9, 16.5)], 'var(--iso-mark)')));
+      // Croix d'hôpital dressée sur le toit
+      + (() => { const [cx, cy] = P(3.85, 10.25, 24); return `<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><line x1="-3" y1="0" x2="-3" y2="-6" stroke="var(--iso-pole)" stroke-width="1"/><line x1="3" y1="0" x2="3" y2="-6" stroke="var(--iso-pole)" stroke-width="1"/>
+        <path d="M-2.4 -21 h4.8 v5.2 h5.2 v4.8 h-5.2 v5.2 h-4.8 v-5.2 h-5.2 v-4.8 h5.2 z" fill="var(--iso-mark)" stroke="var(--iso-edge)" stroke-width="0.8" stroke-linejoin="round"/></g>`; })()));
     const bo = { x: 7.2, y: 11.0, w: 1.6, d: 0.8, h: 15, c: G1 };
     shade(bo);
     let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);

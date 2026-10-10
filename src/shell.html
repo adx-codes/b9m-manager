@@ -305,6 +305,11 @@ table.ly tr.refused td { opacity: 0.6; }
 .city .drive { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .city .glow { animation: flicker 7s linear infinite; }
+  .city .ember { animation: ember 1.8s ease-in-out infinite alternate; }
+  @keyframes ember { from { opacity: 0.75; } 40% { opacity: 1; } to { opacity: 0.6; } }
+  .city .bbq .ember-glow { animation: emberglow 2.3s ease-in-out infinite alternate; }
+  @keyframes emberglow { from { opacity: 0.08; } to { opacity: 0.28; } }
+  .city .bbq-smoke { animation-duration: 4.2s; }
   @keyframes flicker { 0%, 100% { opacity: var(--iso-glow); } 30% { opacity: calc(var(--iso-glow) * 0.85); } 52% { opacity: var(--iso-glow); } 54% { opacity: calc(var(--iso-glow) * 0.5); } 56% { opacity: calc(var(--iso-glow) * 0.95); } 58% { opacity: calc(var(--iso-glow) * 0.6); } 61% { opacity: var(--iso-glow); } 80% { opacity: calc(var(--iso-glow) * 0.9); } }
   .city .flag { transform-box: fill-box; transform-origin: left center; animation: wave 2.6s ease-in-out infinite alternate; }
   @keyframes wave { from { transform: scaleX(1) skewY(0deg); } to { transform: scaleX(0.86) skewY(-5deg); } }
