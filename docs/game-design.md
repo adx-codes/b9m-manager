@@ -339,6 +339,8 @@ Le centre garde l'historique des jeunes proposés et de la décision prise. Les 
 
 L'accueil est le quartier du club en vue isométrique : chaque bâtiment en couleur ouvre un écran. Les bâtiments gris représentent le reste de la ville et les fonctions à venir. Des onglets restent disponibles pour naviguer vite.
 
+**Plateformes :** le jeu se joue sur ordinateur ou tablette (de préférence en paysage), pas sur téléphone. L'interface utilise jusqu'à 1 440 px de large. La page de création de partie le rappelle sous la présentation ; sur un écran de téléphone (moins de 700 px de large, ou écran tactile de moins de 600 px), une fenêtre le signale une fois par session, avec un bouton « Continuer quand même ».
+
 | Bâtiment | Écran | Enseigne | Contenu |
 | --- | --- | --- | --- |
 | Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |

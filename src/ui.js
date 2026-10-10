@@ -237,14 +237,28 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
 
   // ---------- Rendu principal ----------
+  // Écran de téléphone : le jeu est pensé pour ordinateur et tablette (alerte une fois par session, on peut continuer)
+  function isPhone() {
+    const mm = (q) => window.matchMedia && window.matchMedia(q).matches;
+    return mm('(max-width: 700px)') || (mm('(pointer: coarse)') && Math.min(screen.width, screen.height) < 600);
+  }
+  function devDismissed() { if (U.devOk === undefined) { try { U.devOk = sessionStorage.getItem('hbm-dev-ok') === '1'; } catch (e) { U.devOk = false; } } return U.devOk; }
+  function deviceModal() {
+    if (devDismissed() || !isPhone()) return '';
+    return `<div class="overlay" id="devov" role="dialog" aria-modal="true" aria-labelledby="devtitle"><div class="modal" style="max-width:420px">
+      <h2 id="devtitle" style="margin:0 0 8px">Plutôt sur grand écran</h2>
+      <p style="margin:0 0 10px">B9M Manager se joue sur <b>ordinateur ou tablette</b>. Sur un téléphone, les tableaux, le terrain et le match en direct sont trop serrés pour être confortables.</p>
+      <p class="muted" style="margin:0 0 16px">Sur tablette, le mode paysage est le plus agréable.</p>
+      <div class="row"><button class="btn primary" data-act="devok">Continuer quand même</button></div></div></div>`;
+  }
   function render() {
     const app = document.getElementById('app');
     applyTheme();
-    if (!G) { app.innerHTML = renderHome(); return; }
+    if (!G) { app.innerHTML = renderHome() + deviceModal(); return; }
     const views = { ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '');
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
     if (U.youthModal && G.youth) { const f = document.querySelector('.modal button'); if (f) f.focus(); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
@@ -268,7 +282,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function renderHome() {
     return `<section class="hero"><span class="label">Prototype · saison 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
-      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p></section>
+      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
+      <p class="devnote">À jouer sur ordinateur ou tablette (de préférence en paysage) : l'interface n'est pas faite pour les téléphones.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
       ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="step2">Continuer avec ${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} →</button><span class="muted">La réputation fixe le niveau moyen de l'effectif généré.</span></div></section>`}`;
@@ -1394,6 +1409,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
       case 'psclose': closeSheet(); return;
+      case 'devok': U.devOk = true; try { sessionStorage.setItem('hbm-dev-ok', '1'); } catch (e) { /* ignore */ } render(); return;
       case 'step2': U.homeStep = 2; render(); window.scrollTo(0, 0); return;
       case 'step1': U.homeStep = 1; render(); window.scrollTo(0, 0); return;
       case 'pickb': ensureDraft().b = id; render(); return;
