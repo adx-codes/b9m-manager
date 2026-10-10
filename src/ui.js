@@ -939,6 +939,24 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
 
   // ---------- Entraînement ----------
+  // Récap de fatigue au gymnase : état après le match, et projection au coup d'envoi selon l'intensité
+  function fatigueRecap(t) {
+    const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
+    const rec = (k) => k === 'intense' ? (H.hasMod(t, 'soins+') ? -6 : H.hasMod(t, 'soins-') ? -18 : H.INTENSITY[k].rec) : H.INTENSITY[k].rec;
+    const proj = (f, k) => Math.max(0, Math.min(100, f - rec(k)));
+    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id)).filter(Boolean);
+    const avg = (arr) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+    const now = starters.map((p) => p.fatigue), tiredNow = now.filter((f) => f >= 28).length;
+    const pending = G.trainPending, cur = G.training.intensity;
+    const head = `<p class="muted" style="margin:0 0 10px">${pending ? 'Après le match et la récupération' : 'Avant le prochain match'} · titulaires : moyenne <b style="color:var(--fg)">${avg(now)}</b> · <b style="color:var(--fg)">${tiredNow}</b> fatigué${tiredNow > 1 ? 's' : ''} sur ${starters.length}</p>`;
+    const table = pending ? `<table class="fatproj"><thead><tr><th>Au coup d'envoi</th><th class="r">Titulaires fatigués</th><th class="r">Moyenne</th></tr></thead><tbody>${Object.entries(H.INTENSITY).map(([k, I]) => {
+      const v = starters.map((p) => proj(p.fatigue, k)), n = v.filter((f) => f >= 28).length;
+      return `<tr class="${k === cur ? 'me' : ''}"><td>${I.label}${k === cur ? ' <span class="muted">· choisie</span>' : ''}</td><td class="r"><b style="color:${n ? fatCol(Math.max(...v)) : 'var(--good)'}">${n}</b> / ${starters.length}</td><td class="r num">${avg(v)}</td></tr>`;
+    }).join('')}</tbody></table>` : '';
+    const top = t.players.map((p) => ({ p, f: pending ? proj(p.fatigue, cur) : p.fatigue, st: starters.includes(p) })).filter((x) => x.f >= 20).sort((a, b) => b.f - a.f).slice(0, 6);
+    const list = top.length ? `<div class="fatlist"><span class="label">Les plus entamés${pending ? ` · intensité ${H.INTENSITY[cur].label.toLowerCase()}` : ''}</span>${top.map((x) => `<div class="fatrow"><span class="pos${x.p.pos === 'GB' ? ' gb' : ''}">${x.p.pos}</span><span>${esc(short(x.p.name))}${x.st ? '' : ' <span class="muted">· banc</span>'}</span><span class="fatbar" title="${x.f}/100"><span style="width:${x.f}%;background:${fatCol(x.f)}"></span></span><span class="num muted">${x.f}</span></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Tout le monde est frais.</p>';
+    return `<section class="panel"><h3>Fatigue de l'effectif</h3>${head}${table}${list}<p class="legend" style="margin:10px 0 0">Dès 28 de fatigue, les attributs baissent : environ −10 % à 40, −25 % à 55. Légère : 10 points de fatigue en moins au coup d'envoi ; intense : ${-rec('intense')} en plus.</p></section>`;
+  }
   function renderTraining() {
     const tr = G.training;
     const lt = G.lastTraining;
@@ -967,7 +985,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         ${launch}
         <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
       </div></section>
-      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel${reveal ? ' reveal' : ''}" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
+      <div style="display:grid;gap:20px;min-width:0">${G.ended ? '' : fatigueRecap(t)}${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel${reveal ? ' reveal' : ''}" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
   }
 
   // ---------- Centre de formation ----------
