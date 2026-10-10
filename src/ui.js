@@ -558,9 +558,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="row"><button class="btn" data-act="pause">${U.paused ? 'Reprendre' : 'Pause'}</button>
         <div class="seg" role="group" aria-label="Vitesse">${[1, 2, 4].map((v) => `<button data-act="speed" data-id="${v}" aria-pressed="${U.speed === v}">×${v}</button>`).join('')}</div>
         <button class="btn" data-act="finish">Aller au coup de sifflet final</button></div>
-      <div class="row"><button class="btn primary" data-act="timeout" ${s.to[h] ? 'disabled' : ''}>${s.to[h] ? 'Temps mort utilisé' : 'Temps mort'}</button>
+      <div class="row">${(() => { const left = 3 - s.to[0] - s.to[1], ok = U.m.canTO(U.side); return `<button class="btn primary" data-act="timeout" ${ok ? '' : 'disabled'} title="3 temps morts par match, 2 au plus par mi-temps">${ok ? `Temps mort · ${left} restant${left > 1 ? 's' : ''}` : left ? 'Plus de temps mort cette mi-temps' : 'Temps morts épuisés'}</button>`; })()}
         <button class="btn" data-act="empty" aria-pressed="${s.empty}" ${late ? '' : 'disabled'}>${s.empty ? 'Arrêter le 7 contre 6' : 'Passer à 7 contre 6'}</button></div>
-      <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Un temps mort par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à partir de la 50e minute : bonus en attaque, mais cage vide en cas de perte.</p>
+      <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Trois temps morts par match, deux au plus par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à partir de la 50e minute : bonus en attaque, mais cage vide en cas de perte.</p>
       <p class="legend" style="margin:0">${tacLine(s.tac)}${s.tac.int ? ` · intensité ${H.INTENSITY_LV[s.tac.int].toLowerCase()}` : ''}<br>${s.forceDef ? 'Défense ' + s.forceDef + ' forcée' : rulesLine(s.tac.rules)}</p></div>`;
   }
   const INT_TXT = {

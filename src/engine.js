@@ -1081,11 +1081,17 @@
     }
   };
 
+  // Temps morts : 3 par équipe et par match, 2 au plus dans une même mi-temps
+  P.canTO = function (si) {
+    const s = this.S[si], h = this.half();
+    return !this.done && s.to[h] < 2 && s.to[0] + s.to[1] < 3;
+  };
   // Temps mort : coupe la série adverse (petit regain de réussite) et souffle pour les joueurs sur le terrain
   P.timeout = function (si, why) {
     const s = this.S[si], h = this.half();
-    if (this.done || s.to[h]) return false;
-    s.to[h] = 1;
+    if (!this.canTO(si)) return false;
+    s.to[h]++;
+    s.lastTOmin = this.minute(this.i);
     const cap = hasMod(s.team, 'capitanat+') ? 1 : hasMod(s.team, 'capitanat-') ? -1 : 0;
     s.boost = Math.max(s.boost, this.i + (cap > 0 ? 10 : cap < 0 ? 3 : 6));
     s.run = 0; s.press = 0;
@@ -1110,9 +1116,11 @@
       if (o.streak && o.streak.n >= 3 && d('ga') && o.streak.n !== s.hotSeen) { s.press += 1; s.hotSeen = o.streak.n; }
     }
     s.snap = cur;
-    if (!s.to[h] && min >= 5 && (min < 29 || min > 32)) {
+    // Pas deux temps morts à moins de 6 minutes d'écart ; le 2e d'une mi-temps demande plus de pression,
+    // et en 1re mi-temps le coach en garde un pour la fin de match
+    if (this.canTO(si) && min >= 5 && (min < 29 || min > 32) && (s.lastTOmin === undefined || min - s.lastTOmin >= 6)) {
       let why = null;
-      const need = c.patience + (c.saver && h === 1 && min < 50 ? 1.2 : 0);
+      const need = c.patience + (c.saver && h === 1 && min < 50 ? 1.2 : 0) + (s.to[h] ? 1.5 : 0) + (h === 0 && s.to[0] ? 1 : 0);
       if (s.press > need && rnd() < clamp(0.3 + (s.press - need) * 0.12, 0.3, 0.75)) {
         why = s.run >= 3 ? `${s.run} buts encaissés d'affilée` : o.streak && o.streak.n >= 3 ? `pour calmer ${o.streak.name}` : (s.recTo || 0) >= 1.6 ? 'après des ballons perdus' : 'pour casser le rythme';
       }
