@@ -35,17 +35,17 @@ Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées pa
 | Club | Ville | Réputation (1 à 5) | Supporters | Domicile | Déplacement | Centre de formation |
 | --- | --- | --- | --- | --- | --- | --- |
 | Lutèce Handball | Paris | 5 | Les Râleurs du Périph | 3 | 2 | 4 |
-| Montpellier Comédie HB | Montpellier | 5 | Les Éternels Étudiants | 4 | 3 | 5 |
+| Montpellier Comédie HB | Montpellier | 5 | La Claque | 4 | 3 | 5 |
 | Lyon Confluence HB | Lyon | 4 | Les Bouchons Lyonnais | 3 | 2 | 3 |
 | Toulouse Briques Roses | Toulouse | 4 | Les Chocolatines Ultras | 4 | 3 | 3 |
 | Les Éléphants de Nantes | Nantes | 4 | Les Bretons Contrariés | 5 | 4 | 4 |
 | Bordeaux Garonne HB | Bordeaux | 4 | Les Grands Crus | 3 | 2 | 3 |
-| Grenoble Tacos HB | Grenoble | 4 | Les Bulles de la Bastille | 3 | 2 | 3 |
+| Grenoble Tacos HB | Grenoble | 4 | Les Gratinés | 3 | 2 | 3 |
 | Rennes Hermine HB | Rennes | 3 | Les Galettes-Saucisses | 4 | 3 | 3 |
 | Marseille Calanques HB | Marseille | 3 | Les Sardines du Vieux-Port | 4 | 3 | 2 |
 | Lille Beffroi HB | Lille | 3 | Les Fricadelles du Beffroi | 4 | 3 | 3 |
 | Strasbourg Rhin HB | Strasbourg | 3 | Les Choucroutés | 3 | 2 | 3 |
-| Angers Redbox HB | Angers | 3 | Les Quarts d'Heure Angevins | 3 | 2 | 3 |
+| Angers Redbox HB | Angers | 3 | Les Unboxeurs | 3 | 2 | 3 |
 | Clermont Volcans HB | Clermont-Ferrand | 3 | Les Bibendums | 3 | 2 | 2 |
 | Nice Baie des Anges | Nice | 2 | Les Retraités de la Prom | 2 | 1 | 2 |
 | Saint-Étienne Forez HB | Saint-Étienne | 2 | Les Verts de Rage | 4 | 4 | 3 |
