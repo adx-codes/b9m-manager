@@ -277,8 +277,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
-    if (U.youthModal && G.youth) { const f = document.querySelector('.modal button'); if (f) f.focus(); }
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
+    if (U.youthModal && G.youth) { U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
     U.ctlSig = ctlSig();
@@ -724,7 +724,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (G.ended) runTraining(); else G.trainPending = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
     H.youthRound(G);
-    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
+    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; U.yAnim = true; U.yBatch = false; }
   }
   function runTraining() {
     G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
@@ -993,8 +993,28 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (let r = G.round + 1; r < G.sched.length; r++) if (r % 5 === 0) return r;
     return null;
   }
+  // Fournée : tous les jeunes sortis des centres de la ligue à cette journée, le tien en tête
+  function youthBatch() {
+    const y = G.youth.p, r0 = G.youth.round;
+    const lst = [{ team: G.userId, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, mine: true }]
+      .concat((G.leagueYouth || []).filter((l) => l.round === r0).map((l) => { const f = l.ok && l.id ? findPlayer(l.id) : null; return f ? { ...l, ovr: f.p.ovr, pot: f.p.pot, age: f.p.age, p: f.p } : l; }));
+    const lo = (l) => H.potRange(l.p || { id: l.id, age: l.age, ovr: l.ovr, pot: l.pot }, sref()).lo;
+    lst.sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || lo(b) - lo(a) || H.stars(b.ovr, sref()) - H.stars(a.ovr, sref()));
+    const rows = lst.map((l) => {
+      const t = T(l.team), q = l.p || { id: l.id, age: l.age, ovr: l.ovr, pot: l.pot };
+      const dec = l.mine ? '<b>À toi de décider</b>' : l.ok ? (l.out ? `Recruté · ${esc(l.out)} libéré` : 'Recruté') : '<span class="tag refused">Refusé</span>';
+      return `<tr class="${l.mine ? 'me' : ''}${!l.mine && !l.ok ? ' refused' : ''}"><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${l.p ? plink(l.p) : esc(l.name)}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${dec}</td></tr>`;
+    }).join('');
+    const kept = lst.filter((l) => !l.mine && l.ok).length;
+    return `<div class="ybatch"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centres de formation · fournée de la journée ${r0}</span>
+        <h2 id="ytitle" style="margin-top:4px">${lst.length} jeunes dans la ${LEAGUE}</h2><p class="muted" style="margin:4px 0 0">${kept} gardé${kept > 1 ? 's' : ''} par les clubs adverses, ${lst.length - 1 - kept} refusé${lst.length - 1 - kept > 1 ? 's' : ''}. Classés par potentiel ; étoiles par rapport à ton club.</p></div>
+        <button class="btn" data-act="ybatch">← Retour à ton jeune</button></div>
+      <div class="scroll" style="max-height:min(60vh, 520px);overflow-y:auto;margin-top:12px"><table class="ly"><thead><tr><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  }
   function youthCard(modal) {
+    if (U.yBatch) return youthBatch();
     const y = G.youth.p, t = me();
+    const nb = (G.leagueYouth || []).filter((l) => l.round === G.youth.round).length + 1;
     const full = t.players.length >= 16;
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
     const attrs = y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS);
@@ -1007,12 +1027,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <p class="muted" style="margin:4px 0 0">${H.POS_LABEL[y.pos]} · ${y.age} ans · ${y.hand === 'G' ? 'gaucher' : 'droitier'}</p></div>
         <div class="ynotes">${(() => { const r = H.potRange(y, sref()); return `<div><span class="label">Niveau</span>${vstars(y.ovr)}</div><div><span class="label">Potentiel estimé</span>${potbar(r)}<span class="muted" style="font-size:0.8rem">${potTxt(r).replace(', estimation du staff', '')}</span></div>`; })()}</div></div>
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
-      <div class="yattrs">${attrs.map(([k, l]) => `<div class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
+      <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
       ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/16) : choisis qui part pour lui faire de la place</span>
         <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
         : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
-        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}</div>
+        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la fournée (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
   function renderFormation() {
@@ -1684,6 +1704,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   document.addEventListener('click', (e) => {
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
+    const yr = document.querySelector('.modal.yreveal');
+    if (yr && e.target.closest('.overlay')) { const done = yr.getAnimations({ subtree: true }).every((a) => a.playState === 'finished'); yr.classList.remove('yreveal'); if (!done && !e.target.closest('[data-act]')) return; }
     // Menu des clubs : se ferme au clic ailleurs, mémorise son état d'ouverture
     if (U.ly) { const dd = e.target.closest('.ddrop'); if (!dd) { U.ly.open = false; const o = document.querySelector('.ddrop[open]'); if (o) o.open = false; } else if (e.target.closest('summary')) U.ly.open = !dd.open; }
     const b = e.target.closest('[data-act]');
@@ -1740,7 +1762,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'cons': toggleCons(t.tactic, id); save(); render(); return;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
-      case 'ylater': U.youthModal = false; render(); return;
+      case 'ylater': U.youthModal = false; U.yBatch = false; render(); return;
+      case 'ybatch': U.yBatch = !U.yBatch; render(); { const m = document.querySelector('.ymodal, .ycard, .ybatch'); if (m) m.scrollTop = 0; } return;
       case 'yrefuse': if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Refusé' }); G.youth = null; } U.youthModal = false; save(); render(); return;
       case 'yaccept': {
         if (!G.youth) return;
