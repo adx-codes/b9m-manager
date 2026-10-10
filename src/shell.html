@@ -281,6 +281,10 @@ td.h1 .v { background: color-mix(in srgb, var(--bad) 24%, var(--surface)); }
 .focus b { font-family: var(--f-display); font-size: 1.05rem; }
 .focus span { font-size: 0.8rem; color: var(--muted); }
 .focus[aria-pressed="true"] { border-color: var(--iso-gym); box-shadow: inset 0 0 0 1px var(--iso-gym); background: color-mix(in srgb, var(--iso-gym) 10%, var(--surface)); }
+.focus:disabled, .seg button:disabled { cursor: default; opacity: 0.55; }
+.focus[aria-pressed="true"]:disabled, .seg button[aria-pressed="true"]:disabled { opacity: 1; }
+.trained { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-left: 5px solid var(--good); border-radius: 8px; background: color-mix(in srgb, var(--good) 10%, var(--surface)); }
+.trained .tick { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--good); color: #fff; font-weight: 800; }
 .proglist { display: grid; gap: 0; }
 .prog { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: center; font-size: 0.9rem; }
 .prog .pitems { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }

@@ -287,6 +287,10 @@ td.h1 .v { background: color-mix(in srgb, var(--bad) 24%, var(--surface)); }
 .focus b { font-family: var(--f-display); font-size: 1.05rem; }
 .focus span { font-size: 0.8rem; color: var(--muted); }
 .focus[aria-pressed="true"] { border-color: var(--iso-gym); box-shadow: inset 0 0 0 1px var(--iso-gym); background: color-mix(in srgb, var(--iso-gym) 10%, var(--surface)); }
+.focus:disabled, .seg button:disabled { cursor: default; opacity: 0.55; }
+.focus[aria-pressed="true"]:disabled, .seg button[aria-pressed="true"]:disabled { opacity: 1; }
+.trained { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line)); border-left: 5px solid var(--good); border-radius: 8px; background: color-mix(in srgb, var(--good) 10%, var(--surface)); }
+.trained .tick { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--good); color: #fff; font-weight: 800; }
 .proglist { display: grid; gap: 0; }
 .prog { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: center; font-size: 0.9rem; }
 .prog .pitems { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
@@ -2919,8 +2923,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const lt = G.lastTraining;
     const t = me();
     let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici une fois la semaine lancée, après chaque journée.</p>';
-    const launch = G.trainPending ? `<div class="row" style="gap:12px"><button class="btn primary big" data-act="dotrain">Lancer la semaine d'entraînement</button><span class="muted">Après la journée ${G.round} : choisis le focus et l'intensité, puis lance la semaine.</span></div>` : '';
+    // Semaine déjà faite après cette journée : réglages verrouillés jusqu'au prochain match
     const fresh = lt && !G.trainPending && lt.round === G.round && !G.ended;
+    const launch = G.trainPending ? `<div class="row" style="gap:12px"><button class="btn primary big" data-act="dotrain">Lancer la semaine d'entraînement</button><span class="muted">Après la journée ${G.round} : choisis le focus et l'intensité, puis lance la semaine.</span></div>`
+      : fresh ? `<div class="trained" role="status"><span class="tick" aria-hidden="true">✓</span><span><b>Semaine d'entraînement faite</b> après la journée ${lt.round} · ${esc(H.TRAIN[lt.focus].label.toLowerCase())}, intensité ${esc(H.INTENSITY[lt.intensity].label.toLowerCase())}<br><span class="muted">Le programme se règle à nouveau après le prochain match.</span></span></div>` : '';
+    const lock = fresh ? ' disabled' : '';
     if (lt && lt.log.length) {
       const byP = {};
       for (const e of lt.log) (byP[e.id] = byP[e.id] || { name: e.name, pos: e.pos, items: [] }).items.push(e);
@@ -2930,8 +2937,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const young = t.players.filter((p) => p.age < 23).length, old = t.players.filter((p) => p.age > 31).length;
     return `<div class="grid2">
       <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">
-        <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
-        <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}">${x.label}</button>`).join('')}</div>
+        <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"${lock}><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
+        <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}"${lock}>${x.label}</button>`).join('')}</div>
           <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match.' : 'Progression normale, récupération normale.'}</p></div>
         ${launch}
         <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
@@ -3702,8 +3709,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         H.ensureSheet(tm); save(); render(); return;
       }
       case 'sort': U.sort = U.sort.k === id ? { k: id, dir: -U.sort.dir } : { k: id, dir: 1 }; render(); return;
-      case 'tfocus': G.training.focus = id; save(); render(); return;
-      case 'tint': G.training.intensity = id; save(); render(); return;
+      case 'tfocus': case 'tint': {
+        const lt = G.lastTraining;
+        if (lt && !G.trainPending && lt.round === G.round && !G.ended) return;
+        G.training[act === 'tfocus' ? 'focus' : 'intensity'] = id; save(); render(); return;
+      }
       case 'next': U.view = 'pre'; U.post = null; U.tab = G.ended ? 'match' : 'ville'; render(); window.scrollTo(0, 0); return;
       case 'reset': U.confirmReset = true; render(); return;
       case 'resetNo': U.confirmReset = false; render(); return;
