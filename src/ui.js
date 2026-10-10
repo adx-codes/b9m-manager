@@ -993,7 +993,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (let r = G.round + 1; r < G.sched.length; r++) if (r % 5 === 0) return r;
     return null;
   }
-  // Fournée : tous les jeunes sortis des centres de la ligue à cette journée, le tien en tête
+  // Promo : tous les jeunes sortis des centres de la ligue à cette journée, le tien en tête
   function youthBatch() {
     const y = G.youth.p, r0 = G.youth.round;
     const lst = [{ team: G.userId, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, mine: true }]
@@ -1006,7 +1006,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<tr class="${l.mine ? 'me' : ''}${!l.mine && !l.ok ? ' refused' : ''}"><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${l.p ? plink(l.p) : esc(l.name)}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${dec}</td></tr>`;
     }).join('');
     const kept = lst.filter((l) => !l.mine && l.ok).length;
-    return `<div class="ybatch"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centres de formation · fournée de la journée ${r0}</span>
+    return `<div class="ybatch"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centres de formation · promo de la journée ${r0}</span>
         <h2 id="ytitle" style="margin-top:4px">${lst.length} jeunes dans la ${LEAGUE}</h2><p class="muted" style="margin:4px 0 0">${kept} gardé${kept > 1 ? 's' : ''} par les clubs adverses, ${lst.length - 1 - kept} refusé${lst.length - 1 - kept > 1 ? 's' : ''}. Classés par potentiel ; étoiles par rapport à ton club.</p></div>
         <button class="btn" data-act="ybatch">← Retour à ton jeune</button></div>
       <div class="scroll" style="max-height:min(60vh, 520px);overflow-y:auto;margin-top:12px"><table class="ly"><thead><tr><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -1032,7 +1032,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
         : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
-        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la fournée (${nb})</button></div>
+        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
   function renderFormation() {
