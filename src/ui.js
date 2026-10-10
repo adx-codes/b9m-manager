@@ -277,8 +277,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
-    if (U.youthModal && G.youth) { U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Alerte : nouveau joueur à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Retourner la carte</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
+    if (U.youthModal && G.youth) { if (U.yStage !== 'alert') U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
     U.ctlSig = ctlSig();
@@ -733,7 +733,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (G.ended) runTraining(); else G.trainPending = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
     H.youthRound(G);
-    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; U.yAnim = true; U.yBatch = false; }
+    if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; U.yStage = 'alert'; U.yAnim = false; U.yBatch = false; }
   }
   function runTraining() {
     G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
@@ -1772,6 +1772,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
       case 'ylater': U.youthModal = false; U.yBatch = false; render(); return;
+      case 'yflip': U.yStage = null; U.yAnim = true; render(); return;
       case 'ybatch': U.yBatch = !U.yBatch; render(); { const m = document.querySelector('.ymodal, .ycard, .ybatch'); if (m) m.scrollTop = 0; } return;
       case 'yrefuse': if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Refusé' }); G.youth = null; } U.youthModal = false; save(); render(); return;
       case 'yaccept': {
