@@ -386,6 +386,8 @@
       if (!t.mods) t.mods = [];
       if (!t.out) t.out = [];
     }
+    // Entraînement de la semaine lancé à la main après chaque journée
+    if (st.trainPending === undefined) st.trainPending = false;
     return st;
   }
   // ---------- Centre de formation et feuille de match ----------
@@ -544,7 +546,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
   }
 
   // ---------- Moteur de match ----------

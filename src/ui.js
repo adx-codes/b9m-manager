@@ -320,6 +320,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     const live = U.view === 'live' && U.m;
     const btn = live ? `<button class="btn primary nextbtn" data-act="tab" data-id="match">Match en cours →</button>`
+      : G.trainPending ? trainBtn('nextbtn')
       : U.post && U.view === 'post' && U.tab === 'match' ? `<button class="btn primary nextbtn" data-act="tab" data-id="championnat">Résultats et classement →</button>`
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
@@ -422,6 +423,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (U.view === 'live' && U.m) return renderLive();
     if (U.view === 'post' && U.post) return renderPost();
     if (G.ended) return renderEnd();
+    if (G.trainPending) return renderTrainPending();
     const nf = nextFixture();
     if (nf.rest) return renderRest();
     const h = T(nf.h), a = T(nf.a), t = me();
@@ -663,6 +665,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="frows">${rows}</div>
       <p style="margin:6px 0 0">Barre vers la droite : ton joueur prend le dessus (son duel contre le duel défensif adverse, son tir de loin contre le contre adverse). ${homme ? "En homme à homme, chaque défenseur est seul : vise le plus faible." : "En défense collective, chaque défenseur est aidé par ses voisins (notes élargies)."} Un défenseur exclu laisse un trou.</p></div>`;
   }
+  function renderTrainPending() {
+    const tr = G.training;
+    return `<section class="board"><div class="teams"><div class="team">${badge(me())}<span class="tn">${esc(me().name)}</span></div><div class="score"><span style="font-size:0.55em">Gymnase</span></div><div class="team away"><span class="tn">Après la journée ${G.round}</span></div></div><div class="meta"><span>Semaine d'entraînement à lancer</span><span>${esc(H.TRAIN[tr.focus].label)} · intensité ${esc(H.INTENSITY[tr.intensity].label.toLowerCase())}</span></div>
+      <div class="row" style="justify-content:center">${trainBtn()}<button class="btn" data-act="tab" data-id="entrainement">Régler l'entraînement</button></div></section>`;
+  }
   function renderRest() {
     const games = G.sched[G.round];
     return `<section class="board"><div class="teams"><div class="team">${badge(me())}<span class="tn">${esc(me().name)}</span></div><div class="score"><span style="font-size:0.55em">Repos</span></div><div class="team away"><span class="tn">Journée ${G.round + 1}</span></div></div><div class="meta"><span>Pas de match pour toi cette semaine</span><span>${games.length} matchs au programme</span></div></section>
@@ -688,15 +695,29 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     G.round++;
     H.recover(G);
     for (const t of G.teams) if (!playing.has(t.id)) for (const p of t.players) { p.fatigue = Math.max(0, p.fatigue - 20); p.lastMins = undefined; }
-    for (const t of G.teams) {
-      if (t.id === G.userId) G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(t, G.training.focus, G.training.intensity) };
-      else H.train(t, 'equilibre', 'normale');
-    }
+    for (const t of G.teams) if (t.id !== G.userId) H.train(t, 'equilibre', 'normale');
     if (G.round >= G.sched.length) G.ended = true;
+    // Ton entraînement attend le clic « Lancer l'entraînement » (sauf après la dernière journée)
+    if (G.ended) runTraining(); else G.trainPending = true;
     if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
     H.youthRound(G);
     if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
   }
+  function runTraining() {
+    G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
+    G.trainPending = false;
+  }
+  // Clic « Lancer l'entraînement » : semaine simulée, puis direction la préparation du prochain match
+  function doTraining() {
+    if (!G.trainPending) return;
+    runTraining();
+    U.post = null; U.view = 'pre'; U.tab = 'match';
+    save();
+    render();
+    window.scrollTo(0, 0);
+    trainingNotice();
+  }
+  function trainBtn(cls) { return `<button class="btn primary${cls ? ' ' + cls : ''}" data-act="dotrain">Lancer l'entraînement →</button>`; }
   function restRound() {
     const nf = nextFixture();
     if (!nf || !nf.rest) return;
@@ -706,11 +727,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     save();
     render();
     window.scrollTo(0, 0);
-    trainingNotice();
   }
   function startMatch() {
     const nf = nextFixture();
-    if (!nf || nf.rest) return;
+    if (!nf || nf.rest || G.trainPending) return;
     for (const t of G.teams) if (t.id !== G.userId) H.aiPrepare(t);
     H.ensureSheet(me());
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
@@ -783,7 +803,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     save();
     render();
     window.scrollTo(0, 0);
-    trainingNotice();
   }
   function renderPost() {
     const p = U.post;
@@ -796,7 +815,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const old = p.side === undefined ? '' : '';
     U.side = p.side;
     return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div>
-      <div class="row" style="justify-content:center"><button class="btn primary" data-act="tab" data-id="championnat">Passer à la suite : résultats et classement →</button></div></section>${old}
+      <div class="row" style="justify-content:center">${G.trainPending ? trainBtn() : '<button class="btn primary" data-act="tab" data-id="championnat">Passer à la suite : résultats et classement →</button>'}</div></section>${old}
       <div class="grid2">
         <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
         <div style="display:grid;gap:20px;min-width:0">
@@ -804,7 +823,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <section class="panel"><h3>Tes buteurs</h3>${sc.length ? sc.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos">${x.p.pos}</span><span>${esc(x.p.name)}</span><span class="spacer" style="flex:1"></span><b class="num">${x.n}</b></div>`).join('') : '<p class="muted">Aucun but.</p>'}
             ${gk.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos gb">GB</span><span>${esc(x.p.name)}</span><span style="flex:1"></span><span class="num muted">${x.n} arrêt${x.n > 1 ? 's' : ''}</span></div>`).join('')}</section>
           <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${h.id}</span><span class="label">${a.id}</span></div>${statsHtml(p.h.st, p.a.st)}</section>
-          <div class="row"><button class="btn primary" data-act="next">${G.ended ? 'Voir le bilan de la saison' : 'Retour en ville'}</button><button class="btn" data-act="tab" data-id="entrainement">Progrès à l'entraînement</button><button class="btn" data-act="tab" data-id="championnat">Résultats de la journée</button></div>
+          <div class="row">${G.trainPending ? trainBtn() + '<button class="btn" data-act="tab" data-id="entrainement">Régler l\'entraînement</button>' : `<button class="btn primary" data-act="next">${G.ended ? 'Voir le bilan de la saison' : 'Retour en ville'}</button><button class="btn" data-act="tab" data-id="entrainement">Progrès à l'entraînement</button>`}<button class="btn" data-act="tab" data-id="championnat">Résultats de la journée</button></div>
         </div>
       </div>
       ${p.h.ps ? perfSection(h, a, p.h, p.a) : ''}`;
@@ -909,6 +928,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const lt = G.lastTraining;
     const t = me();
     let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici après la prochaine journée.</p>';
+    const pending = G.trainPending ? `<div class="row" style="justify-content:space-between;gap:12px"><span>Semaine à lancer après la journée ${G.round}.</span>${trainBtn()}</div>` : '';
     if (lt && lt.log.length) {
       const byP = {};
       for (const e of lt.log) (byP[e.id] = byP[e.id] || { name: e.name, pos: e.pos, items: [] }).items.push(e);
@@ -917,11 +937,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     } else if (lt) prog = `<p class="muted" style="margin:0">Aucun progrès après la journée ${lt.round}. Ça arrive, surtout avec un effectif expérimenté ou une semaine légère.</p>`;
     const young = t.players.filter((p) => p.age < 23).length, old = t.players.filter((p) => p.age > 31).length;
     return `<div class="grid2">
-      <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">
+      <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">${pending}
         <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
         <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}">${x.label}</button>`).join('')}</div>
           <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match.' : 'Progression normale, récupération normale.'}</p></div>
-        <p class="legend" style="margin:0">Le programme s'applique après chaque journée. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
+        <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
       </div></section>
       <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel"><h3>Progrès de la dernière semaine</h3>${prog}</section></div></div>`;
   }
@@ -1175,11 +1195,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tired = starters.filter((p) => p.fatigue > 28).length;
     let arenaSub = 'Saison terminée · bilan';
     if (U.view === 'post' && U.post) arenaSub = 'Résumé du dernier match';
+    else if (G.trainPending) arenaSub = 'Entraînement à lancer';
     else if (nf && nf.rest) arenaSub = `J${G.round + 1} · repos`;
     else if (nf) { const home = nf.h === t.id; arenaSub = `J${G.round + 1} · ${home ? 'contre' : 'à'} ${T(home ? nf.a : nf.h).name}`; }
     const s = H.standings(G), row = s.find((r) => r.id === G.userId);
     return [
-      { key: 'salle', tab: 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : nf ? 'Jouer la journée' : 'Voir le bilan' },
+      { key: 'salle', tab: 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan' },
       { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes' },
       { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
       { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
@@ -1610,6 +1631,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
       case 'nclose': hideNotify(); return;
+      case 'dotrain': doTraining(); return;
       case 'ntrain': hideNotify(); U.tab = 'entrainement'; render(); window.scrollTo(0, 0); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
