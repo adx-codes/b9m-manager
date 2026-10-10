@@ -1011,7 +1011,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<section class="panel tvcard" aria-label="Avant-match HandXtra sur MeIn Sport">
       <div class="tvhead"><span class="tvlogo" aria-hidden="true"><b>MeIn</b>SPORT</span><span class="tvshow">HandXtra</span><span class="tvlive">Avant-match</span></div>
       <div class="tvlines">${lines.map(([k, who, txt]) => `<p><b class="${k}">${who}</b> ${esc(txt)}</p>`).join('')}</div>
-      <p class="betnote">Tom Villetable au micro, François-Tablier Houla à la consultation.</p></section>`;
+</section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));

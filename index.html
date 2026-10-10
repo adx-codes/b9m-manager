@@ -498,7 +498,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .tvlogo b { background: #fff; color: var(--tv); border-radius: 3px; padding: 1px 4px; font-size: 0.78rem; letter-spacing: 0; }
 .tvshow { white-space: nowrap; font-family: var(--f-display); font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .tvlive { white-space: nowrap; margin-left: auto; font-size: 0.54rem; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.5); border-radius: 3px; padding: 1px 5px; }
-.tvlines { padding: 10px 12px 0; display: grid; gap: 7px; }
+.tvlines { padding: 10px 12px 12px; display: grid; gap: 7px; }
 .tvlines p { margin: 0; font-size: 0.78rem; line-height: 1.4; }
 .tvlines b { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .tvlines b.tom, .tvlines b.fx { color: var(--tv); }
@@ -2848,7 +2848,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<section class="panel tvcard" aria-label="Avant-match HandXtra sur MeIn Sport">
       <div class="tvhead"><span class="tvlogo" aria-hidden="true"><b>MeIn</b>SPORT</span><span class="tvshow">HandXtra</span><span class="tvlive">Avant-match</span></div>
       <div class="tvlines">${lines.map(([k, who, txt]) => `<p><b class="${k}">${who}</b> ${esc(txt)}</p>`).join('')}</div>
-      <p class="betnote">Tom Villetable au micro, François-Tablier Houla à la consultation.</p></section>`;
+</section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
