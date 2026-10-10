@@ -55,7 +55,7 @@ Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées pa
 
 Chaque joueur a un poste principal, 14 attributs notés de 1 à 20, 2 traits de profil, et une note globale calculée selon les attributs clés de son poste. Cette note sur 20 sert au moteur mais n'est jamais affichée : le joueur la voit en étoiles (voir ci-dessous).
 
-**Étoiles (niveau et potentiel) :** affichage de 0,5 à 5 étoiles, par demi-étoile, relatif au niveau du club du joueur, comme dans Football Manager. Référence : moyenne du meilleur joueur à chacun des 7 postes de son effectif. Un joueur à ce niveau vaut 3½ ★, et 1,6 point de note vaut une étoile (5 ★ dès 2,4 points au-dessus). Les joueurs adverses sont notés sur la même référence : un titulaire d'un gros club peut valoir 5 ★ pour un petit club. Étoiles pleines : niveau actuel ; contours : potentiel ; zone pâle : incertitude du staff. Au survol, un libellé (joueur clé, titulaire solide, titulaire correct, joueur de rotation, remplaçant, niveau insuffisant) et sa traduction en étoiles, jamais le chiffre. La progression de la saison (Δ) s'affiche en flèche ▲ ou ▼. Les attributs restent sur 20, la note de match sur 10.
+**Étoiles (niveau et potentiel) :** affichage de 0,5 à 5 étoiles, par demi-étoile, relatif au niveau du club du joueur, comme dans Football Manager. Référence : moyenne du meilleur joueur à chacun des 7 postes de son effectif. Un joueur à ce niveau vaut 3½ ★, et 1,6 point de note vaut une étoile (5 ★ dès 2,4 points au-dessus). Les joueurs adverses sont notés sur la même référence : un titulaire d'un gros club peut valoir 5 ★ pour un petit club. Niveau et potentiel s'affichent séparément (deux colonnes dans l'effectif, deux lignes dans la fiche) : le potentiel est plein jusqu'au bas de la fourchette du staff, pâle jusqu'à son haut. Au survol, un libellé (joueur clé, titulaire solide, titulaire correct, joueur de rotation, remplaçant, niveau insuffisant) et sa traduction en étoiles, jamais le chiffre. La progression de la saison (Δ) s'affiche en flèche ▲ ou ▼. Les attributs restent sur 20, la note de match sur 10.
 
 **Attributs de champ (1 à 20) :**
 
@@ -353,7 +353,7 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 | Infirmerie (gris) | À venir | Blessures et soins | — |
 | Boutique (gris) | À venir | Supporters et recettes | — |
 
-**Effectif :** le tableau montre pour chaque joueur l'âge, la main (D ou G), le niveau et le potentiel en étoiles, la progression depuis le début de saison (Δ, en flèche), la forme, la fatigue, les minutes moyennes, le multiplicateur d'expérience et tous les attributs. Les attributs gagnés à l'entraînement ou par le style joué sont marqués pour la semaine. L'effectif complet de l'adversaire est visible avant chaque match.
+**Effectif :** le tableau montre pour chaque joueur l'âge, la main (D ou G), le niveau et le potentiel en étoiles (deux colonnes triables), la progression depuis le début de saison (Δ, en flèche), la forme, la fatigue, les minutes moyennes, le multiplicateur d'expérience et tous les attributs. Les attributs gagnés à l'entraînement ou par le style joué sont marqués pour la semaine. L'effectif complet de l'adversaire est visible avant chaque match.
 
 **Fiche joueur :** un clic sur un nom (effectif, adversaire, performances, même en direct) ouvre sa fiche :
 
