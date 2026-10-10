@@ -3593,8 +3593,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     shade(inf);
     add(3.85, 10.25, gwrap(gh.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
       // Croix d'hôpital dressée sur le toit
-      + (() => { const [cx, cy] = P(3.85, 10.25, 24); return `<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><line x1="-3" y1="0" x2="-3" y2="-6" stroke="var(--iso-pole)" stroke-width="1"/><line x1="3" y1="0" x2="3" y2="-6" stroke="var(--iso-pole)" stroke-width="1"/>
-        <path d="M-2.4 -21 h4.8 v5.2 h5.2 v4.8 h-5.2 v5.2 h-4.8 v-5.2 h-5.2 v-4.8 h5.2 z" fill="var(--iso-mark)" stroke="var(--iso-edge)" stroke-width="0.8" stroke-linejoin="round"/></g>`; })()));
+      // Croix d'hôpital peinte à plat sur le toit
+      + (() => { const cx = 3.85, cy = 10.25, L = 0.42, W = 0.14; return poly([[-W, -L], [W, -L], [W, -W], [L, -W], [L, W], [W, W], [W, L], [-W, L], [-W, W], [-L, W], [-L, -W], [-W, -W]].map(([dx, dy]) => P(cx + dx, cy + dy, 24)), 'var(--iso-mark)', EDGE); })()));
     const bo = { x: 7.2, y: 11.0, w: 1.6, d: 0.8, h: 15, c: G1 };
     shade(bo);
     let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);
