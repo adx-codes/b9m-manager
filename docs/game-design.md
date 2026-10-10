@@ -53,7 +53,9 @@ Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées pa
 
 ## Joueurs
 
-Chaque joueur a un poste principal, 14 attributs notés de 1 à 20, 2 traits de profil, et une note globale calculée selon les attributs clés de son poste.
+Chaque joueur a un poste principal, 14 attributs notés de 1 à 20, 2 traits de profil, et une note globale calculée selon les attributs clés de son poste. Cette note sur 20 sert au moteur mais n'est jamais affichée : le joueur la voit en étoiles (voir ci-dessous).
+
+**Étoiles (niveau et potentiel) :** affichage de 0,5 à 5 étoiles, par demi-étoile, relatif au niveau du club du joueur, comme dans Football Manager. Référence : moyenne du meilleur joueur à chacun des 7 postes de son effectif. Un joueur à ce niveau vaut 3½ ★, et 1,6 point de note vaut une étoile (5 ★ dès 2,4 points au-dessus). Les joueurs adverses sont notés sur la même référence : un titulaire d'un gros club peut valoir 5 ★ pour un petit club. Étoiles pleines : niveau actuel ; contours : potentiel ; zone pâle : incertitude du staff. Au survol, un libellé (joueur clé, titulaire solide, titulaire correct, joueur de rotation, remplaçant, niveau insuffisant) et sa traduction en étoiles, jamais le chiffre. La progression de la saison (Δ) s'affiche en flèche ▲ ou ▼. Les attributs restent sur 20, la note de match sur 10.
 
 **Attributs de champ (1 à 20) :**
 
@@ -111,7 +113,7 @@ Génération : excentricité centrée sur 9 avec une forte dispersion, esprit co
 
 **Latéralité :** chaque joueur est droitier (D) ou gaucher (G), visible dans l'effectif. À droite, un gaucher a le bon angle : +3 % au tir à l'arrière droit, +4 % à l'aile droite. Un droitier y tire sur son mauvais côté : −2 % et −3 %. Effet mesuré : environ 0,7 but par match.
 
-**Potentiel :** chaque joueur a un plafond visible (note / pot.). Marge selon l'âge : 2 à 6 points avant 21 ans, 1 à 4 avant 24 ans, presque rien après 28 ans. Sous son potentiel, il progresse jusqu'à 3 fois plus vite ; au-dessus, presque plus.
+**Potentiel :** chaque joueur a un plafond, affiché en étoiles comme une estimation du staff. Fourchette selon l'âge : 1½ étoile jusqu'à 18 ans, 1 étoile à 19–20 ans, ½ étoile de 21 à 23 ans, potentiel exact (arrondi à la demi-étoile) à partir de 24 ans. La fourchette contient toujours le vrai potentiel ; son décalage est propre à chaque joueur et ne change pas, si bien qu'elle se resserre autour de la vraie valeur en vieillissant. Marge selon l'âge : 2 à 6 points avant 21 ans, 1 à 4 avant 24 ans, presque rien après 28 ans. Sous son potentiel, il progresse jusqu'à 3 fois plus vite ; au-dessus, presque plus.
 
 **Temps de jeu et progression :** les minutes du dernier match multiplient la progression de la semaine, de ×0,7 sans jouer à ×1,3 au-delà de 45 minutes. Effet doublé avant 23 ans (×0,4 à ×1,6). Les moins de 23 ans portent l'icône 🌱 pendant les matchs.
 
@@ -268,7 +270,7 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 **Rotations automatiques :** le staff fait tourner chaque poste selon son propre plan, décalé et aléatoire : le demi-centre souffle d'abord, puis un ailier, puis le pivot, jamais tous ensemble. Chaque titulaire vise 35 à 45 minutes. Dans les fins serrées (écart de 3 buts ou moins après la 50e), les titulaires restent. Un joueur au-dessus de 70 de fatigue sort en urgence. Les gardiens se partagent les mi-temps par défaut.
 
-**Changements manuels :** uniquement en pause. On clique un joueur du terrain, puis un remplaçant : vert au même poste, bleu à un poste secondaire. Chaque carte affiche la note au poste et, si le joueur est fatigué, sa note réelle en rouge. Dès qu'on change un joueur, le staff ne touche plus à ce poste pendant 7 minutes de jeu (compte à rebours sur la carte), puis reprend les rotations ; on peut lui rendre la main plus tôt. Pas de message dans le fil du match pour les changements.
+**Changements manuels :** uniquement en pause. On clique un joueur du terrain, puis un remplaçant : vert au même poste, bleu à un poste secondaire. Chaque carte affiche le niveau au poste en étoiles et, si le joueur est fatigué, son niveau réel en étoiles rouges. Dès qu'on change un joueur, le staff ne touche plus à ce poste pendant 7 minutes de jeu (compte à rebours sur la carte), puis reprend les rotations ; on peut lui rendre la main plus tôt. Pas de message dans le fil du match pour les changements.
 
 **Coach IA adverse :**
 
@@ -325,7 +327,7 @@ L'âge module tout : ×1,4 avant 23 ans, ×1 jusqu'à 28, ×0,5 jusqu'à 31, ×0
 
 ## Centre de formation
 
-Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, attributs tirés autour de 9 (rarement plus de 14), potentiel affiché exactement ; environ une fois sur cinq, une légende (voir Joueurs). Le bonus ou malus Formation ajoute ou retire 1 partout.
+Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, attributs tirés autour de 9 (rarement plus de 14), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le bonus ou malus Formation ajoute ou retire 1 partout.
 
 - **Le recruter :** il rejoint le groupe. À 16 joueurs, on choisit qui part parmi ceux de son poste. La feuille de match reste à 14, le staff place les autres en tribune.
 - **Le laisser partir :** il est refusé.
@@ -349,14 +351,14 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 | Infirmerie (gris) | À venir | Blessures et soins | — |
 | Boutique (gris) | À venir | Supporters et recettes | — |
 
-**Effectif :** le tableau montre pour chaque joueur l'âge, la main (D ou G), la note et le potentiel, la progression depuis le début de saison (Δ), la forme, la fatigue, les minutes moyennes, le multiplicateur d'expérience et tous les attributs. Les attributs gagnés à l'entraînement ou par le style joué sont marqués pour la semaine. L'effectif complet de l'adversaire est visible avant chaque match.
+**Effectif :** le tableau montre pour chaque joueur l'âge, la main (D ou G), le niveau et le potentiel en étoiles, la progression depuis le début de saison (Δ, en flèche), la forme, la fatigue, les minutes moyennes, le multiplicateur d'expérience et tous les attributs. Les attributs gagnés à l'entraînement ou par le style joué sont marqués pour la semaine. L'effectif complet de l'adversaire est visible avant chaque match.
 
 **Fiche joueur :** un clic sur un nom (effectif, adversaire, performances, même en direct) ouvre sa fiche :
 
-- note, potentiel et progression de la saison, postes de dépannage, jeu des arrières ;
+- niveau et potentiel en étoiles, progression de la saison, postes de dépannage, jeu des arrières ;
 - chiffres de la saison : matchs, minutes, buts et réussite (arrêts pour un gardien), pertes, exclusions ;
 - note moyenne des matchs sur 10 ;
-- courbe de la note journée après journée avec le potentiel, minutes et buts par match ;
+- courbe du niveau en étoiles journée après journée avec la bande du potentiel estimé, minutes et buts par match ;
 - attributs et points gagnés depuis le début de saison ;
 - tableau match par match.
 
@@ -428,7 +430,8 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 - Défense en 6-0 par défaut, bascules 5-1 et 4-2 réglées par le coach ; deux réglages par secteur.
 - Esprit collectif comme attribut joueur, identité d'équipe calculée, jeu choisi par le coach ; il évolue avec le style joué.
 - Bonus et malus : un parmi 3 de chaque, noms drôles, un de chaque pour les clubs IA.
-- Centre de formation : un jeune toutes les 5 journées, potentiel exact, décision du coach.
+- Centre de formation : un jeune toutes les 5 journées, potentiel estimé en fourchette, décision du coach.
+- Notes affichées en étoiles (sur 5, relatives au club, potentiel incertain chez les jeunes) ; note sur 20 masquée.
 - Postes secondaires à 85 % ; latéralité avec effet réel au tir à droite.
 - Changements manuels en pause seulement, rendus au staff après 7 minutes.
 - Coach IA adverse, fiche joueur ; mini-terrain 2D abandonné.

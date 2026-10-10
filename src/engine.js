@@ -73,6 +73,36 @@
     const head = p.age < 21 ? 2 + rnd() * 4 : p.age < 24 ? 1 + rnd() * 3 : p.age < 28 ? rnd() * 1.5 : p.age < 31 ? rnd() * 0.5 : 0;
     return Math.round(clamp(p.ovr + head, 1, 20) * 10) / 10;
   }
+  // ---------- Étoiles (affichage seulement : le moteur garde la note sur 20) ----------
+  // Échelle relative au club de référence (le club du joueur), comme dans FM :
+  // le titulaire moyen du club vaut 3,5 étoiles, 1,6 point de note = 1 étoile.
+  const half = (v) => Math.round(v * 2) / 2;
+  function starRef(t) {
+    const best = POS.map(pos => t.players.filter(p => p.pos === pos).reduce((m, p) => Math.max(m, p.ovr), 0)).filter(v => v > 0);
+    return best.reduce((a, b) => a + b, 0) / Math.max(1, best.length);
+  }
+  const starRaw = (v, ref) => clamp(3.5 + (v - ref) / 1.6, 0.5, 5);
+  const stars = (v, ref) => clamp(half(starRaw(v, ref)), 0.5, 5);
+  // Biais fixe de l'estimation du staff, tiré de l'identifiant (stable, rien à sauvegarder)
+  function potBias(p) {
+    let h = 2166136261;
+    for (const c of String(p.id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+    return ((h >>> 0) % 1000) / 999;
+  }
+  // Marge d'incertitude du potentiel, en étoiles : large chez les très jeunes, nulle à partir de 24 ans
+  const potMargin = (age) => age <= 18 ? 1.5 : age <= 20 ? 1 : age <= 23 ? 0.5 : 0;
+  function potRange(p, ref) {
+    const cur = stars(p.ovr, ref), pot = p.pot ?? p.ovr, w = potMargin(p.age);
+    if (!w) { const v = Math.max(cur, stars(pot, ref)); return { lo: v, hi: v, cur, w }; }
+    let lo = half(starRaw(pot, ref) - w * potBias(p));
+    let hi = Math.min(5, lo + w);
+    lo = clamp(Math.max(lo, cur), 0.5, 5); hi = Math.max(hi, lo);
+    return { lo, hi, cur, w };
+  }
+  const STAR_LABEL = [[5, 'Joueur clé'], [4, 'Titulaire solide'], [3, 'Titulaire correct'], [2, 'Joueur de rotation'], [1, 'Remplaçant'], [0, 'Niveau insuffisant']];
+  const POT_LABEL = [[5, 'Peut devenir un joueur clé'], [4, 'Peut devenir un titulaire solide'], [3, 'Peut devenir titulaire'], [2, 'Peut devenir un joueur de rotation'], [0, 'Avenir limité']];
+  const starLabel = (s) => STAR_LABEL.find(([m]) => s >= m)[1];
+  const potLabel = (s) => POT_LABEL.find(([m]) => s >= m)[1];
   const CLUBS = [
     { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a' },
     { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b' },
@@ -1167,7 +1197,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

@@ -34,6 +34,7 @@
   --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --f-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
   --gold: #6f747a;
+  --star: #a3852f;
   --zone: #a4a8ad;
   --on-accent: #ffffff;
   --r: 6px;
@@ -43,7 +44,7 @@
     --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
     --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
     --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-    --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
+    --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
     color-scheme: dark;
@@ -53,7 +54,7 @@
   --bg: #0f1011; --surface: #17191b; --sunk: #121315; --line: #2a2d30; --fg: #e8e9ea; --muted: #9a9ea3;
   --accent: #d7d9dc; --accent-soft: #26292c; --court: #3d4247; --court-soft: #202326;
   --good: #4cc282; --bad: #ef6b5e; --warn: #e3a948;
-  --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
+  --board: #08090a; --board-fg: #f4f5f6; --board-dim: #8b9095; --digit: #f0f0ee; --gold: #b9bdc2; --star: #cdb064; --zone: #6f747a; --on-accent: #111214; --pos-fg: #c9ccd0;
  --iso-side: #24323d; --iso-unit: #2b3844; --iso-lamp: #ffd47a; --iso-glow: 0.35; --iso-water: #2f6f93; --iso-stone: #3a4652; --iso-tree2: #253c35; --iso-turf: #2c5236; --iso-bed: #5a3a38; --iso-glass: #5f88a6; --iso-pole: #8a98a5; --iso-gridline: rgba(255,255,255,0.03);
  --iso-ground: #1a2731; --iso-campus: #1e2f3a; --iso-road: #2c3a46; --iso-mark: #66798a; --iso-grey: #3a4855; --iso-roof: #2f3c48; --iso-win: #ffd98a; --iso-tree: #2f4a42; --iso-trunk: #4a5550; --iso-edge: rgba(0,0,0,0.55); --iso-door: #0b1117; --iso-pitch: #2c4459; --iso-gym: #2fa596; --iso-youth: #e07a9c; --iso-office: #d8aa3e; --iso-press: #cf5a4f;
   color-scheme: dark;
@@ -68,7 +69,7 @@ button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
-.wrap { max-width: 1080px; margin: 0 auto; }
+.wrap { max-width: 1440px; margin: 0 auto; }
 
 /* Barre de club */
 .top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 0; }
@@ -111,6 +112,18 @@ main { padding-block: 22px 0; display: grid; gap: 20px; }
 .label { font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .stars { color: var(--gold); letter-spacing: 1px; font-size: 0.85rem; }
 .stars .off { color: var(--line); }
+/* Étoiles des joueurs : couches superposées (vide, potentiel incertain, potentiel, niveau), coupées à la demi-étoile */
+.pstars { position: relative; display: inline-block; font-size: 1rem; line-height: 1; letter-spacing: 0; white-space: nowrap; vertical-align: -2px; cursor: help; }
+.pstars.sm { font-size: 0.9rem; }
+.sovr .pstars { font-size: 1.6rem; justify-self: end; }
+.ynotes .pstars { font-size: 1.3rem; justify-self: end; }
+.pstars > span { display: block; overflow: hidden; }
+.pstars > span + span { position: absolute; left: 0; top: 0; }
+.pstars .s0 { color: var(--line); opacity: 0.55; }
+.pstars .sph { color: var(--star); opacity: 0.3; }
+.pstars .spl { color: var(--star); opacity: 0.58; }
+.pstars .sc { color: var(--star); }
+.pstars .scr { color: var(--bad); }
 .scroll { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
 th { text-align: left; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 700; padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
@@ -320,7 +333,7 @@ td.tr5 { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
 .modal { background: var(--surface); border-radius: 10px; border: 1px solid var(--line); max-width: 720px; width: 100%; padding: 22px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); max-height: calc(100% - 32px); overflow-y: auto; }
 .ycard h2 { font-size: 1.9rem; }
 .ynotes { display: flex; gap: 18px; }
-.ynotes div { display: grid; text-align: right; }
+.ynotes div { display: grid; text-align: right; align-content: start; gap: 4px; }
 .ynotes b { font-family: var(--f-display); font-size: 2rem; line-height: 1; }
 .yattrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; }
 .yattr { display: flex; justify-content: space-between; gap: 8px; padding: 5px 9px; border-radius: 5px; font-size: 0.84rem; border: 1px solid var(--line); }
@@ -418,7 +431,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 /* Fiche joueur */
 .plink { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; }
 .plink:hover, .plink:focus-visible { text-decoration-color: currentColor; color: var(--accent); }
-.modal.sheet { max-width: 1000px; position: relative; }
+.modal.sheet { max-width: 1240px; position: relative; }
 .shead { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-right: 58px; }
 .shead h2 { font-family: var(--f-display); font-size: 2rem; margin: 6px 0 8px; line-height: 1; }
 .sovr { display: grid; gap: 2px; text-align: right; }
@@ -435,6 +448,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .schart .cv { fill: var(--fg); font-weight: 700; }
 .schart .cl { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
 .schart .cpt { fill: var(--surface); stroke: var(--accent); stroke-width: 1.6; }
+.schart .cpotb { fill: var(--star); fill-opacity: 0.14; }
 .schart .cpot { stroke: var(--good); stroke-dasharray: 5 4; stroke-width: 1.2; }
 .schart .cb { fill: var(--court); opacity: 0.75; }
 .schart .cb0 { fill: var(--line); }
@@ -600,6 +614,36 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     const head = p.age < 21 ? 2 + rnd() * 4 : p.age < 24 ? 1 + rnd() * 3 : p.age < 28 ? rnd() * 1.5 : p.age < 31 ? rnd() * 0.5 : 0;
     return Math.round(clamp(p.ovr + head, 1, 20) * 10) / 10;
   }
+  // ---------- Étoiles (affichage seulement : le moteur garde la note sur 20) ----------
+  // Échelle relative au club de référence (le club du joueur), comme dans FM :
+  // le titulaire moyen du club vaut 3,5 étoiles, 1,6 point de note = 1 étoile.
+  const half = (v) => Math.round(v * 2) / 2;
+  function starRef(t) {
+    const best = POS.map(pos => t.players.filter(p => p.pos === pos).reduce((m, p) => Math.max(m, p.ovr), 0)).filter(v => v > 0);
+    return best.reduce((a, b) => a + b, 0) / Math.max(1, best.length);
+  }
+  const starRaw = (v, ref) => clamp(3.5 + (v - ref) / 1.6, 0.5, 5);
+  const stars = (v, ref) => clamp(half(starRaw(v, ref)), 0.5, 5);
+  // Biais fixe de l'estimation du staff, tiré de l'identifiant (stable, rien à sauvegarder)
+  function potBias(p) {
+    let h = 2166136261;
+    for (const c of String(p.id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+    return ((h >>> 0) % 1000) / 999;
+  }
+  // Marge d'incertitude du potentiel, en étoiles : large chez les très jeunes, nulle à partir de 24 ans
+  const potMargin = (age) => age <= 18 ? 1.5 : age <= 20 ? 1 : age <= 23 ? 0.5 : 0;
+  function potRange(p, ref) {
+    const cur = stars(p.ovr, ref), pot = p.pot ?? p.ovr, w = potMargin(p.age);
+    if (!w) { const v = Math.max(cur, stars(pot, ref)); return { lo: v, hi: v, cur, w }; }
+    let lo = half(starRaw(pot, ref) - w * potBias(p));
+    let hi = Math.min(5, lo + w);
+    lo = clamp(Math.max(lo, cur), 0.5, 5); hi = Math.max(hi, lo);
+    return { lo, hi, cur, w };
+  }
+  const STAR_LABEL = [[5, 'Joueur clé'], [4, 'Titulaire solide'], [3, 'Titulaire correct'], [2, 'Joueur de rotation'], [1, 'Remplaçant'], [0, 'Niveau insuffisant']];
+  const POT_LABEL = [[5, 'Peut devenir un joueur clé'], [4, 'Peut devenir un titulaire solide'], [3, 'Peut devenir titulaire'], [2, 'Peut devenir un joueur de rotation'], [0, 'Avenir limité']];
+  const starLabel = (s) => STAR_LABEL.find(([m]) => s >= m)[1];
+  const potLabel = (s) => POT_LABEL.find(([m]) => s >= m)[1];
   const CLUBS = [
     { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a' },
     { id: 'MTP', name: 'Montpellier Écusson HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b' },
@@ -1694,7 +1738,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -1721,6 +1765,21 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const me = () => T(G.userId);
   const badge = (t, sm) => `<span class="badge${sm ? ' sm' : ''}" style="background:${t.color}" aria-hidden="true">${t.id}</span>`;
   const stars = (n) => `<span class="stars" aria-label="Réputation ${n} sur 5">${'★'.repeat(n)}<span class="off">${'★'.repeat(5 - n)}</span></span>`;
+  // Étoiles des joueurs : relatives au niveau de ton club, demi-étoiles, jamais la note chiffrée
+  const sref = () => H.starRef(me());
+  const sfmt = (s) => (s >= 1 ? String(Math.floor(s)) : '') + (s % 1 ? '½' : '') + ' ★';
+  const STR = '★★★★★';
+  function sbar(cur, o = {}) {
+    const w = (v) => (v / 5) * 100;
+    const lay = (cls, v) => v > 0 ? `<span class="${cls}" style="width:${w(v)}%">${STR}</span>` : '';
+    return `<span class="pstars${o.sm ? ' sm' : ''}" title="${esc(o.title || '')}" aria-label="${esc(o.title || sfmt(cur))}"><span class="s0">${STR}</span>${o.hi ? lay('sph', o.hi) : ''}${o.lo ? lay('spl', o.lo) : ''}${lay(o.red ? 'scr' : 'sc', cur)}</span>`;
+  }
+  const potTxt = (r) => r.lo === r.hi ? sfmt(r.lo) : `${sfmt(r.lo).replace(' ★', '')} à ${sfmt(r.hi)}, estimation du staff`;
+  const pTitle = (p, r) => `Niveau : ${H.starLabel(r.cur).toLowerCase()} (${sfmt(r.cur)})\nPotentiel : ${H.potLabel(r.hi).toLowerCase()} (${potTxt(r)})`;
+  // Niveau + potentiel (étoiles pleines, puis contours ; zone pâle = incertitude du staff)
+  function pstars(p, o = {}) { const r = H.potRange(p, sref()); return sbar(r.cur, { lo: r.lo, hi: r.hi, sm: o.sm, title: pTitle(p, r) }); }
+  // Niveau seul, pour une valeur sur 20 (note à un poste, note diminuée par la fatigue)
+  function vstars(v, o = {}) { const s = H.stars(v, sref()); return sbar(s, { sm: o.sm, red: o.red, title: o.title || `${H.starLabel(s)} (${sfmt(s)})` }); }
   const short = (name) => { const p = name.split(' '); return p[0][0] + '. ' + p.slice(1).join(' '); };
   const DEF_TXT = {
     '6-0': ['Protège la zone, limite les tirs de près', 'Laisse tirer de loin'],
@@ -1792,22 +1851,23 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   function sheetChart(p) {
     const hs = p.hist || [];
     const W = 900, Hh = 128, L = 34, R = 12, T = 12, B = 22;
-    const pts = [[0, p.ovr0 ?? p.ovr]].concat(hs.map((h) => [h[0], h[1]]));
+    const ref = sref(), st = (v) => H.stars(v, ref), pr = H.potRange(p, ref);
+    const pts = [[0, st(p.ovr0 ?? p.ovr)]].concat(hs.map((h) => [h[0], st(h[1])]));
     const nR = Math.max(G.sched.length, 1);
-    const vals = pts.map((x) => x[1]).concat([p.pot ?? p.ovr]);
-    const lo = Math.floor(Math.min(...vals) - 0.3), hi = Math.ceil(Math.max(...vals) + 0.3);
-    const X = (r) => L + (r / nR) * (W - L - R), Y = (v) => T + (1 - (v - lo) / Math.max(0.5, hi - lo)) * (Hh - T - B);
+    const lo = 0.5, hi = 5;
+    const X = (r) => L + (r / nR) * (W - L - R), Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (Hh - T - B);
     const grid = [];
-    for (let v = lo; v <= hi; v += (hi - lo > 4 ? 2 : 1)) grid.push(`<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="cg"/><text x="${L - 6}" y="${Y(v) + 3.5}" class="ct" text-anchor="end">${v}</text>`);
+    for (let v = 1; v <= 5; v++) grid.push(`<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" class="cg"/><text x="${L - 6}" y="${Y(v) + 3.5}" class="ct" text-anchor="end">${v} ★</text>`);
     const xt = [];
     for (let r = 0; r <= nR; r += nR > 12 ? 4 : 2) xt.push(`<text x="${X(r)}" y="${Hh - 6}" class="ct" text-anchor="middle">${r === 0 ? 'Début' : 'J' + r}</text>`);
     const line = pts.map((x, k) => `${k ? 'L' : 'M'}${X(x[0]).toFixed(1)},${Y(x[1]).toFixed(1)}`).join('');
-    const pot = p.pot ?? p.ovr;
+    const potBand = pr.hi > pr.lo
+      ? `<rect x="${L}" width="${W - L - R}" y="${Y(pr.hi).toFixed(1)}" height="${(Y(pr.lo) - Y(pr.hi)).toFixed(1)}" class="cpotb"><title>Potentiel estimé : ${potTxt(pr)}</title></rect><text x="${W - R}" y="${Y(pr.hi) < 24 ? Y(pr.hi) + 11 : Y(pr.hi) - 4}" class="ct" text-anchor="end">Potentiel estimé</text>`
+      : `<line x1="${L}" x2="${W - R}" y1="${Y(pr.lo)}" y2="${Y(pr.lo)}" class="cpot"/><text x="${W - R}" y="${Y(pr.lo) < 24 ? Y(pr.lo) + 12 : Y(pr.lo) - 4}" class="ct" text-anchor="end">Potentiel</text>`;
     const mins = hs.map((h) => { const bh = (h[2] / 60) * 34; return `<rect x="${(X(h[0]) - 5).toFixed(1)}" y="${(Hh + 40 - bh).toFixed(1)}" width="10" height="${bh.toFixed(1)}" rx="1.5" class="${h[2] > 0 ? 'cb' : 'cb0'}"><title>J${h[0]} : ${h[2]} min</title></rect>${(p.pos === 'GB' ? h[5] : h[3]) ? `<text x="${X(h[0]).toFixed(1)}" y="${(Hh + 40 - bh - 3).toFixed(1)}" class="ct cv" text-anchor="middle">${p.pos === 'GB' ? h[5] : h[3]}</text>` : ''}`; }).join('');
-    return `<svg viewBox="0 0 ${W} ${Hh + 46}" class="schart" role="img" aria-label="Évolution de la note et minutes jouées par journée">
-      ${grid.join('')}${xt.join('')}
-      <line x1="${L}" x2="${W - R}" y1="${Y(pot)}" y2="${Y(pot)}" class="cpot"/><text x="${W - R}" y="${Y(pot) - 4}" class="ct" text-anchor="end">Potentiel ${pot.toFixed(1)}</text>
-      <path d="${line}" class="cl"/>${pts.map((x) => `<circle cx="${X(x[0]).toFixed(1)}" cy="${Y(x[1]).toFixed(1)}" r="2.6" class="cpt"><title>${x[0] ? 'Après J' + x[0] : 'Début de saison'} : ${x[1].toFixed(1)}</title></circle>`).join('')}
+    return `<svg viewBox="0 0 ${W} ${Hh + 46}" class="schart" role="img" aria-label="Évolution du niveau en étoiles et minutes jouées par journée">
+      ${potBand}${grid.join('')}${xt.join('')}
+      <path d="${line}" class="cl"/>${pts.map((x) => `<circle cx="${X(x[0]).toFixed(1)}" cy="${Y(x[1]).toFixed(1)}" r="2.6" class="cpt"><title>${x[0] ? 'Après J' + x[0] : 'Début de saison'} : ${sfmt(x[1])}</title></circle>`).join('')}
       <line x1="${L}" x2="${W - R}" y1="${Hh + 40}" y2="${Hh + 40}" class="cg"/><text x="${L - 6}" y="${Hh + 30}" class="ct" text-anchor="end">Min</text>${mins}</svg>`;
   }
   function sheetHtml(p, t) {
@@ -1835,12 +1895,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
       <div class="shead"><div><div class="row" style="gap:8px"><span class="pos${gk ? ' gb' : ''}">${p.pos}</span><span class="muted">${esc(H.POS_LABEL[p.pos])}</span>${p.age < 23 ? '<span title="Moins de 23 ans">🌱</span>' : ''}${p.youth ? '<span class="yt" title="Formé au club">J</span>' : ''}</div>
         <h2 id="pstitle">${esc(p.name)}</h2>
         <div class="row" style="gap:10px">${badge(t, true)}<span>${esc(t.name)}</span><span class="muted">${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'}${H.SECONDARY[p.pos].length ? ' · dépanne en ' + H.SECONDARY[p.pos].join(', ') : ''}${H.BACK_POS.includes(p.pos) ? ' · jeu ' + H.BACK_STYLES[H.backStyle(p)].toLowerCase() : ''}</span></div></div>
-        <div class="sovr"><span class="label">Note / potentiel</span><b class="num">${p.ovr.toFixed(1)}<span class="pot">/${(p.pot ?? p.ovr).toFixed(1)}</span></b><span class="${d >= 0.05 ? 'dlt' : d <= -0.05 ? 'dlt neg' : 'muted'}">${d >= 0.05 ? '+' : ''}${Math.abs(d) < 0.05 ? 'stable' : d.toFixed(1)} cette saison</span></div>
+        <div class="sovr"><span class="label">Niveau · potentiel</span>${pstars(p)}<span class="muted">${esc(H.starLabel(H.stars(p.ovr, sref())))}</span><span class="${d >= 0.05 ? 'dlt' : d <= -0.05 ? 'dlt neg' : 'muted'}">${d >= 0.05 ? '▲ en progrès' : d <= -0.05 ? '▼ en baisse' : 'stable'} cette saison</span></div>
         <button class="btn sclose" data-act="psclose" aria-label="Fermer la fiche">✕</button></div>
       <div class="stiles">${tiles.join('')}</div>
-      <h3 class="sub3">Évolution de la note</h3>
+      <h3 class="sub3">Évolution du niveau</h3>
       ${hs.length ? sheetChart(p) : '<p class="muted">Pas encore de match joué cette saison.</p>'}
-      <p class="legend" style="margin:4px 0 0">Courbe : note après chaque journée (entraînement compris). Barres : minutes jouées${gk ? ', chiffre : arrêts' : ', chiffre : buts'}.</p>
+      <p class="legend" style="margin:4px 0 0">Courbe : niveau en étoiles après chaque journée (entraînement compris), par rapport à ton club. Barres : minutes jouées${gk ? ', chiffre : arrêts' : ', chiffre : buts'}.</p>
       <div class="grid2" style="margin-top:14px">
         <div style="min-width:0"><h3 class="sub3" style="margin-top:0">Attributs <span class="muted" style="font-weight:400">· ${gained ? `+${gained} point${gained > 1 ? 's' : ''} gagné${gained > 1 ? 's' : ''} cette saison` : 'aucun gain cette saison'}</span></h3>
           <div class="sattrs">${allK.map(attr).join('')}</div>
@@ -2101,7 +2161,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
             <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             <div class="opt"><span class="label">Joueurs à surveiller</span>
-              ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted num">${p.ovr.toFixed(1)}</span></div>`).join('')}
+              ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span>${vstars(p.ovr, { sm: true })}</div>`).join('')}
             </div>
             ${faceHtml(t, opp)}
           </div>
@@ -2199,7 +2259,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const info = (p) => { const f = Math.round(s.fat[p.id] || 0), st = s.ps[p.id] || { g: 0, sh: 0, sv: 0, fa: 0 };
       return `<span class="cfat"><span style="width:${Math.min(100, f)}%;background:${fatCol(f)}"></span></span><span class="cline"><span class="lat ${p.hand === 'G' ? 'g' : 'd'}">${p.hand}</span><span class="num">${p.pos === 'GB' ? `${st.sv}/${st.fa} arr.` : `${st.g}/${st.sh} buts`}</span><span class="num muted">${f}</span></span>`; };
     const effNote = (p, pos) => { const n = ovrAt(p, pos), f = s.fat[p.id] || 0; const k = f > H.FAT.thr ? Math.max(0.55, 1 - (f - H.FAT.thr) * H.FAT.k) : 1; return { n, e: n * k, tired: k < 0.995 }; };
-    const noteLine = (p, pos, lab) => { const x = effNote(p, pos); return `<span class="cnote">${lab}${x.n.toFixed(1)}${x.tired ? ` <span class="ctired" title="Note réelle avec la fatigue">→ ${x.e.toFixed(1)}</span>` : ''}</span>`; };
+    const noteLine = (p, pos, lab) => { const x = effNote(p, pos), sn = H.stars(x.n, sref()), se = H.stars(x.e, sref()); return `<span class="cnote">${lab}${vstars(x.n, { sm: true, title: `${lab}${sfmt(sn)}` })}${x.tired && se < sn ? ` <span class="ctired">→ ${vstars(x.e, { sm: true, red: true, title: `Niveau réel avec la fatigue : ${sfmt(se)}` })}</span>` : ''}</span>`; };
     const onCards = H.POS.map((pos) => {
       const p = s.lineup[pos];
       if (!p) return '';
@@ -2207,7 +2267,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const dis = !paused || out;
       return `<button class="ccard${sel === pos ? ' sel' : ''}${out ? ' out' : ''}" data-act="subpick" data-id="${pos}" ${dis ? 'disabled' : ''} aria-pressed="${sel === pos}">
         <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${pos in s.manual ? `<span class="ctag" title="Le staff reprend ce poste dans ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))} min">Coach · ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))}'</span>` : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
-        <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, 'Note ')}</button>`;
+        <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, '')}</button>`;
     }).join('');
     const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos));
     const benchCards = bench.map((p) => {
@@ -2216,7 +2276,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         ok = (sel === 'GB') === (p.pos === 'GB');
         cls = !ok ? ' dim' : p.pos === sel ? ' match' : H.SECONDARY[p.pos].includes(sel) ? ' sec' : ' other';
         if (ok) note = noteLine(p, sel, 'À ce poste ');
-      } else note = noteLine(p, p.pos, 'Note ');
+      } else note = noteLine(p, p.pos, '');
       return `<button class="ccard bench${cls}" data-act="subin" data-id="${p.id}" ${paused && sel && ok ? '' : 'disabled'}>
         <span class="chead"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}</span><b>${esc(short(p.name))}</b>${info(p)}${note}</button>`;
     }).join('');
@@ -2334,7 +2394,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       else H.train(t, 'equilibre', 'normale');
     }
     if (G.round >= G.sched.length) G.ended = true;
-    if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, decision: 'Parti sans réponse' }); G.youth = null; }
+    if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
     if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; }
   }
   function restRound() {
@@ -2475,25 +2535,27 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const groups = gk ? groupsAll : groupsAll.filter(([g]) => !hid.includes(g));
     const starters = new Set(Object.values(t.lineup));
     const s = U.sort;
-    const val = (p, k) => k === 'pos' ? H.POS.indexOf(p.pos) * 100 - p.ovr : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? p.ovr - (p.ovr0 ?? p.ovr) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
+    const ref = sref(), stv = (p) => H.stars(p.ovr, ref), ptv = (p) => { const r = H.potRange(p, ref); return (r.lo + r.hi) / 2; };
+    const dsign = (p) => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? 1 : d <= -0.05 ? -1 : 0; };
+    const val = (p, k) => k === 'pos' ? H.POS.indexOf(p.pos) * 100 - stv(p) : k === 'ovr' ? stv(p) : k === 'pot' ? ptv(p) : k === 'name' ? p.name : k === 'goals' ? (gk ? p.saves : p.goals) : k === 'mpg' ? (p.apps ? p.mins / p.apps : 0) : k === 'dlt' ? dsign(p) : k === 'xp' ? H.matchXP(p) : k in p.a ? p.a[k] : p[k];
     const sty = new Map(t.id === G.userId && G.lastStyle && G.lastStyle.round === G.round ? G.lastStyle.log.map((e) => [e.id, e.d]) : []);
     const wk = new Set(t.id === G.userId && G.lastTraining && G.lastTraining.round === G.round ? G.lastTraining.log.map((e) => e.id + ':' + e.k) : []);
     const sorted = players.slice().sort((x, y) => {
       const a = val(x, s.k), b = val(y, s.k);
-      if (a === undefined || b === undefined) return H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos) || y.ovr - x.ovr;
-      const c = typeof a === 'string' ? a.localeCompare(b) : a - b;
+      if (a === undefined || b === undefined) return H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos) || stv(y) - stv(x);
+      const c = typeof a === 'string' ? a.localeCompare(b) : a - b || x.name.localeCompare(y.name);
       return (s.k === 'pos' || s.k === 'name' ? c : -c) * s.dir;
     });
     const sh = (k, l, cls, title) => `<th class="${cls || ''}${s.k === k ? ' sorted' : ''}"${title ? ` title="${esc(title)}"` : ''}><button class="sortbtn" data-act="sort" data-id="${k}">${l}${s.k === k ? (s.dir === 1 ? ' ▾' : ' ▴') : ''}</button></th>`;
     const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
     const formTxt = (f) => f > 0 ? `<span class="form" style="color:var(--good)">+${f}</span>` : f < 0 ? `<span class="form" style="color:var(--bad)">${f}</span>` : '<span class="form muted">=</span>';
     const head1 = `<tr class="grp"><th class="stick" colspan="1"></th><th colspan="${suivi ? 8 : 4}"></th>${groups.map(([g, cols]) => `<th colspan="${cols.length}" class="gh">${g}</th>`).join('')}<th></th></tr>`;
-    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}<th class="r${['ovr', 'pot'].includes(s.k) ? ' sorted' : ''}"><button class="sortbtn" data-act="sort" data-id="ovr">Note</button> / <button class="sortbtn" data-act="sort" data-id="pot">pot.</button></th>${sh('dlt', 'Δ', 'r', 'Progression de la note depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
+    const head2 = `<tr>${sh('pos', 'Joueur', 'stick')}${sh('age', 'Âge', 'r')}${sh('hand', 'Main', '', 'D : droitier · G : gaucher')}<th class="${['ovr', 'pot'].includes(s.k) ? 'sorted' : ''}" title="Étoiles pleines : niveau actuel. Contours : potentiel. Zone pâle : incertitude du staff sur le potentiel des jeunes."><button class="sortbtn" data-act="sort" data-id="ovr">Niveau</button> · <button class="sortbtn" data-act="sort" data-id="pot">pot.</button></th>${sh('dlt', 'Δ', 'r', 'Progression depuis le début de saison')}${suivi ? sh('form', 'Forme', 'r') + sh('fatigue', 'Fatigue') + sh('mpg', 'Min', 'r', 'Temps de jeu moyen par match') + sh('xp', 'Exp.', 'r', 'Multiplicateur de progression selon les minutes jouées au dernier match') : ''}${groups.map(([, cols], gi) => cols.map(([k, l], ci) => sh(k, l, 'ac' + (ci === 0 ? ' gs' : ''), ATTR_LABEL[k])).join('')).join('')}${sh('goals', gk ? 'Arr.' : 'Buts', 'r gs')}</tr>`;
     const rows = sorted.map((p) => {
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
-        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="r nw"><b>${p.ovr.toFixed(1)}</b><span class="pot" title="Potentiel">/${(p.pot ?? p.ovr).toFixed(1)}</span></td><td class="r">${(() => { const d = p.ovr - (p.ovr0 ?? p.ovr); return d >= 0.05 ? `<span class="dlt">+${d.toFixed(1)}</span>` : d <= -0.05 ? `<span class="dlt neg">${d.toFixed(1)}</span>` : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
+        <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${pstars(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r">${formTxt(p.form)}</td>
         <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}">${p.a[k]}</td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
@@ -2503,13 +2565,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderSquad() {
     const t = me();
     const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id));
-    const avg = starters.reduce((a, p) => a + p.ovr, 0) / 7;
+    const avg = starters.reduce((a, p) => a + p.ovr, 0) / 7, ref = sref();
     const field = t.players.filter((p) => p.pos !== 'GB'), gks = t.players.filter((p) => p.pos === 'GB');
-    const best = field.slice().sort((x, y) => y.ovr - x.ovr)[0];
+    const best = field.slice().sort((x, y) => H.stars(y.ovr, ref) - H.stars(x.ovr, ref) || (H.potRange(y, ref).hi - H.potRange(x, ref).hi))[0];
     const tired = starters.filter((p) => p.fatigue > 28).length;
     return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Vestiaire · effectif de ${t.players.length}</h3>
-        <span class="row" style="gap:16px"><span class="muted">Note moyenne des titulaires <b class="num" style="color:var(--fg)">${avg.toFixed(1)}</b></span><span class="muted">Meilleur joueur <b style="color:var(--fg)">${esc(short(best.name))} (${best.ovr.toFixed(1)})</b></span><span class="muted">Titulaires fatigués <b class="num" style="color:var(--fg)">${tired}</b></span></span></div>
-        <p class="legend" style="margin:0 0 12px">Toutes les notes sont sur 20. Note / pot. : niveau actuel et niveau que le joueur peut atteindre ; tant qu'il est sous son potentiel, il progresse vite, ensuite presque plus. Δ : progression depuis le début de saison. Min : temps de jeu moyen par match. Exp. : multiplicateur de progression à l'entraînement selon les minutes du dernier match (de ×0,7 sans jouer à ×1,3 pour 45 minutes et plus, effet doublé avant 23 ans). Les cases encadrées sont les attributs de son poste, les seuls qui progressent à l'entraînement. Clique sur un en-tête pour trier.</p>
+        <span class="row" style="gap:16px"><span class="muted row" style="gap:6px">Niveau moyen des titulaires ${vstars(avg, { sm: true })}</span><span class="muted row" style="gap:6px">Meilleur joueur <b style="color:var(--fg)">${esc(short(best.name))}</b> ${vstars(best.ovr, { sm: true })}</span><span class="muted">Titulaires fatigués <b class="num" style="color:var(--fg)">${tired}</b></span></span></div>
+        <p class="legend" style="margin:0 0 12px">Niveau · pot. : étoiles par rapport au niveau de ton club (3½ ★ pour un titulaire type) ; étoiles pleines pour le niveau actuel, contours pour le potentiel, zone pâle quand le staff hésite encore (jeunes de moins de 24 ans). Tant qu'un joueur est sous son potentiel, il progresse vite, ensuite presque plus. Attributs sur 20. Δ : progression depuis le début de saison. Min : temps de jeu moyen par match. Exp. : multiplicateur de progression à l'entraînement selon les minutes du dernier match (de ×0,7 sans jouer à ×1,3 pour 45 minutes et plus, effet doublé avant 23 ans). Les cases encadrées sont les attributs de son poste, les seuls qui progressent à l'entraînement. Clique sur un en-tête pour trier.</p>
         <div class="heatkey"><span class="h5">16 et +</span><span class="h4">13 à 15</span><span class="h3">10 à 12</span><span class="h2">7 à 9</span><span class="h1">6 et −</span><span class="up upkey">▲ +1 cette semaine</span><span class="muted">Main : D droitier, G gaucher · T titulaire · Tr en tribune (hors des 14 de la feuille de match) · J formé au club</span></div>
         <h3 class="sub3">Profil de l'équipe</h3>${teamProfile(t)}
         ${G.lastTraining && G.lastTraining.round === G.round && G.lastTraining.log.length ? `<div class="advice" style="margin-top:12px"><span class="label">Progrès à l'entraînement après la journée ${G.lastTraining.round}</span><div class="row" style="gap:6px">${Object.values(G.lastTraining.log.reduce((acc, e) => { (acc[e.id] = acc[e.id] || { name: e.name, n: 0 }).n++; return acc; }, {})).map((x) => `<span class="up">${esc(short(x.name))} +${x.n}</span>`).join('')}</div></div>` : ''}
@@ -2550,7 +2612,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function youthCard(modal) {
     const y = G.youth.p, t = me();
     const full = t.players.length >= 16;
-    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr);
+    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
     const attrs = y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS);
     const keys = Object.keys(H.WEIGHTS[y.pos]);
     const rel = U.yRelease;
@@ -2559,11 +2621,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centre de formation · après la journée ${G.youth.round}</span>
         <h2 id="ytitle" style="margin-top:4px">${esc(y.name)}</h2>
         <p class="muted" style="margin:4px 0 0">${H.POS_LABEL[y.pos]} · ${y.age} ans · ${y.hand === 'G' ? 'gaucher' : 'droitier'}</p></div>
-        <div class="ynotes"><div><span class="label">Note</span><b class="num">${y.ovr.toFixed(1)}</b></div><div><span class="label">Potentiel</span><b class="num" style="color:var(--iso-youth)">${y.pot.toFixed(1)}</b></div></div></div>
-      <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Tant que sa note est sous son potentiel, il progresse bien plus vite à l'entraînement (jusqu'à ×${(1 + Math.max(0, y.pot - y.ovr) / 4).toFixed(1)} aujourd'hui) ; une fois le potentiel atteint, presque plus.</p>
+        <div class="ynotes">${(() => { const r = H.potRange(y, sref()); return `<div><span class="label">Niveau</span>${vstars(y.ovr)}</div><div><span class="label">Potentiel estimé</span>${sbar(r.cur, { lo: r.lo, hi: r.hi, title: pTitle(y, r) })}<span class="muted" style="font-size:0.8rem">${potTxt(r).replace(', estimation du staff', '')}</span></div>`; })()}</div></div>
+      <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
       ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/16) : choisis qui part pour lui faire de la place</span>
-        <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} · ${p.ovr.toFixed(1)} · ${p.age} ans</button>`).join('')}</div></div>`
+        <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
         : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
         <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}</div>
@@ -2579,9 +2641,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à 16 joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
       </section>
       <div style="display:grid;gap:20px;min-width:0">
-        <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="up">Note ${p.ovr.toFixed(1)} · potentiel ${p.pot.toFixed(1)}</span></span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
+        <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems">${pstars(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
           <p class="legend">Effectif : ${t.players.length}/16 joueurs.</p></section>
-        <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="r num">${l.ovr.toFixed(1)} → ${l.pot.toFixed(1)}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
+        <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return sbar(r.cur, { sm: true, lo: r.lo, hi: r.hi, title: pTitle(q, r) }); })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
       </div></div>`;
   }
 
@@ -2925,11 +2987,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const opts = t.players.filter((p) => pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB')
       .sort((x, y) => (y.pos === pos) - (x.pos === pos) || ovrAt(y, pos) - ovrAt(x, pos));
     return `<div class="slot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"><span class="label">${H.POS_LABEL[pos]}</span>
-      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${ovrAt(p, pos).toFixed(1)}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
+      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${sfmt(H.stars(ovrAt(p, pos), sref()))}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
       <span class="ovr">${cur.hand === 'G' ? 'Gaucher' : 'Droitier'} · fat. ${cur.fatigue} · forme ${cur.form > 0 ? '+' : ''}${cur.form}${(pos === 'ArD' || pos === 'AiD') && cur.hand === 'D' ? ' · <b style="color:var(--bad)">mauvais côté</b>' : ''}</span></div>`;
   }
   function dragChip(p, click, ghost) {
-    return `<button class="chip dragchip${ghost ? ' ghostchip' : ''}" draggable="true" data-drag="${p.id}" ${click ? `data-act="tribune" data-id="${p.id}"` : ''}><span class="grip" aria-hidden="true">⋮⋮</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${esc(short(p.name))} <span class="muted num">${p.ovr.toFixed(1)}</span></button>`;
+    return `<button class="chip dragchip${ghost ? ' ghostchip' : ''}" draggable="true" data-drag="${p.id}" ${click ? `data-act="tribune" data-id="${p.id}"` : ''}><span class="grip" aria-hidden="true">⋮⋮</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${esc(short(p.name))} ${vstars(p.ovr, { sm: true })}</button>`;
   }
   // Glisser-déposer de la composition : banc ⇄ tribune, et vers un poste du terrain
   function setLineup(t, pos, pid) {
@@ -3000,7 +3062,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">Composition</h3><button class="btn" data-act="auto">Composition auto</button></div>
         <div class="court">${COURT}${H.POS.map((p) => slotHtml(t, p)).join('')}</div>
-        <p class="legend">La note affichée est celle du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec la note correspondante. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : 85 % de sa note ; ailleurs, la note dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
+        <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
         <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${t.players.length > 14 ? ` Feuille de match : 14 joueurs sur ${t.players.length}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
         <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, t.players.length > 14, false)).join('')}</div></div>
         ${t.players.length > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
@@ -3112,7 +3174,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
       case 'ylater': U.youthModal = false; render(); return;
-      case 'yrefuse': if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, decision: 'Refusé' }); G.youth = null; } U.youthModal = false; save(); render(); return;
+      case 'yrefuse': if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Refusé' }); G.youth = null; } U.youthModal = false; save(); render(); return;
       case 'yaccept': {
         if (!G.youth) return;
         const tm = me(), y = G.youth.p;
@@ -3131,7 +3193,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         tm.players.push(y);
         for (const pos of H.POS) if (!tm.players.some((p) => p.id === tm.lineup[pos])) tm.lineup[pos] = y.id;
         H.ensureSheet(tm);
-        G.youthLog.unshift({ round: G.youth.round, name: y.name, pos: y.pos, ovr: y.ovr, pot: y.pot, decision });
+        G.youthLog.unshift({ round: G.youth.round, name: y.name, pos: y.pos, ovr: y.ovr, pot: y.pot, age: y.age, id: y.id, decision });
         G.youth = null; U.youthModal = false; U.yRelease = null; save(); render(); return;
       }
       case 'tribune': {
