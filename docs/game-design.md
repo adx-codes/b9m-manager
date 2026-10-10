@@ -193,7 +193,7 @@ Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvr
 
 ## Jeu des arrières et face-à-face
 
-Chaque arrière (ArG, DC, ArD) a un jeu : De loin, Équilibré ou Au contact. Par défaut, le jeu conseillé par le staff selon ses notes (écart de 2 points entre tir à 9 m et moyenne tir à 6 m + duel). Il se règle dans une fenêtre de la tactique, et peut être changé pour un seul match depuis la préparation.
+Chaque arrière (ArG, DC, ArD) a un jeu : De loin, Équilibré ou Au contact. Par défaut, tout le monde joue Équilibré, joueur comme clubs IA : le staff ne recommande rien, c'est au coach de lire les notes. Chaque arrière a un registre naturel, caché, selon ses notes (écart de 2 points entre tir à 9 m et moyenne tir à 6 m + duel). Il se règle dans une fenêtre de la tactique, et peut être changé pour un seul match depuis la préparation.
 
 - **De loin :** tirs à 9 m ×1,7, percées réduites, peu de pertes ; vulnérable face aux bons contreurs.
 - **Au contact :** percées ×1,7, plus de 7 m et d'exclusions provoquées, risque de passage en force, fatigue +8 %.
@@ -445,7 +445,7 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 | Test | Résultat |
 | --- | --- |
 | Équipe qui reçoit (équipes équivalentes) | 58 à 60 % des points, +1,4 but en moyenne (47 % avant l'avantage du terrain) |
-| Jeu des arrières conseillé / tous Équilibré / tous Au contact / tous De loin | 46 % / 42 % / 41 % / 35 % des points |
+| Jeu des arrières adapté aux notes / tous Équilibré / tous Au contact / tous De loin | 46 % / 42 % / 41 % / 35 % des points |
 | +3 en contre (tous les joueurs de champ) | Tirs de loin adverses réussis : 57 % → 54 % |
 | +3 en duel défensif (tous les joueurs de champ) | Percées adverses réussies : 64 % → 57 % |
 | ArD adverse de 12 à 18 en duel défensif | Percées de ton ArG : 60 % → 56 % (zone), 69 % → 62 % (homme) |
@@ -474,7 +474,7 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 - Nom du jeu : B9M Manager ; accueil neutre puis couleurs du club atténuées.
 - Noms régionaux et 12 % d'étrangers ; niveau de départ lié à l'âge ; 4 gauchers à droite par effectif.
 - Défense en deux attributs (contre, duel défensif), face-à-face et note élargie en zone.
-- Jeu des arrières par joueur, modifiable pour un match.
+- Jeu des arrières par joueur, modifiable pour un match ; Équilibré par défaut, sans recommandation du staff.
 - Avantage du terrain, curseur d'intensité, notifications du coach adverse.
 - Légendes (regens) aux noms reconnaissables mais pas trop proches.
 

@@ -885,7 +885,8 @@ html.locked #gate { display: grid; }
     const loin = p.a.tirLoin, near = (p.a.tirPres + p.a.duel) / 2;
     return loin - near >= 2 ? 'loin' : near - loin >= 2 ? 'contact' : 'equilibre';
   }
-  const backStyle = (p) => p.matchStyle || p.style || autoStyle(p);
+  // Jeu choisi par le coach (Équilibré par défaut) ; autoStyle ne sert qu'au registre naturel du joueur
+  const backStyle = (p) => p.matchStyle || p.style || 'equilibre';
   const BACK_POS = ['ArG', 'DC', 'ArD'];
   // Intensité du match, de −2 (gestion) à +2 (tout donner) : pression défensive, contre-attaques et engagement, contre fatigue et exclusions
   const INTENSITY_LV = { '-2': 'Gestion', '-1': 'Calme', 0: 'Normale', 1: 'Engagée', 2: 'Tout donner' };
@@ -2652,7 +2653,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="fduel"><span class="fl">Percée</span>${bar(me1.a.duel, d.v)}<span class="num muted">${me1.a.duel} / ${d.v.toFixed(0)}</span></div>
         <div class="fduel"><span class="fl">Tir de loin</span>${bar(me1.a.tirLoin, c.v)}<span class="num muted">${me1.a.tirLoin} / ${c.v.toFixed(0)}</span></div>
         <span class="fadv ${adv[0]}">${adv[1]}</span>
-        <div class="fpick"><span class="fl">Pour ce match</span><span class="seg sm">${[['', 'Habituel'], ['loin', 'De loin'], ['equilibre', 'Équilibré'], ['contact', 'Au contact']].map(([k, l]) => `<button data-act="mstyle" data-id="${me1.id}|${k}" aria-pressed="${(me1.matchStyle || '') === k}" title="${k ? '' : 'Réglage de la tactique : ' + H.BACK_STYLES[me1.style || H.autoStyle(me1)]}">${l}</button>`).join('')}</span></div></div>`;
+        <div class="fpick"><span class="fl">Pour ce match</span><span class="seg sm">${[['', 'Habituel'], ['loin', 'De loin'], ['equilibre', 'Équilibré'], ['contact', 'Au contact']].map(([k, l]) => `<button data-act="mstyle" data-id="${me1.id}|${k}" aria-pressed="${(me1.matchStyle || '') === k}" title="${k ? '' : 'Réglage de la tactique : ' + H.BACK_STYLES[me1.style || 'equilibre']}">${l}</button>`).join('')}</span></div></div>`;
     }).join('');
     return `<div class="opt"><span class="label">Face-à-face en attaque</span>
       <div class="frows">${rows}</div>
@@ -3500,18 +3501,18 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const custom = t.players.filter((p) => H.BACK_POS.includes(p.pos) && p.style).length;
     return `<div class="opt"><span class="label">Jeu des arrières</span>
       <div class="row" style="gap:6px">${st.map((x) => `<span class="chip"><span class="pos">${x.pos}</span>${esc(short(x.p.name))} · <b>${H.BACK_STYLES[H.backStyle(x.p)]}</b></span>`).join('')}</div>
-      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Jeu conseillé par le staff pour tous'}</span></div></div>`;
+      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Équilibré pour tous'}</span></div></div>`;
   }
   function backStyleHtml(t) {
     const backs = t.players.filter((p) => H.BACK_POS.includes(p.pos)).sort((a, b) => H.BACK_POS.indexOf(a.pos) - H.BACK_POS.indexOf(b.pos) || b.ovr - a.ovr);
     const starters = new Set(Object.values(t.lineup));
     return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="bstitle" style="margin:0">Jeu des arrières</h2><button class="btn" data-act="bsclose" aria-label="Fermer">✕</button></div>
       <p class="muted" style="margin:6px 0 10px">Choisis comment chaque arrière attaque. Le réglage suit le joueur, même s'il change de poste.</p>
-      <div class="bstyles">${backs.map((p) => { const nat = H.autoStyle(p), cur = H.backStyle(p);
+      <div class="bstyles">${backs.map((p) => { const cur = H.backStyle(p);
         return `<div class="bsrow"><span class="bsname"><span class="pos">${p.pos}</span> ${plink(p, short(p.name))}${starters.has(p.id) ? ' <span class="tit" title="Titulaire">T</span>' : ''}<span class="bsnotes muted num" title="Tir de loin · tir à 6 m · duel">9 m ${p.a.tirLoin} · 6 m ${p.a.tirPres} · duel ${p.a.duel}</span></span>
-          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}" title="${k === nat ? 'Conseillé par le staff selon ses notes' : ''}">${l}${k === nat ? ' <span class="reco" aria-label="conseillé">●</span>' : ''}</button>`).join('')}</span></div>`; }).join('')}</div>
-      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Le point ● marque le jeu conseillé selon ses notes : dans son registre, il gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p>
-      <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre au jeu conseillé</button></div>`;
+          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</span></div>`; }).join('')}</div>
+      <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Par défaut, tout le monde joue Équilibré. À toi de lire ses notes : un arrière dans son registre naturel gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p>
+      <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre en Équilibré</button></div>`;
   }
   function renderTactics() {
     if (me().players.length > 14) H.ensureSheet(me());
@@ -3601,7 +3602,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
       case 'colt': { const h = hiddenCols(); U.hidden = h.includes(id) ? h.filter((x) => x !== id) : h.concat(id); try { localStorage.setItem('hbm-cols', JSON.stringify(U.hidden)); } catch (e) {} render(); return; }
       case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
-      case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === H.autoStyle(pl)) delete pl.style; else pl.style = v; save(); render(); } return; }
+      case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === 'equilibre') delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
       case 'psclose': closeSheet(); return;
       case 'devok': U.devOk = true; try { sessionStorage.setItem('hbm-dev-ok', '1'); } catch (e) { /* ignore */ } render(); return;

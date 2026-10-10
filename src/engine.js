@@ -231,7 +231,8 @@
     const loin = p.a.tirLoin, near = (p.a.tirPres + p.a.duel) / 2;
     return loin - near >= 2 ? 'loin' : near - loin >= 2 ? 'contact' : 'equilibre';
   }
-  const backStyle = (p) => p.matchStyle || p.style || autoStyle(p);
+  // Jeu choisi par le coach (Équilibré par défaut) ; autoStyle ne sert qu'au registre naturel du joueur
+  const backStyle = (p) => p.matchStyle || p.style || 'equilibre';
   const BACK_POS = ['ArG', 'DC', 'ArD'];
   // Intensité du match, de −2 (gestion) à +2 (tout donner) : pression défensive, contre-attaques et engagement, contre fatigue et exclusions
   const INTENSITY_LV = { '-2': 'Gestion', '-1': 'Calme', 0: 'Normale', 1: 'Engagée', 2: 'Tout donner' };
