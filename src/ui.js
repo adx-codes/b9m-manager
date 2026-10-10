@@ -339,8 +339,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
 
   // ---------- Match ----------
-  function boardTeams(h, a, hs, as) {
-    return `<div class="teams"><div class="team">${badge(h)}<span class="tn">${esc(h.name)}</span></div><div class="score"><span>${hs}</span><span class="sep">:</span><span>${as}</span></div><div class="team away"><span class="tn">${esc(a.name)}</span>${badge(a)}</div></div>`;
+  function boardTeams(h, a, hs, as, cls) {
+    const c = cls || ['', ''];
+    return `<div class="teams"><div class="team">${badge(h)}<span class="tn">${esc(h.name)}</span></div><div class="score"><span class="${c[0]}">${hs}</span><span class="sep">:</span><span class="${c[1]}">${as}</span></div><div class="team away"><span class="tn">${esc(a.name)}</span>${badge(a)}</div></div>`;
   }
   function tacLine(t) {
     return `${ATT_TXT[t.att][0]} · jeu ${H.JEU[t.jeu].toLowerCase()} · ${H.DSTYLE[t.dstyle].toLowerCase()}${t.cons.length ? ' · ' + t.cons.map((c) => CONS[c].toLowerCase()).join(', ') : ''}`;
@@ -479,12 +480,29 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const i = Math.min(m.i, m.N - 1);
     const min = m.done ? 60 : m.minute(i);
     const pct = Math.round((m.i / m.N) * 100);
-    return `${boardTeams(m.h.team, m.a.team, m.h.score, m.a.score)}
+    // Le chiffre qui vient de changer « tombe » comme sur un panneau d'affichage
+    const sc = [m.h.score, m.a.score], pv = U.prevSc || sc;
+    U.prevSc = sc;
+    const mo = momentum(m);
+    return `${boardTeams(m.h.team, m.a.team, m.h.score, m.a.score, sc.map((v, k) => (v !== pv[k] ? 'drop' : '')))}
+      <div class="mom" title="Dynamique des 5 dernières minutes : ${m.h.team.id} ${mo.gh}–${mo.ga} ${m.a.team.id}"><span class="mh" style="width:${Math.max(0, U.momV || 0) * 50}%;background:${momColor(m.h.team)}"></span><span class="ma" style="width:${Math.max(0, -(U.momV || 0)) * 50}%;background:${momColor(m.a.team)}"></span></div>
       <div class="meta"><span>${menHtml(m.h, i)}</span><span class="clock">${min}'</span><span>${menHtml(m.a, i)}</span></div>
       <div class="bar"><span style="width:${pct}%"></span></div>
       <div class="meta"><span>Défense ${m.h.curDef} ${ipill(m.h)}</span><span>${ipill(m.a)} Défense ${m.a.curDef}</span></div>
       <div class="meta"><span>${m.halfDone ? '2e mi-temps' : '1re mi-temps'}${m.halfDone ? ` · mi-temps ${m.h.half}–${m.a.half}` : ''}</span><span>${U.paused ? 'En pause' : 'Vitesse ×' + U.speed}</span></div>`;
   }
+  // Momentum : écart de buts sur les 5 dernières minutes de jeu (±4 buts = barre pleine)
+  function momentum(m) {
+    const now = m.done ? 60 : m.minute(Math.min(m.i, m.N - 1));
+    let gh = 0, ga = 0;
+    for (let k = m.ev.length - 1; k >= 0; k--) {
+      const e = m.ev[k];
+      if (e.m < now - 5) break;
+      if (e.type === 'but') { if (e.side === 0) gh++; else if (e.side === 1) ga++; }
+    }
+    return { gh, ga, v: Math.max(-1, Math.min(1, (gh - ga) / 4)) };
+  }
+  const momColor = (t) => `color-mix(in srgb, ${t.color} 70%, #fff)`;
   function evHtml(e, teams) {
     const cls = e.side === -1 ? 'neutral' : e.side === U.side ? 'mine' : 'them';
     const tm = teams && e.side >= 0 ? teams[e.side] : null;
@@ -617,6 +635,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const b = document.getElementById('board');
     if (!b) return;
     b.innerHTML = boardInner();
+    const mv = momentum(m).v;
+    if (mv !== U.momV) {
+      U.momV = mv;
+      requestAnimationFrame(() => { const h = b.querySelector('.mom .mh'), a = b.querySelector('.mom .ma'); if (h) h.style.width = Math.max(0, mv) * 50 + '%'; if (a) a.style.width = Math.max(0, -mv) * 50 + '%'; });
+    }
     const f = document.getElementById('feed');
     if (f && evs && evs.length) f.insertAdjacentHTML('afterbegin', evs.slice().reverse().map((e) => evHtml(e, [m.h.team, m.a.team])).join(''));
     const st = document.getElementById('stats');
@@ -711,7 +734,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function doTraining() {
     if (!G.trainPending) return;
     runTraining();
-    U.post = null; U.view = 'pre';
+    U.post = null; U.view = 'pre'; U.trainAnim = true;
     save();
     render();
     const el = document.getElementById('trainres');
@@ -734,6 +757,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (const t of G.teams) if (t.id !== G.userId) H.aiPrepare(t);
     H.ensureSheet(me());
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
+    U.prevSc = null; U.momV = 0;
     U.side = nf.h === G.userId ? 0 : 1;
     U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false;
     render();
@@ -919,17 +943,20 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tr = G.training;
     const lt = G.lastTraining;
     const t = me();
+    // Juste après « Lancer la semaine » : les hausses apparaissent une par une
+    const reveal = U.trainAnim; U.trainAnim = false;
+    let ri = 0;
     let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici une fois la semaine lancée, après chaque journée.</p>';
     // Semaine déjà faite après cette journée : réglages verrouillés jusqu'au prochain match
     const fresh = lt && !G.trainPending && lt.round === G.round && !G.ended;
     const launch = G.trainPending ? `<div class="row" style="gap:12px"><button class="btn primary big" data-act="dotrain">Lancer la semaine d'entraînement</button><span class="muted">Après la journée ${G.round} : choisis le focus et l'intensité, puis lance la semaine.</span></div>`
-      : fresh ? `<div class="trained" role="status"><span class="tick" aria-hidden="true">✓</span><span><b>Semaine d'entraînement faite</b> après la journée ${lt.round} · ${esc(H.TRAIN[lt.focus].label.toLowerCase())}, intensité ${esc(H.INTENSITY[lt.intensity].label.toLowerCase())}<br><span class="muted">Le programme se règle à nouveau après le prochain match.</span></span></div>` : '';
+      : fresh ? `<div class="trained${reveal ? ' reveal' : ''}" role="status"><span class="tick" aria-hidden="true">✓</span><span><b>Semaine d'entraînement faite</b> après la journée ${lt.round} · ${esc(H.TRAIN[lt.focus].label.toLowerCase())}, intensité ${esc(H.INTENSITY[lt.intensity].label.toLowerCase())}<br><span class="muted">Le programme se règle à nouveau après le prochain match.</span></span></div>` : '';
     const lock = fresh ? ' disabled' : '';
     if (lt && lt.log.length) {
       const byP = {};
       for (const e of lt.log) (byP[e.id] = byP[e.id] || { name: e.name, pos: e.pos, items: [] }).items.push(e);
       prog = `<p class="muted" style="margin:0 0 8px">Après la journée ${lt.round} · focus ${H.TRAIN[lt.focus].label.toLowerCase()}, intensité ${H.INTENSITY[lt.intensity].label.toLowerCase()} · ${lt.log.length} attribut${lt.log.length > 1 ? 's' : ''} en hausse</p>
-        <div class="proglist">${Object.values(byP).map((x) => `<div class="prog"><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span><span>${esc(x.name)}</span><span class="pitems">${x.items.map((e) => `<span class="up">${esc(ATTR_LABEL[e.k])} ${e.v - 1} → <b>${e.v}</b></span>`).join('')}</span></div>`).join('')}</div>`;
+        <div class="proglist">${Object.values(byP).map((x) => `<div class="prog"><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span><span>${esc(x.name)}</span><span class="pitems">${x.items.map((e) => `<span class="up" style="--i:${ri++}">${esc(ATTR_LABEL[e.k])} ${e.v - 1} → <b>${e.v}</b></span>`).join('')}</span></div>`).join('')}</div>`;
     } else if (lt) prog = `<p class="muted" style="margin:0">Aucun progrès après la journée ${lt.round}. Ça arrive, surtout avec un effectif expérimenté ou une semaine légère.</p>`;
     const young = t.players.filter((p) => p.age < 23).length, old = t.players.filter((p) => p.age > 31).length;
     return `<div class="grid2">
@@ -940,7 +967,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         ${launch}
         <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
       </div></section>
-      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
+      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel${reveal ? ' reveal' : ''}" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
   }
 
   // ---------- Centre de formation ----------
@@ -1292,9 +1319,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       + door(8.1, 9.1, 10.4, 10) + `<line x1="${P(8.6, 10.4, 0)[0]}" y1="${P(8.6, 10.4, 0)[1]}" x2="${P(8.6, 10.4, 10)[0]}" y2="${P(8.6, 10.4, 10)[1]}" stroke="var(--iso-glass)" stroke-width="0.8"/>`
       + isoBox({ x: 7.9, y: 10.4, w: 1.4, d: 0.42, h: 1.6, z: 10.5, c: 'var(--iso-stone)' });
     add(ar.x + ar.w / 2, ar.y + ar.d / 2, bwrap(pl.salle, arena));
-    for (const [k, col] of [[9.7, t.color], [10.0, 'var(--iso-mark)'], [10.3, t.color]]) {
+    for (const [n, [k, col]] of [[9.7, t.color], [10.0, 'var(--iso-mark)'], [10.3, t.color]].entries()) {
       const [bx, by] = P(6.6, k, 0), [tx, ty] = P(6.6, k, 30);
-      add(6.6, k, `<g class="deco"><line x1="${bx}" y1="${by}" x2="${tx}" y2="${ty}" stroke="var(--iso-pole)" stroke-width="1.2"/>${poly([P(6.6, k, 30), P(6.6, k - 0.3, 30), P(6.6, k - 0.3, 24), P(6.6, k, 24)], col, EDGE)}</g>`);
+      add(6.6, k, `<g class="deco"><line x1="${bx}" y1="${by}" x2="${tx}" y2="${ty}" stroke="var(--iso-pole)" stroke-width="1.2"/><g class="flag" style="animation-delay:${-n * 0.7}s">${poly([P(6.6, k, 30), P(6.6, k - 0.3, 30), P(6.6, k - 0.3, 24), P(6.6, k, 24)], col, EDGE)}</g></g>`);
     }
     // Vestiaire
     const ve = { x: 10.55, y: 8.1, w: 1.3, d: 1.9, h: 22, c: 'var(--accent)' };
@@ -1384,7 +1411,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       let s = isoBox(bb);
       if (b.win) s += parapet(bb) + winL(bb, b.win[0], b.win[1], WIN, 0.38) + winR(bb, b.win[2], b.win[3], WIN, 0.3) + door(b.x + b.w / 2 - 0.15, b.x + b.w / 2 + 0.15, b.y + b.d, 7);
       if (b.units) { s += unit(b.x + 0.15, b.y + 0.2, b.h); if (b.units > 1) s += unit(b.x + b.w - 0.5, b.y + b.d - 0.5, b.h, 0.8); }
-      if (b.roof) s += winL(bb, 1, 2, WIN, 0.4) + gable(bb, b.roof, 'var(--iso-roof)') + isoBox({ x: b.x + b.w * 0.65, y: b.y + 0.15, w: 0.12, d: 0.12, h: 7, z: b.h + 2, c: 'var(--iso-roof)' });
+      if (b.roof) {
+        s += winL(bb, 1, 2, WIN, 0.4) + gable(bb, b.roof, 'var(--iso-roof)') + isoBox({ x: b.x + b.w * 0.65, y: b.y + 0.15, w: 0.12, d: 0.12, h: 7, z: b.h + 2, c: 'var(--iso-roof)' });
+        const [sx, sy] = P(b.x + b.w * 0.65 + 0.06, b.y + 0.21, b.h + 9.5), d0 = (b.x * 1.7 + b.y) % 4;
+        s += [0, 1.6, 3.2].map((dl) => `<circle class="smoke" cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="1.6" style="animation-delay:${-(d0 + dl).toFixed(1)}s"/>`).join('');
+      }
       add(b.x + b.w / 2, b.y + b.d / 2, `<g class="deco">${s}</g>`);
     }
     // Végétation, mobilier, voitures
@@ -1395,7 +1426,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (const [x, y] of [[4.88, 1.6], [4.88, 4.4], [4.88, 8.6], [4.88, 11.1], [6.1, 3.0], [6.1, 9.4], [2.4, 5.9], [9.8, 5.92], [2.4, 7.05], [9.8, 7.06]]) add(x, y, `<g class="deco">${lamp(x, y)}</g>`);
     for (const [x, y] of [[1.0, 5.8], [2.1, 5.8], [8.2, 3.95]]) add(x, y, `<g class="deco">${bench(x, y)}</g>`);
     const cols = ['#c0392b', '#2e86c1', '#f1c40f', '#ecf0f1', '#34495e', '#16a085', '#8e44ad'];
-    for (const [x, y, a, c] of [[5.12, 2.2, 'y', 0], [5.62, 8.9, 'y', 1], [2.8, 6.12, 'x', 2], [8.6, 6.62, 'x', 3], [9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6], [5.62, 0.6, 'y', 3]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
+    for (const [x, y, a, c] of [[5.12, 2.2, 'y', 0], [5.62, 8.9, 'y', 1], [2.8, 6.12, 'x', 2], [9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6], [5.62, 0.6, 'y', 3]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
     // Buts du terrain de quartier
     for (const g of U.courtGoals || []) {
       const ln = (a, b, c) => `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/>`;
@@ -1437,10 +1468,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     { const [lx, ly] = P(11.25, 1.45, 72);
       objs.push({ d: 12.9, svg: prop(`<circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`) }); }
     objs.sort((a, b) => a.d - b.d);
+    { const [ax, ay] = P(0.15, 6.62), [bx, by] = P(11.4, 6.62);
+      flatLayer.push(`<g class="drive" style="--dx:${(bx - ax).toFixed(1)}px;--dy:${(by - ay).toFixed(1)}px">${car(0.15, 6.62, 'x', cols[3])}</g>`); }
 
     const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
     const css = GHOSTS.map((g) => `.city:has([data-ghost="${g.key}"]:hover) [data-gsign="${g.key}"], .city:has([data-ghost="${g.key}"]:focus-visible) [data-gsign="${g.key}"]`)
-      .concat(places.map((p) => `.city:has([data-place="${p.key}"]:hover) [data-psign="${p.key}"], .city:has([data-place="${p.key}"]:focus-visible) [data-psign="${p.key}"]`)).join(',') + '{opacity:1}';
+      .concat(places.map((p) => `.city:has([data-place="${p.key}"]:hover) [data-psign="${p.key}"], .city:has([data-place="${p.key}"]:focus-visible) [data-psign="${p.key}"]`)).join(',') + '{opacity:1;transform:none}';
     return `<div class="citywrap"><svg class="city" viewBox="40 92 780 448" role="group" aria-label="Plan de la ville du club"><style>${css}</style>${flatLayer.join('')}${objs.map((o) => o.svg).join('')}<g class="signs">${signs}</g></svg></div>`;
   }
   function renderCity() {
