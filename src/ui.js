@@ -558,7 +558,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<svg class="cdrop" viewBox="0 0 30 16" width="30" height="16" role="img" aria-label="Baisse ${lvl} due à la fatigue"><title>Baisse de niveau ${lvl} due à la fatigue</title><path d="M1 3 L9 3 C 16 3, 20 ${y}, 29 ${y}" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/><path d="M26 ${(+y - 2.5).toFixed(1)} L29 ${y} L26 ${(+y + 2.5).toFixed(1)}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     };
     const noteLine = (p, pos, lab) => { const x = effNote(p, pos), sn = H.stars(x.n, sref()); return `<span class="cnote">${lab}${vstars(x.n, { sm: true, title: `${lab}${sfmt(sn)}` })}${x.tired ? dropCurve(1 - x.e / Math.max(0.1, x.n)) : ''}</span>`; };
-    const onCards = H.POS.map((pos) => {
+    const MATCH_ORDER = ['GB', 'AiG', 'ArG', 'DC', 'Piv', 'ArD', 'AiD'];
+    const onCards = MATCH_ORDER.map((pos) => {
       const p = s.lineup[pos];
       if (!p) return '';
       const out = exc.has(p.id) || s.red.has(p.id);
@@ -567,7 +568,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${pos in s.manual ? `<span class="ctag" title="Le staff reprend ce poste dans ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))} min">Coach · ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))}'</span>` : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
         <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, '')}</button>`;
     }).join('');
-    const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos));
+    const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => MATCH_ORDER.indexOf(a.pos) - MATCH_ORDER.indexOf(b.pos));
     const benchCards = bench.map((p) => {
       let cls = '', ok = false, note = '';
       if (sel) {
