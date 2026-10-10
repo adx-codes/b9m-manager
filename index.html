@@ -584,8 +584,6 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 #notif b { color: var(--digit); }
 #notif .nbadge { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; font: 800 0.8rem var(--f-display); color: #fff; }
 #notif .nclose { position: absolute; top: 8px; right: 8px; background: none; border: 0; color: var(--board-dim); font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
-#notif .nlink { background: none; border: 0; padding: 4px 0 0; color: var(--digit); font: inherit; font-weight: 600; cursor: pointer; }
-#notif .nlink:hover { text-decoration: underline; }
 #notif.short { font-size: 0.86rem; padding-block: 9px; border-left-color: var(--board-dim); }
 #notif.short .nbadge { width: 30px; height: 30px; font-size: 0.7rem; }
 @media (prefers-reduced-motion: reduce) { #notif { transition: none; } }
@@ -2321,7 +2319,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     const live = U.view === 'live' && U.m;
     const btn = live ? `<button class="btn primary nextbtn" data-act="tab" data-id="match">Match en cours →</button>`
-      : G.trainPending ? trainBtn('nextbtn')
+      : G.trainPending ? (U.tab === 'entrainement' ? `<button class="btn primary nextbtn" data-act="dotrain">Lancer la semaine →</button>` : trainBtn('nextbtn'))
       : U.post && U.view === 'post' && U.tab === 'match' ? `<button class="btn primary nextbtn" data-act="tab" data-id="championnat">Résultats et classement →</button>`
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
@@ -2669,7 +2667,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderTrainPending() {
     const tr = G.training;
     return `<section class="board"><div class="teams"><div class="team">${badge(me())}<span class="tn">${esc(me().name)}</span></div><div class="score"><span style="font-size:0.55em">Gymnase</span></div><div class="team away"><span class="tn">Après la journée ${G.round}</span></div></div><div class="meta"><span>Semaine d'entraînement à lancer</span><span>${esc(H.TRAIN[tr.focus].label)} · intensité ${esc(H.INTENSITY[tr.intensity].label.toLowerCase())}</span></div>
-      <div class="row" style="justify-content:center">${trainBtn()}<button class="btn" data-act="tab" data-id="entrainement">Régler l'entraînement</button></div></section>`;
+      <div class="row" style="justify-content:center">${trainBtn()}</div></section>`;
   }
   function renderRest() {
     const games = G.sched[G.round];
@@ -2708,17 +2706,17 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
     G.trainPending = false;
   }
-  // Clic « Lancer l'entraînement » : semaine simulée, puis direction la préparation du prochain match
+  // Clic « Lancer la semaine » au gymnase : semaine simulée, résultat affiché sur place
   function doTraining() {
     if (!G.trainPending) return;
     runTraining();
-    U.post = null; U.view = 'pre'; U.tab = 'match';
+    U.post = null; U.view = 'pre';
     save();
     render();
-    window.scrollTo(0, 0);
-    trainingNotice();
+    const el = document.getElementById('trainres');
+    if (el) el.scrollIntoView({ block: 'nearest' });
   }
-  function trainBtn(cls) { return `<button class="btn primary${cls ? ' ' + cls : ''}" data-act="dotrain">Lancer l'entraînement →</button>`; }
+  function trainBtn(cls) { return `<button class="btn primary${cls ? ' ' + cls : ''}" data-act="tab" data-id="entrainement">Lancer l'entraînement →</button>`; }
   function restRound() {
     const nf = nextFixture();
     if (!nf || !nf.rest) return;
@@ -2769,7 +2767,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     schedule();
   }
   // Notification en haut de l'écran (temps mort adverse)
-  function notify(html, sticky, ms) {
+  function notify(html, sticky) {
     let el = document.getElementById('notif');
     if (!el) { el = document.createElement('div'); el.id = 'notif'; el.setAttribute('role', 'alert'); document.body.appendChild(el); }
     el.innerHTML = html + '<button class="nclose" data-act="nclose" aria-label="Fermer la notification">✕</button>';
@@ -2777,17 +2775,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     clearTimeout(U.notifT);
     U.notifSticky = !!sticky;
     el.classList.toggle('short', !sticky);
-    if (!sticky) U.notifT = setTimeout(hideNotify, ms || 4500);
+    if (!sticky) U.notifT = setTimeout(hideNotify, 4500);
   }
-  // Bilan de la semaine d'entraînement, juste après la journée
-  function trainingNotice() {
-    const lt = G.lastTraining, t = me();
-    if (!lt || lt.round !== G.round) return;
-    const byP = Object.values(lt.log.reduce((acc, e) => { (acc[e.id] = acc[e.id] || { name: e.name, n: 0 }).n++; return acc; }, {})).sort((x, y) => y.n - x.n);
-    const list = byP.slice(0, 4).map((x) => `${esc(short(x.name))} +${x.n}`).join(', ') + (byP.length > 4 ? `, et ${byP.length - 4} autre${byP.length > 5 ? 's' : ''}` : '');
-    const body = lt.log.length ? `${lt.log.length} attribut${lt.log.length > 1 ? 's' : ''} en hausse : ${list}` : 'Aucun progrès cette semaine.';
-    notify(`<span class="nbadge" style="background:${t.color}">${esc(t.id)}</span><span><b>Semaine d'entraînement · ${esc(H.TRAIN[lt.focus].label.toLowerCase())}, intensité ${esc(H.INTENSITY[lt.intensity].label.toLowerCase())}</b><br>${body}<br><button class="nlink" data-act="ntrain">Voir le détail →</button></span>`, false, 9000);
-  }
+
   function hideNotify() { U.notifSticky = false; const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
   function finishMatch() {
     hideNotify();
@@ -2824,7 +2814,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <section class="panel"><h3>Tes buteurs</h3>${sc.length ? sc.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos">${x.p.pos}</span><span>${esc(x.p.name)}</span><span class="spacer" style="flex:1"></span><b class="num">${x.n}</b></div>`).join('') : '<p class="muted">Aucun but.</p>'}
             ${gk.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos gb">GB</span><span>${esc(x.p.name)}</span><span style="flex:1"></span><span class="num muted">${x.n} arrêt${x.n > 1 ? 's' : ''}</span></div>`).join('')}</section>
           <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${h.id}</span><span class="label">${a.id}</span></div>${statsHtml(p.h.st, p.a.st)}</section>
-          <div class="row">${G.trainPending ? trainBtn() + '<button class="btn" data-act="tab" data-id="entrainement">Régler l\'entraînement</button>' : `<button class="btn primary" data-act="next">${G.ended ? 'Voir le bilan de la saison' : 'Retour en ville'}</button><button class="btn" data-act="tab" data-id="entrainement">Progrès à l'entraînement</button>`}<button class="btn" data-act="tab" data-id="championnat">Résultats de la journée</button></div>
+          <div class="row">${G.trainPending ? trainBtn() : `<button class="btn primary" data-act="next">${G.ended ? 'Voir le bilan de la saison' : 'Retour en ville'}</button><button class="btn" data-act="tab" data-id="entrainement">Progrès à l'entraînement</button>`}<button class="btn" data-act="tab" data-id="championnat">Résultats de la journée</button></div>
         </div>
       </div>
       ${p.h.ps ? perfSection(h, a, p.h, p.a) : ''}`;
@@ -2928,8 +2918,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tr = G.training;
     const lt = G.lastTraining;
     const t = me();
-    let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici après la prochaine journée.</p>';
-    const pending = G.trainPending ? `<div class="row" style="justify-content:space-between;gap:12px"><span>Semaine à lancer après la journée ${G.round}.</span>${trainBtn()}</div>` : '';
+    let prog = '<p class="muted" style="margin:0">Les progrès de la semaine apparaissent ici une fois la semaine lancée, après chaque journée.</p>';
+    const launch = G.trainPending ? `<div class="row" style="gap:12px"><button class="btn primary big" data-act="dotrain">Lancer la semaine d'entraînement</button><span class="muted">Après la journée ${G.round} : choisis le focus et l'intensité, puis lance la semaine.</span></div>` : '';
+    const fresh = lt && !G.trainPending && lt.round === G.round && !G.ended;
     if (lt && lt.log.length) {
       const byP = {};
       for (const e of lt.log) (byP[e.id] = byP[e.id] || { name: e.name, pos: e.pos, items: [] }).items.push(e);
@@ -2938,13 +2929,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     } else if (lt) prog = `<p class="muted" style="margin:0">Aucun progrès après la journée ${lt.round}. Ça arrive, surtout avec un effectif expérimenté ou une semaine légère.</p>`;
     const young = t.players.filter((p) => p.age < 23).length, old = t.players.filter((p) => p.age > 31).length;
     return `<div class="grid2">
-      <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">${pending}
+      <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">
         <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
         <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}">${x.label}</button>`).join('')}</div>
           <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match.' : 'Progression normale, récupération normale.'}</p></div>
+        ${launch}
         <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
       </div></section>
-      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel"><h3>Progrès de la dernière semaine</h3>${prog}</section></div></div>`;
+      <div style="display:grid;gap:20px;min-width:0">${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
   }
 
   // ---------- Centre de formation ----------
@@ -3201,7 +3193,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     else if (nf) { const home = nf.h === t.id; arenaSub = `J${G.round + 1} · ${home ? 'contre' : 'à'} ${T(home ? nf.a : nf.h).name}`; }
     const s = H.standings(G), row = s.find((r) => r.id === G.userId);
     return [
-      { key: 'salle', tab: 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan' },
+      { key: 'salle', tab: G.trainPending && !(U.view === 'post' && U.post) ? 'entrainement' : 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan' },
       { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes' },
       { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
       { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
@@ -3633,7 +3625,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'pick': U.newClub = id; render(); return;
       case 'nclose': hideNotify(); return;
       case 'dotrain': doTraining(); return;
-      case 'ntrain': hideNotify(); U.tab = 'entrainement'; render(); window.scrollTo(0, 0); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
