@@ -274,7 +274,8 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 **Coach IA adverse :**
 
-- Temps mort après 3 ou 4 buts encaissés d'affilée, pour préparer une fin serrée, ou en gros retard. Environ 1 par équipe et par match.
+- Temps mort (un par mi-temps au plus) déclenché par une **jauge de pression** : +1 par but encaissé, +0,5 de plus sur contre-attaque, +0,5 par perte de balle, +1 par exclusion subie, +1 quand un même adversaire marque 3 fois de suite ; −1,5 par but marqué, et la jauge se vide doucement. Chaque coach a sa **patience** (sanguin vers 2,5, flegmatique vers 5) et environ 4 sur 10 gardent leur temps mort pour la fin (seuil relevé en 2e mi-temps avant la 50e). Au-delà du seuil, la probabilité de couper monte avec la pression. La raison affichée suit ce qui l'a provoqué : série encaissée, « pour calmer » un buteur en feu, ballons perdus, ou casser le rythme.
+- Raisons tactiques ponctuelles : double infériorité numérique (gagner du temps), dernière attaque à un but près après la 55e, mise en place du 7 contre 6 après la 56e, réponse rare à ton temps mort, gros retard. Environ 1,5 temps mort par équipe et par match.
 - Mené au score, il durcit son plan par paliers : jeu rapide (écart de 4 après la 30e), homme à homme (3 après la 42e), 5-1 ou 4-2 forcé (2 après la 50e), 7 contre 6 dans les 3 dernières minutes. Revenu à +3, il reprend son plan de départ.
 - Il change de gardien si le sien arrête moins de 20 % des tirs.
 - Un tempérament tiré à chaque match le fait réagir un but plus tôt ou non.

@@ -580,7 +580,9 @@
     // Coach IA : toute équipe qui n'est pas celle du joueur. Tempérament : réagit plus ou moins tôt
     this.S.forEach(s => {
       s.ai = opts.user !== undefined && s.team.id === opts.user ? null : { bold: rnd() < 0.5 ? 1 : 0, orig: { att: s.tac.att, dstyle: s.tac.dstyle }, gk: false };
-      s.run = 0;
+      // Temps morts : patience propre au coach (sanguin vers 2,5, flegmatique vers 5) et habitude de garder le sien pour la fin
+      if (s.ai) { s.ai.patience = s.ai.bold ? 2.3 + rnd() * 1.4 : 3.4 + rnd() * 1.8; s.ai.saver = rnd() < 0.4; }
+      s.run = 0; s.press = 0; s.snap = null; s.streak = null;
     });
     const fast = s => (s.tac.att === 'rapide' ? 3 : 0);
     this.N = 2 * (53 + fast(this.h) + fast(this.a) + ri(-2, 2));
@@ -1015,6 +1017,7 @@
       const before = H.score - W.score;
       A.score++; A.st.goals++;
       A.run = 0; D.run = (D.run || 0) + 1;
+      A.streak = A.streak && A.streak.id === p.id ? { id: p.id, name: p.name, n: A.streak.n + 1 } : { id: p.id, name: p.name, n: 1 };
       pp.g++;
       this.ps(D, gk.id).fa++;
       A.goals[p.id] = (A.goals[p.id] || 0) + 1;
@@ -1053,22 +1056,39 @@
     if (this.done || s.to[h]) return false;
     s.to[h] = 1;
     s.boost = Math.max(s.boost, this.i + 6);
-    s.run = 0;
+    s.run = 0; s.press = 0;
+    this.lastTO = { si, i: this.i };
     for (const x of this.on(s, this.i)) s.fat[x.p.id] = Math.max(0, s.fat[x.p.id] - 4);
     this.push('tm', si, `Temps mort ${s.team.name}${why ? ' (' + why + ')' : ''}`, true, { ai: !!s.ai });
     if (s.ai) this.adjust(si, true);
     return true;
   };
-  // Coach IA : temps morts sur les séries, fins de match serrées ou gros retard
+  // Coach IA : temps morts déclenchés par une jauge de pression (buts encaissés, contre-attaques, pertes, exclusions,
+  // buteur adverse en série), selon la patience du coach ; plus quelques raisons tactiques ponctuelles.
   P.coach = function (si, i) {
     const s = this.S[si], o = this.S[1 - si];
     if (!s.ai || this.done) return;
-    const min = this.minute(i), h = this.half(), diff = s.score - o.score;
+    const min = this.minute(i), h = this.half(), diff = s.score - o.score, c = s.ai;
+    // Mise à jour de la jauge depuis le dernier passage
+    const cur = { gf: s.score, ga: o.score, ca: o.st.caG || 0, to: s.st.to, ex: s.st.excl };
+    if (s.snap) {
+      const d = (k) => cur[k] - s.snap[k];
+      s.press = Math.max(0, s.press * 0.97 + d('ga') + d('ca') * 0.5 + d('to') * 0.5 + d('ex') - d('gf') * 1.5);
+      s.recTo = (s.recTo || 0) * 0.9 + d('to');
+      if (o.streak && o.streak.n >= 3 && d('ga') && o.streak.n !== s.hotSeen) { s.press += 1; s.hotSeen = o.streak.n; }
+    }
+    s.snap = cur;
     if (!s.to[h] && min >= 5 && (min < 29 || min > 32)) {
       let why = null;
-      if (s.run >= 3 && rnd() < 0.45) why = `${s.run} buts encaissés d'affilée`;
+      const need = c.patience + (c.saver && h === 1 && min < 50 ? 1.2 : 0);
+      if (s.press > need && rnd() < clamp(0.3 + (s.press - need) * 0.12, 0.3, 0.75)) {
+        why = s.run >= 3 ? `${s.run} buts encaissés d'affilée` : o.streak && o.streak.n >= 3 ? `pour calmer ${o.streak.name}` : (s.recTo || 0) >= 1.6 ? 'après des ballons perdus' : 'pour casser le rythme';
+      }
+      else if (this.short(s, i) - this.short(o, i) >= 2 && rnd() < 0.3) why = 'pour gagner du temps en double infériorité';
       else if (h === 1 && min >= 55 && Math.abs(diff) <= 1 && rnd() < 0.08) why = 'pour préparer la dernière attaque';
-      else if (diff <= -5 && rnd() < 0.04) why = 'pour secouer son équipe';
+      else if (h === 1 && min >= 56 && diff <= -1 && diff >= -3 && !s.empty && rnd() < 0.12) why = 'pour mettre en place le 7 contre 6';
+      else if (this.lastTO && this.lastTO.si !== si && i - this.lastTO.i <= 2 && rnd() < 0.04) why = 'pour répondre au temps mort adverse';
+      else if (diff <= -5 && rnd() < 0.03) why = 'pour secouer son équipe';
       if (why) { this.timeout(si, why); return; }
     }
     if ((i + si) % 4 === 0) this.adjust(si, false);
