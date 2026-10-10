@@ -21,6 +21,7 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 ## Repères d'équilibrage (à préserver)
 
 - Environ 29 buts par équipe et par match, 58–62 % d'efficacité.
+- Environ 7,5 % de matchs nuls (moyenne Starligue 2023-2026), soit 15 à 20 par saison.
 - L'équipe qui reçoit prend 58–60 % des points à niveau égal.
 - Un club 4 étoiles prend environ 75–80 % des points contre un 2 étoiles.
 - Bonus et malus de club : 1 à 3 points chacun sur une saison, jamais plus.
