@@ -467,6 +467,20 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .mnote.nt3 { background: var(--sunk); }
 .mnote.nt1 { background: color-mix(in srgb, var(--bad) 28%, var(--surface)); }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; color: #fff; }
+/* Bet9M : bookmaker fictif */
+.betcard { max-width: 860px; }
+.bethead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.betlogo { display: inline-flex; align-items: baseline; justify-content: center; padding-top: 5px; box-sizing: border-box; width: 30px; height: 30px; border-radius: 8px; background: var(--board); color: var(--board-fg); font-family: var(--f-display); font-weight: 800; font-size: 1rem; letter-spacing: -0.02em; }
+.betlogo i { font-style: normal; color: var(--star); font-size: 0.72rem; margin-left: 1px; }
+.bethead b { font-family: var(--f-display); font-size: 1.1rem; letter-spacing: 0.02em; }
+.betrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.betbtn { display: grid; justify-items: center; gap: 2px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--sunk); cursor: help; }
+.betbtn .bl { font-size: 0.82rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.betbtn b { font-family: var(--f-display); font-size: 1.45rem; line-height: 1.05; }
+.betcell.fav .betbtn { border-color: var(--star); box-shadow: 0 0 0 1px var(--star) inset; }
+.betpct { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; align-items: center; margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+.bbar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bbar span { display: block; height: 100%; background: var(--good); }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
 .fline .nw { overflow: hidden; text-overflow: ellipsis; }

@@ -435,6 +435,20 @@
     for (const t of st.teams) if (t.id !== st.userId) aiYouth(st, t);
     return true;
   }
+  // Cotes du bookmaker fictif (Bet9M) : probabilités tirées de n matchs simulés sur des copies des deux équipes,
+  // nul lissé vers la moyenne de la ligue (7,5 %), marge du bookmaker de 7 %
+  function odds(home, away, n) {
+    n = n || 200;
+    let w = 0, d = 0;
+    for (let k = 0; k < n; k++) {
+      const m = new Match(JSON.parse(JSON.stringify(home)), JSON.parse(JSON.stringify(away))).run();
+      const df = m.h.score - m.a.score;
+      if (df > 0) w++; else if (!df) d++;
+    }
+    const pd = (d + 0.075 * 40) / (n + 40), pw = (1 - pd) * (w + 1) / (n - d + 2), pl = 1 - pd - pw;
+    const o = (p) => clamp(Math.round(100 / (p * 1.07)) / 100, 1.03, 25);
+    return { pw, pd, pl, ow: o(pw), od: o(pd), ol: o(pl) };
+  }
   function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
   function ensureSheet(t) {
     const starters = new Set(Object.values(t.lineup));
@@ -1231,7 +1245,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

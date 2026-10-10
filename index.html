@@ -472,6 +472,20 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .mnote.nt3 { background: var(--sunk); }
 .mnote.nt1 { background: color-mix(in srgb, var(--bad) 28%, var(--surface)); }
 .res { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 4px; font-size: 0.72rem; font-weight: 800; color: #fff; }
+/* Bet9M : bookmaker fictif */
+.betcard { max-width: 860px; }
+.bethead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.betlogo { display: inline-flex; align-items: baseline; justify-content: center; padding-top: 5px; box-sizing: border-box; width: 30px; height: 30px; border-radius: 8px; background: var(--board); color: var(--board-fg); font-family: var(--f-display); font-weight: 800; font-size: 1rem; letter-spacing: -0.02em; }
+.betlogo i { font-style: normal; color: var(--star); font-size: 0.72rem; margin-left: 1px; }
+.bethead b { font-family: var(--f-display); font-size: 1.1rem; letter-spacing: 0.02em; }
+.betrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.betbtn { display: grid; justify-items: center; gap: 2px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--sunk); cursor: help; }
+.betbtn .bl { font-size: 0.82rem; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.betbtn b { font-family: var(--f-display); font-size: 1.45rem; line-height: 1.05; }
+.betcell.fav .betbtn { border-color: var(--star); box-shadow: 0 0 0 1px var(--star) inset; }
+.betpct { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 8px; align-items: center; margin-top: 6px; font-size: 0.78rem; color: var(--muted); }
+.bbar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bbar span { display: block; height: 100%; background: var(--good); }
 .flist { display: grid; gap: 4px; margin-top: 4px; }
 .fline { display: grid; grid-template-columns: 20px 32px 34px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 0.86rem; }
 .fline .nw { overflow: hidden; text-overflow: ellipsis; }
@@ -985,6 +999,20 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
     if (st.round % 5 !== 0 || st.round === 0 || st.round >= st.sched.length) return false;
     for (const t of st.teams) if (t.id !== st.userId) aiYouth(st, t);
     return true;
+  }
+  // Cotes du bookmaker fictif (Bet9M) : probabilités tirées de n matchs simulés sur des copies des deux équipes,
+  // nul lissé vers la moyenne de la ligue (7,5 %), marge du bookmaker de 7 %
+  function odds(home, away, n) {
+    n = n || 200;
+    let w = 0, d = 0;
+    for (let k = 0; k < n; k++) {
+      const m = new Match(JSON.parse(JSON.stringify(home)), JSON.parse(JSON.stringify(away))).run();
+      const df = m.h.score - m.a.score;
+      if (df > 0) w++; else if (!df) d++;
+    }
+    const pd = (d + 0.075 * 40) / (n + 40), pw = (1 - pd) * (w + 1) / (n - d + 2), pl = 1 - pd - pw;
+    const o = (p) => clamp(Math.round(100 / (p * 1.07)) / 100, 1.03, 25);
+    return { pw, pd, pl, ow: o(pw), od: o(pd), ol: o(pl) };
   }
   function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
   function ensureSheet(t) {
@@ -1782,7 +1810,7 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, aiYouth, youthRound, starRef, stars, potRange, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -2206,6 +2234,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tired = starters.filter((p) => p.fatigue > 28);
     const tac = t.tactic;
     return `<section class="board">${boardTeams(h, a, '–', '–')}<div class="meta"><span>Journée ${G.round + 1} · ${home ? 'à domicile' : "à l'extérieur"}</span><span>Salle de ${esc(h.city)}</span></div></section>
+      ${betCard(h, a)}
       <div class="grid2">
         <section class="panel"><h3>Ton plan de match</h3>
           <div style="display:grid;gap:12px">
@@ -2732,6 +2761,23 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<div class="fline"><span class="res ${r}">${{ w: 'V', d: 'N', l: 'D' }[r]}</span><span class="muted num">J${g.j}</span><span class="muted">${home ? 'dom.' : 'ext.'}</span><span class="nw">${badge(o, true)} ${esc(o.name)}${o.id === G.userId ? ' <span class="muted">(toi)</span>' : ''}</span><b class="num">${us}–${them}</b></div>`;
     }).join('');
     return `<div class="opt"><span class="label">Derniers résultats · ${ord(pos)} de la ${LEAGUE} · ${cnt.w} V, ${cnt.d} N, ${cnt.l} D sur ${last.length}</span><div class="flist">${rows}</div></div>`;
+  }
+  // Bet9M : bookmaker fictif (clin d'œil à Beyond9M). Cotes calculées une fois par journée, gardées dans la sauvegarde.
+  function betCard(h, a) {
+    const key = G.round + ':' + h.id + '-' + a.id;
+    const o = G.odds && G.odds.key === key ? G.odds : null;
+    if (!o && !U.oddsBusy) {
+      U.oddsBusy = true;
+      setTimeout(() => { const r = H.odds(h, a, 200); G.odds = { key, ...r }; U.oddsBusy = false; save(); if (U.tab === 'match' && U.view === 'pre') render(); }, 60);
+    }
+    const share = o ? (() => { const v = [o.pw, o.pd, o.pl].map((p) => Math.pow(p, 2)), t = v.reduce((x, y) => x + y, 0); const r = v.map((x) => Math.round((x / t) * 100)); r[1] = 100 - r[0] - r[2]; return r; })() : [0, 0, 0];
+    const fav = o ? [o.ow, o.od, o.ol].indexOf(Math.min(o.ow, o.ol)) : -1;
+    const cell = (k, lab, odd, pct) => `<div class="betcell${k === fav ? ' fav' : ''}"><div class="betbtn" title="${o ? `Probabilité estimée : ${Math.round([o.pw, o.pd, o.pl][k] * 100)} %` : ''}"><span class="bl">${esc(lab)}</span><b class="num">${o ? odd.toFixed(2).replace('.', ',') : '…'}</b></div>
+        <div class="betpct"><span class="num">${o ? pct + ' %' : ''}</span><span class="bbar"><span style="width:${pct}%"></span></span></div></div>`;
+    return `<section class="panel betcard" aria-label="Cotes Bet9M">
+      <div class="bethead"><span class="betlogo" aria-hidden="true">9<i>M</i></span><b>Bet9M</b><span class="muted">${LEAGUE} · J${G.round + 1}</span><span class="spacer"></span><span class="muted" style="font-size:0.78rem">${o ? 'Part des parieurs sous les cotes' : 'Les bookmakers font leurs calculs…'}</span></div>
+      <div class="betrow">${cell(0, h.name, o && o.ow, share[0])}${cell(1, 'Match nul', o && o.od, share[1])}${cell(2, a.name, o && o.ol, share[2])}</div>
+      <p class="legend" style="margin:8px 0 0">Cotes fictives, tirées de 200 matchs simulés avec les effectifs et les tactiques du moment. Ici, la seule mise qui compte, c'est la mise en place.</p></section>`;
   }
   function leagueYouthPanel() {
     const mine = (G.youthLog || []).filter((l) => /^Recruté/.test(l.decision)).map((l) => ({ round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }));
