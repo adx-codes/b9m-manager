@@ -393,8 +393,10 @@
     const L = free.length && rnd() < 0.18 ? pick(free) : null;
     const pos = L ? L.pos : pick(POS);
     const p = makePlayer(pos, 10, t.id);
-    // Loterie, mais réaliste : attributs autour de 9 (rarement au-dessus de 14), traits de personnalité libres
-    for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round(9 + gauss() * 2.4), 2, 16);
+    // Loterie, mais réaliste : niveau calé sur celui du club (un joueur de rotation, environ 2 étoiles), attributs du poste
+    // autour de la référence du club moins 2,4, les autres plus bas ; traits de personnalité libres
+    const keys = Object.keys(WEIGHTS[pos]), lvl = starRef(t) - 2.4;
+    for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round((keys.includes(k) ? lvl : lvl - 1.8) + gauss() * 2), 2, 17);
     const fv = hasMod(t, 'formation+') ? 1 : hasMod(t, 'formation-') ? -1 : 0;
     if (fv) for (const k in p.a) if (k !== 'excentricite' && k !== 'collectif') p.a[k] = clamp(p.a[k] + fv, 1, 20);
     p.age = ri(17, 19);
@@ -419,8 +421,8 @@
     const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
     const yv = y.pot - 1 + (rnd() - 0.5) * 2;
     let out = null, ok = false;
-    if (t.players.length < 16) ok = !worst || yv >= worst.ovr - 0.5;
-    else if (worst && yv > proj(worst) + 1) { ok = true; out = worst; }
+    if (t.players.length < 16) ok = !worst || yv >= worst.ovr + 1.8;
+    else if (worst && yv > proj(worst) + 2.5) { ok = true; out = worst; }
     if (ok) {
       if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
       t.players.push(y);

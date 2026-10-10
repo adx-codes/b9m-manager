@@ -133,7 +133,7 @@ Génération : excentricité centrée sur 9 avec une forte dispersion, esprit co
 
 **Noms :** chaque club a des noms typiques de sa région (Bretagne, Ouest, Nord, Alsace, Paris, Provence, Sud-Ouest, Alpes, Auvergne, Bourgogne). Environ 12 % de joueurs étrangers (Danemark, Allemagne, Norvège, Espagne, Croatie, Serbie, Suède, Islande), avec leur drapeau. Pas d'homonymes dans un effectif.
 
-**Jeunes du centre :** attributs autour de 9 (rarement plus de 14), potentiel = note + 1,5 à 5,5 points, une vraie pépite (+3) environ une fois sur 8.
+**Jeunes du centre :** niveau calé sur le club, pour pouvoir entrer dans la rotation : attributs du poste autour de la référence étoiles du club moins 2,4 points (les autres 1,8 plus bas, écart type 2), soit le plus souvent 1½ à 2½ étoiles, parfois 3 ou plus ; potentiel = note + 1,5 à 5,5 points, une vraie pépite (+3) environ une fois sur 8.
 
 **Légendes (regens) :** 20 jeunes aux noms qui rappellent des légendes, au même poste (Thomas Omeyrac, Nikolaï Karabatov, Mikael Hanstrup, Uli Gensmeier, Luca Abalone, Bertrand Gillot…). Trois sont dispersées chez des clubs adverses au début de partie, puis environ un jeune sur cinq du centre de formation en est une. Attributs clés relevés, potentiel de 16,5 à 19,5, aucun signe distinctif. Chaque nom n'apparaît qu'une fois par partie.
 
@@ -334,7 +334,7 @@ L'âge module tout : ×1,4 avant 23 ans, ×1 jusqu'à 28, ×0,5 jusqu'à 31, ×0
 
 ## Centre de formation
 
-Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, attributs tirés autour de 9 (rarement plus de 14), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le bonus ou malus Formation ajoute ou retire 1 partout.
+Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, niveau d'un joueur de rotation du club (le plus souvent 1½ à 2½ étoiles), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le bonus ou malus Formation ajoute ou retire 1 partout.
 
 - **Le recruter :** il rejoint le groupe. À 16 joueurs, on choisit qui part parmi ceux de son poste. La feuille de match reste à 14, le staff place les autres en tribune.
 - **Le laisser partir :** il est refusé.
@@ -342,7 +342,7 @@ Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un je
 
 Le centre garde l'historique des jeunes proposés et de la décision prise. Les jeunes recrutés portent l'étiquette J dans l'effectif.
 
-**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, avec le même bonus ou malus Formation et le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut au moins le plus faible du poste ; à 16, il ne libère le plus faible du poste que si le jeune vaut nettement mieux (plus d'un point au-dessus de sa valeur projetée). La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 37 % des jeunes recrutés, deux fois plus souvent chez les petits clubs que chez les gros ; les légendes ne sortent pas des centres IA (les 3 placées en début de partie suffisent).
+**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, avec le même bonus ou malus Formation et le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les légendes ne sortent pas des centres IA (les 3 placées en début de partie suffisent).
 
 **Récap de la SparLigue :** sous le centre, un encart liste tous les jeunes recrutés dans le championnat (IA et joueur), du plus récent au plus ancien : journée, club, joueur (fiche cliquable), âge, niveau et potentiel en étoiles à jour, joueur libéré le cas échéant. En tête, le nombre de recrues et le club le plus friand ; le nombre de jeunes refusés par les adversaires est indiqué dans la légende.
 
