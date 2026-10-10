@@ -483,26 +483,40 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     // Le chiffre qui vient de changer « tombe » comme sur un panneau d'affichage
     const sc = [m.h.score, m.a.score], pv = U.prevSc || sc;
     U.prevSc = sc;
-    const mo = momentum(m);
     return `${boardTeams(m.h.team, m.a.team, m.h.score, m.a.score, sc.map((v, k) => (v !== pv[k] ? 'drop' : '')))}
-      <div class="mom" title="Dynamique des 5 dernières minutes : ${m.h.team.id} ${mo.gh}–${mo.ga} ${m.a.team.id}"><span class="mh" style="width:${Math.max(0, U.momV || 0) * 50}%;background:${momColor(m.h.team)}"></span><span class="ma" style="width:${Math.max(0, -(U.momV || 0)) * 50}%;background:${momColor(m.a.team)}"></span></div>
+      ${momSvg(momSeries(m.ev, m.done ? 60 : (m.i / m.N) * 60), m.h.team, m.a.team)}
       <div class="meta"><span>${menHtml(m.h, i)}</span><span class="clock">${min}'</span><span>${menHtml(m.a, i)}</span></div>
       <div class="bar"><span style="width:${pct}%"></span></div>
       <div class="meta"><span>Défense ${m.h.curDef} ${ipill(m.h)}</span><span>${ipill(m.a)} Défense ${m.a.curDef}</span></div>
       <div class="meta"><span>${m.halfDone ? '2e mi-temps' : '1re mi-temps'}${m.halfDone ? ` · mi-temps ${m.h.half}–${m.a.half}` : ''}</span><span>${U.paused ? 'En pause' : 'Vitesse ×' + U.speed}</span></div>`;
   }
-  // Momentum : écart de buts sur les 5 dernières minutes de jeu (±4 buts = barre pleine)
-  function momentum(m) {
-    const now = m.done ? 60 : m.minute(Math.min(m.i, m.N - 1));
-    let gh = 0, ga = 0;
-    for (let k = m.ev.length - 1; k >= 0; k--) {
-      const e = m.ev[k];
-      if (e.m < now - 5) break;
-      if (e.type === 'but') { if (e.side === 0) gh++; else if (e.side === 1) ga++; }
+  // Courbe de momentum : chaque action pèse pour son équipe puis s'estompe en 2 à 3 minutes.
+  // Buts, arrêts, tirs contrés pour ; pertes de balle, tirs manqués, exclusions contre. Au-dessus : domicile.
+  const MOM_W = { but: 1, arret: 0.6, contre: 0.4, to: -0.5, rate: -0.3, excl: -0.6, rouge: -0.8 };
+  const MOM_STEP = 0.5;
+  function momSeries(ev, now) {
+    const pts = ev.filter((e) => MOM_W[e.type] && (e.side === 0 || e.side === 1)).map((e) => [e.m + 0.5, MOM_W[e.type] * (e.side === 0 ? 1 : -1)]);
+    const out = [];
+    for (let t = 0; t <= now + 1e-9; t += MOM_STEP) {
+      let v = 0;
+      for (const [m, w] of pts) { const d = t - m; if (d > 0 && d < 8) v += w * (d / 1.2) * Math.exp(1 - d / 1.2); }
+      out.push(Math.round(Math.tanh(v / 1.7) * 100) / 100);
     }
-    return { gh, ga, v: Math.max(-1, Math.min(1, (gh - ga) / 4)) };
+    return out;
   }
-  const momColor = (t) => `color-mix(in srgb, ${t.color} 70%, #fff)`;
+  function momSvg(series, h, a) {
+    const W = 600, M = 32, A = 28, x = (k) => (k * MOM_STEP / 60 * W).toFixed(1);
+    const line = series.map((v, k) => `${x(k)},${(M - v * A).toFixed(1)}`).join(' ');
+    const area = series.length > 1 ? `M0,${M} L${line} L${x(series.length - 1)},${M} Z` : '';
+    return `<div class="momc" title="Dynamique du match : buts, arrêts et tirs contrés pour une équipe, pertes de balle, tirs manqués et exclusions contre elle, sur les dernières minutes. En haut ${esc(h.name)}, en bas ${esc(a.name)}.">
+      <span class="momt"><span style="color:${momColor(h)}">${h.id}</span><span style="color:${momColor(a)}">${a.id}</span></span>
+      <span class="momg"><svg viewBox="0 0 ${W} ${2 * M}" preserveAspectRatio="none" aria-hidden="true"><defs><clipPath id="momUp"><rect x="0" y="0" width="${W}" height="${M}"/></clipPath><clipPath id="momDn"><rect x="0" y="${M}" width="${W}" height="${M}"/></clipPath></defs>
+        <line x1="${W / 2}" y1="2" x2="${W / 2}" y2="${2 * M - 2}" class="momht"/>
+        ${area ? `<path d="${area}" clip-path="url(#momUp)" fill="${momColor(h)}"/><path d="${area}" clip-path="url(#momDn)" fill="${momColor(a)}"/>` : ''}
+        <line x1="0" y1="${M}" x2="${W}" y2="${M}" class="mom0"/></svg><span class="momx">${[0, 15, 30, 45, 60].map((m) => `<span>${m}'</span>`).join('')}</span></span></div>`;
+  }
+  // Couleur du club éclaircie, davantage pour les couleurs très sombres (lisibles sur le tableau noir)
+  const momColor = (t) => { const c = (t.color || '#888').replace('#', ''), n = parseInt(c.length === 3 ? c.replace(/./g, '$&$&') : c, 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return `color-mix(in srgb, ${t.color} ${l < 0.25 ? 40 : 70}%, #fff)`; };
   function evHtml(e, teams) {
     const cls = e.side === -1 ? 'neutral' : e.side === U.side ? 'mine' : 'them';
     const tm = teams && e.side >= 0 ? teams[e.side] : null;
@@ -635,11 +649,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const b = document.getElementById('board');
     if (!b) return;
     b.innerHTML = boardInner();
-    const mv = momentum(m).v;
-    if (mv !== U.momV) {
-      U.momV = mv;
-      requestAnimationFrame(() => { const h = b.querySelector('.mom .mh'), a = b.querySelector('.mom .ma'); if (h) h.style.width = Math.max(0, mv) * 50 + '%'; if (a) a.style.width = Math.max(0, -mv) * 50 + '%'; });
-    }
     const f = document.getElementById('feed');
     if (f && evs && evs.length) f.insertAdjacentHTML('afterbegin', evs.slice().reverse().map((e) => evHtml(e, [m.h.team, m.a.team])).join(''));
     const st = document.getElementById('stats');
@@ -757,7 +766,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (const t of G.teams) if (t.id !== G.userId) H.aiPrepare(t);
     H.ensureSheet(me());
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
-    U.prevSc = null; U.momV = 0;
+    U.prevSc = null;
     U.side = nf.h === G.userId ? 0 : 1;
     U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false;
     render();
@@ -812,7 +821,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const r = m.result();
     playRound(r);
     const pack = (s) => ({ id: s.id, score: s.score, half: s.half, st: s.st, goals: s.goals, saves: s.saves, ps: s.ps, mins: s.mins });
-    G.last = { h: pack(r.h), a: pack(r.a), ev: r.ev.filter((e) => e.key), side: U.side, round: G.round, mvp: r.mvp || null };
+    G.last = { h: pack(r.h), a: pack(r.a), ev: r.ev.filter((e) => e.key), side: U.side, round: G.round, mvp: r.mvp || null, mom: momSeries(r.ev, 60) };
     U.post = G.last;
     U.m = null;
     U.view = 'post';
@@ -830,7 +839,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const gk = Object.entries(mine.saves).map(([id, n]) => ({ p: t.players.find((x) => x.id === id), n })).filter((x) => x.p);
     const old = p.side === undefined ? '' : '';
     U.side = p.side;
-    return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div>
+    return `<section class="board">${boardTeams(h, a, p.h.score, p.a.score)}${p.mom ? momSvg(p.mom, h, a) : ''}<div class="meta"><span>Journée ${p.round} · ${res} ${mine.score}–${opp.score}</span><span>Mi-temps ${p.h.half}–${p.a.half}</span></div>
       <div class="row" style="justify-content:center">${G.trainPending ? trainBtn() : '<button class="btn primary" data-act="tab" data-id="championnat">Passer à la suite : résultats et classement →</button>'}</div></section>${old}
       <div class="grid2">
         <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
