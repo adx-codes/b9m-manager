@@ -578,6 +578,8 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 #notif b { color: var(--digit); }
 #notif .nbadge { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; font: 800 0.8rem var(--f-display); color: #fff; }
 #notif .nclose { position: absolute; top: 8px; right: 8px; background: none; border: 0; color: var(--board-dim); font-size: 0.9rem; cursor: pointer; padding: 4px 6px; }
+#notif .nlink { background: none; border: 0; padding: 4px 0 0; color: var(--digit); font: inherit; font-weight: 600; cursor: pointer; }
+#notif .nlink:hover { text-decoration: underline; }
 #notif.short { font-size: 0.86rem; padding-block: 9px; border-left-color: var(--board-dim); }
 #notif.short .nbadge { width: 30px; height: 30px; font-size: 0.7rem; }
 @media (prefers-reduced-motion: reduce) { #notif { transition: none; } }

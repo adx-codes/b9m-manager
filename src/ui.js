@@ -706,6 +706,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     save();
     render();
     window.scrollTo(0, 0);
+    trainingNotice();
   }
   function startMatch() {
     const nf = nextFixture();
@@ -747,7 +748,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     schedule();
   }
   // Notification en haut de l'écran (temps mort adverse)
-  function notify(html, sticky) {
+  function notify(html, sticky, ms) {
     let el = document.getElementById('notif');
     if (!el) { el = document.createElement('div'); el.id = 'notif'; el.setAttribute('role', 'alert'); document.body.appendChild(el); }
     el.innerHTML = html + '<button class="nclose" data-act="nclose" aria-label="Fermer la notification">✕</button>';
@@ -755,7 +756,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     clearTimeout(U.notifT);
     U.notifSticky = !!sticky;
     el.classList.toggle('short', !sticky);
-    if (!sticky) U.notifT = setTimeout(hideNotify, 4500);
+    if (!sticky) U.notifT = setTimeout(hideNotify, ms || 4500);
+  }
+  // Bilan de la semaine d'entraînement, juste après la journée
+  function trainingNotice() {
+    const lt = G.lastTraining, t = me();
+    if (!lt || lt.round !== G.round) return;
+    const byP = Object.values(lt.log.reduce((acc, e) => { (acc[e.id] = acc[e.id] || { name: e.name, n: 0 }).n++; return acc; }, {})).sort((x, y) => y.n - x.n);
+    const list = byP.slice(0, 4).map((x) => `${esc(short(x.name))} +${x.n}`).join(', ') + (byP.length > 4 ? `, et ${byP.length - 4} autre${byP.length > 5 ? 's' : ''}` : '');
+    const body = lt.log.length ? `${lt.log.length} attribut${lt.log.length > 1 ? 's' : ''} en hausse : ${list}` : 'Aucun progrès cette semaine.';
+    notify(`<span class="nbadge" style="background:${t.color}">${esc(t.id)}</span><span><b>Semaine d'entraînement · ${esc(H.TRAIN[lt.focus].label.toLowerCase())}, intensité ${esc(H.INTENSITY[lt.intensity].label.toLowerCase())}</b><br>${body}<br><button class="nlink" data-act="ntrain">Voir le détail →</button></span>`, false, 9000);
   }
   function hideNotify() { U.notifSticky = false; const el = document.getElementById('notif'); if (el) el.classList.remove('show'); }
   function finishMatch() {
@@ -773,6 +783,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     save();
     render();
     window.scrollTo(0, 0);
+    trainingNotice();
   }
   function renderPost() {
     const p = U.post;
@@ -1599,6 +1610,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     switch (act) {
       case 'pick': U.newClub = id; render(); return;
       case 'nclose': hideNotify(); return;
+      case 'ntrain': hideNotify(); U.tab = 'entrainement'; render(); window.scrollTo(0, 0); return;
       case 'modsopen': U.modsModal = true; render(); { const c = document.querySelector('#modsov [data-act=modsclose]'); if (c) c.focus(); } return;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
