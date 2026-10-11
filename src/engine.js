@@ -1460,15 +1460,17 @@
     intense: { label: 'Intense', mult: 1.6, rec: -12 }
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
-  // Réserve : les joueurs en tribune (ni sur la feuille de match, ni blessés) jouent avec la réserve le même jour,
+  // Réserve : seuls les jeunes du centre de formation hors de la feuille de match (et non blessés) jouent avec la réserve,
+  // le même jour ; un pro hors de la feuille reste en tribune, sans match.
   // sans match simulé. 60 minutes à 7 : les gardiens se partagent la cage, les joueurs de champ les 6 autres places
   // (plus ils sont nombreux, moins chacun joue). Moins de 7 joueurs : pas de match, une séance d'entraînement
   // au hasard à la place. Une minute en réserve vaut 20 % d'une minute en Starligue pour la progression.
   const RESERVE = { size: 7, xp: 0.2 };
+  const inReserve = (p) => !!(p && p.cf);
   function reserveRound(st, ids) {
     for (const t of st.teams) {
       if (ids && !ids.has(t.id)) continue;
-      const out = new Set(t.out || []), res = t.players.filter(p => out.has(p.id) && !hurt(p));
+      const out = new Set(t.out || []), res = t.players.filter(p => out.has(p.id) && !hurt(p) && inReserve(p));
       for (const p of t.players) { p.lastRes = 0; delete p.resFocus; }
       if (res.length < RESERVE.size) {
         const keys = Object.keys(TRAIN).filter(k => k !== 'equilibre');
@@ -1564,7 +1566,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, inReserve, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
