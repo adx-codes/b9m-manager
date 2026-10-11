@@ -15,16 +15,19 @@ Le MVP est un jeu de gestion de handball jouable dans le navigateur : on dirige 
 3. Lancer le match : simulation, puis score et événements clés.
 4. Voir les résultats de la journée et le classement mis à jour.
 
-**Dans le MVP (prototype jouable) :** un championnat de 16 équipes (la SparLigue), effectifs générés, ville isométrique comme accueil, bonus et malus de club, supporters et centre de formation propres à chaque club, Club house, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
+**Dans le MVP (prototype jouable) :** un championnat de 16 équipes (la SparLigue) avec les vrais clubs et effectifs de la Starligue 2026-2027, ville isométrique comme accueil, bonus et malus de club, supporters et centre de formation propres à chaque club, Club house, tactique avec styles et bascules défensives, moteur de match (avantage du terrain, face-à-face, intensité) avec rotations et coach IA, jeu des arrières, légendes à découvrir, entraînement hebdomadaire, centre de formation, fiche joueur, profil d'équipe, classement, sauvegarde locale.
 
-**Hors MVP :** mercato, finances, staff, coupes, suspensions, saisons multiples, joueurs réels. Ces briques sont déjà représentées dans la ville par des bâtiments grisés.
+**Hors MVP :** mercato, finances, staff, coupes, suspensions, saisons multiples, notes réelles des joueurs. Ces briques sont déjà représentées dans la ville par des bâtiments grisés.
 
 ## Monde de jeu
 
-Un seul championnat fictif de 16 clubs, en matchs aller-retour : 30 journées par saison.
+Un championnat de 16 clubs, la SparLigue, en matchs aller-retour : 30 journées par saison. Depuis la version 1, ce sont les vrais clubs de la Starligue 2026-2027 avec leurs vrais effectifs (la version 0, aux clubs parodiques et aux effectifs générés, est gardée sur la branche `v0` du dépôt).
 
-- **Clubs :** nom, ville, note de réputation (1 à 5) qui règle le niveau moyen de l'effectif généré, et trois caractéristiques fixes (voir Caractéristiques des clubs).
-- **Effectif :** 14 joueurs par club, dont 2 gardiens.
+- **Clubs :** Paris Saint-Germain Handball, HBC Nantes (5 ★) ; Montpellier Handball, Provence Aix UC, Limoges Handball, Chambéry Savoie Mont-Blanc Handball (4 ★) ; Saint-Raphaël Var Handball, Fenix Toulouse Handball, USAM Nîmes Gard, Cesson Rennes Métropole Handball, US Dunkerque, C'Chartres Métropole Handball (3 ★) ; Tremblay Handball, Sélestat Alsace Handball, Saran Loiret Handball, Caen Handball (2 ★). Écussons maison (sigle sur la couleur du club), pas de logos officiels ; couleurs à revoir. Réputation, supporters (noms avec jeux de mots), centre de formation et buvette dans `src/starligue.js`.
+- **Effectifs :** joueurs professionnels et du centre de formation relevés sur lnh.fr le 11/10/2026 (409 joueurs : nom, club, poste, date de naissance, nationalité). Main forte déduite du poste (gaucher à droite, droitier à gauche, au hasard ailleurs). Attributs encore générés selon le niveau du club : à rendre cohérents plus tard. Le premier joueur listé à chaque poste part titulaire. De 16 (Caen) à 29 joueurs (Chambéry) par club, plus de plafond d'effectif.
+- **Niveau de départ selon la réputation :** 5 ★ 13,9 · 4 ★ 13,2 · 3 ★ 12,8 · 2 ★ 12,4 (resserré pour la saison réelle).
+- **Feuille de match :** 14 joueurs (7 titulaires, 7 sur le banc) ; les autres jouent avec la réserve.
+- **Réserve :** le jour du match, les joueurs ni sur la feuille ni blessés jouent avec la réserve, sans match simulé : 60 minutes à 7 (les gardiens se partagent la cage, les joueurs de champ les 6 autres places, au hasard puis ramenées au total). Moins de 7 joueurs : pas de match, la semaine se fait sur un focus d'entraînement tiré au hasard. Une minute en réserve compte pour 20 % d'une minute en SparLigue dans la progression ; ni fatigue ni blessure.
 - **Calendrier :** généré en round-robin, une journée = un match par club.
 - **Points :** victoire 2, nul 1, défaite 0 (barème LNH).
 - **Départage :** points, puis différence de buts particulière, puis différence de buts générale, puis buts marqués.
@@ -370,15 +373,18 @@ Un joueur peut se blesser en match ou pendant la semaine d'entraînement. Mesur�
 
 ## Centre de formation
 
-Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune du centre. Poste au hasard, 17 à 19 ans, niveau d'un joueur de rotation du club (le plus souvent 1½ à 2½ étoiles), potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le niveau du centre de formation du club (1 à 5, affiché en tête de l'écran) décale niveau et potentiel de −1 à +1 et règle la part de pépites.
+Le centre accueille les moins de 23 ans : les jeunes du centre de l'effectif réel (étiquette J), les jeunes qui en sortent pendant la saison, et les pros de moins de 23 ans qu'on y envoie (bouton « Au centre » ; retour chez les pros seulement en fin de saison, avec le multi-saison). Un joueur du centre peut jouer avec les pros, sans limite. Le niveau du centre du club (1 à 5) fait progresser ses jeunes de −20 % à +20 %.
 
-- **Le recruter :** il rejoint le groupe. À 16 joueurs, on choisit qui part parmi ceux de son poste. La feuille de match reste à 14, le staff place les autres en tribune.
+Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un jeune. Poste au hasard, 17 à 19 ans, niveau d'un joueur de rotation du club, potentiel affiché en fourchette d'étoiles estimée par le staff ; environ une fois sur cinq, une légende (voir Joueurs). Le niveau du centre décale niveau et potentiel de −1 à +1 et règle la part de pépites.
+
+- **L'intégrer au centre :** il rejoint le centre de formation, personne ne part.
 - **Le laisser partir :** il est refusé.
 - **Décider plus tard :** la proposition reste ouverte dans le bâtiment Centre de formation de la ville. Sans réponse avant le match suivant, il signe ailleurs.
+- **Libérer un joueur du centre :** bouton « Libérer » avec confirmation, départ définitif. Un club IA peut le récupérer, d'autant plus volontiers qu'il est prometteur pour son niveau (un des trois clubs les plus intéressés, 10 à 90 % de chances). Journal des joueurs libérés et de leur nouveau club.
 
-Le centre garde l'historique des jeunes proposés et de la décision prise. Les jeunes recrutés portent l'étiquette J dans l'effectif.
+Le bâtiment montre les joueurs du centre (niveau, potentiel, semaine : minutes en réserve, titulaire, feuille de match ou blessé ; total de la réserve au survol), la réserve de la dernière journée, les joueurs libérés et l'historique des jeunes proposés.
 
-**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, réglé par son propre centre de formation, avec le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les centres IA sortent aussi des légendes, plus rarement (4 % des jeunes).
+**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées ; il rejoint son centre. Au-delà de 12 jeunes au centre, le staff libère le moins prometteur, qu'un autre club peut récupérer. Mesuré sur une saison : effectifs IA de 27 à 30 joueurs, une cinquantaine de départs, dont une dizaine repris. Les centres IA sortent aussi des légendes, plus rarement (4 % des jeunes).
 
 **Récap de la SparLigue :** sous le centre, un encart liste tous les jeunes recrutés dans le championnat (IA et joueur), du plus récent au plus ancien : journée, club, joueur (fiche cliquable), âge, niveau et potentiel en étoiles à jour, joueur libéré le cas échéant. En tête, le nombre de recrues et le club le plus friand ; le nombre de jeunes refusés par les adversaires est indiqué dans la légende.
 
@@ -391,9 +397,10 @@ L'accueil est le quartier du club en vue isométrique : chaque bâtiment en coul
 | Bâtiment | Écran | Enseigne | Contenu |
 | --- | --- | --- | --- |
 | Salle | Match | Prochain adversaire, domicile ou extérieur | Préparation (plan, conseils du staff, forme de l'adversaire sur ses 5 derniers matchs avec son rang, cotes du bookmaker fictif Bet9M et avant-match télé parodique HandXtra dans une colonne étroite, face-à-face, effectif adverse), match en direct (changements, intensité, temps mort, 7 contre 6, vitesse), performances, résumé |
-| Vestiaire | Effectif | Titulaires fatigués | Profil d'équipe, tableau des notes avec code couleur, tri et colonnes au choix, fiche joueur, gardiens à part |
+| Vestiaire | Effectif | Titulaires fatigués | Profil d'équipe, tableau des notes avec code couleur, tri et colonnes au choix, filtres rapides (feuille de match, réserve, centre, infirmerie), statut T / B / R, fiche joueur (avec la réserve), gardiens à part |
 | Gymnase | Entraînement | Focus et intensité | Programme de la semaine, progrès de la dernière journée |
-| Bureau du coach | Tactique | Style défensif et jeu | Composition sur le terrain (glisser-déposer), rythme, jeu, jeu des arrières, style, bascules, consignes |
+| Bureau du coach | Tactique | Style défensif et jeu | Système de jeu sur deux colonnes : rythme, jeu, jeu des arrières (attaque) ; style, bascules (défense) ; consignes |
+| (onglet) | Feuille de match | — | Groupe par poste (repliable, statut T / B / R, filtre Tous / Pros / Centre, détails au survol), 7 de départ en glisser-déposer, banc (alertes gardien et doublures), réserve, infirmerie ; Composition auto, Faire tourner (titulaires au-delà de 55 de fatigue), Reprendre la dernière feuille |
 | Kiosque | Championnat | Classement et points | Classement, résultats, journée suivante, buteurs |
 | Siège du club (gris) | À venir | Mercato et finances | — |
 | Centre de formation | Formation | Prochain jeune | Jeune proposé, décompte jusqu'au prochain, jeunes du club, historique des décisions |
@@ -427,6 +434,8 @@ Le jeu s'affiche toujours en mode sombre, quels que soient les réglages du navi
 ## Équilibrage
 
 Le moteur est validé quand 1 000 matchs simulés retombent dans ces fourchettes, proches d'un championnat pro (valeurs approximatives, à confirmer avec des stats réelles).
+
+**Saison réelle (version 1), sur 20 saisons simulées :** 28 buts par équipe, 61 % d'efficacité, 19–20 nuls par saison, 57–58 % des points pour l'équipe qui reçoit, un 4 étoiles prend 76–79 % des points contre un 2 étoiles. Blessures : environ 6 par équipe et par saison avec des effectifs deux fois plus grands (même risque par joueur).
 
 | Indicateur (moyenne par équipe et par match) | Cible |
 | --- | --- |
