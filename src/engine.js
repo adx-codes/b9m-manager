@@ -305,7 +305,9 @@
   }
   // Joueur réel : nom, poste, latéralité, âge et nationalité de l'effectif ; attributs tirés selon le niveau du club
   function realPlayer(r, level, clubId, yo) {
-    const age = r.born && DATA && DATA.year ? clamp(DATA.year - r.born, 16, 42) : 0;
+    // Âge au début de la saison (DATA.ref, AAAA-MM-JJ) depuis la date de naissance (AAAA-MM-JJ, ou l'année seule)
+    const ageAt = (born) => { const [y, m = 1, d = 1] = String(born).split('-').map(Number), [ry, rm, rd] = (DATA.ref || DATA.year + '-09-01').split('-').map(Number); return ry - y - (rm < m || (rm === m && rd < d) ? 1 : 0); };
+    const age = r.born && DATA ? clamp(ageAt(r.born), 16, 42) : 0;
     const p = makePlayer(r.pos, level, clubId, yo, age);
     p.name = r.name;
     if (r.nat && r.nat !== 'FR') p.nat = r.nat; else delete p.nat;

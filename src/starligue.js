@@ -3,12 +3,14 @@
 // Couleurs, étoiles, supporters, centre de formation et buvette : premières propositions, à corriger.
 // Effectifs : liste des joueurs professionnels 2026-2027 de lnh.fr (nom, club, poste), relevée le 11/10/2026.
 // Main forte déduite du poste (gaucher à droite, droitier à gauche) ; âge et nationalité tirés au hasard pour l'instant.
-// Format d'un joueur : { name: 'Prénom Nom', pos: 'GB'|'AiG'|'ArG'|'DC'|'Piv'|'ArD'|'AiD', hand: 'G'|'D', born: 1998, nat: 'DK' }
+// Format d'un joueur : { name: 'Prénom Nom', pos: 'GB'|'AiG'|'ArG'|'DC'|'Piv'|'ArD'|'AiD', hand: 'G'|'D', born: '1998-02-16', nat: 'DK' }
 // (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français).
 (function (root) {
   const HBDATA = {
     season: '2026-2027',
     year: 2026,
+    // Date de référence des âges : début de la saison
+    ref: '2026-09-01',
     clubs: [
       { id: 'PSG', name: 'Paris Saint-Germain Handball', city: 'Paris', region: 'paris', rep: 5, color: '#1d2f6b', color2: '#c8323f', fans: { h: 3, a: 2, name: 'Les Titis de Coubertin' }, academy: 4, buvette: 'jambon-beurre à 9 €' },
       { id: 'HBN', name: 'HBC Nantes', city: 'Nantes', region: 'ouest', rep: 5, color: '#4b3470', color2: '#e3c35a', fans: { h: 5, a: 4, name: 'La Marée Violette' }, academy: 4, buvette: 'petit-beurre trempé dans le muscadet' },
