@@ -156,8 +156,8 @@
       .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
     const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
     const a0 = p.a0 || p.a;
-    const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
-    const allK = gk ? H.GKA.map((x) => x[0]) : H.FIELD.map((x) => x[0]);
+    const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"${k === 'robustesse' ? ` title="Résistance aux blessures : ${robTxt(v)}"` : ''}><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
+    const allK = (gk ? H.GKA.map((x) => x[0]) : H.FIELD.map((x) => x[0])).concat('robustesse');
     const gained = allK.concat(traits).reduce((a, k) => a + Math.max(0, p.a[k] - (a0[k] ?? p.a[k])), 0);
     const teamName = (id) => { const x = G.teams.find((tt) => tt.id === id); return x ? x.id : id; };
     const rows = hs.slice().reverse().map((h) => { const n = matchNote(p, h); return `<tr><td>J${h[0]}</td><td>${esc(teamName(h[9]))}</td><td><span class="res ${h[10] > 0 ? 'w' : h[10] < 0 ? 'l' : 'd'}">${h[10] > 0 ? 'V' : h[10] < 0 ? 'D' : 'N'}</span></td><td class="r num">${h[2] || '–'}</td><td class="r num">${h[2] < 1 ? '' : gk ? `${h[5]}/${h[6]}` : `${h[3]}/${h[4]}`}</td>${gk ? '' : `<td class="r num">${h[2] < 1 ? '' : h[7]}</td><td class="r num">${h[8] || ''}</td>`}<td class="r"><span class="mnote ${noteCls(n)}">${n === null ? '–' : n.toFixed(1).replace('.', ',')}</span></td></tr>`; }).join('');
@@ -907,14 +907,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   const FIELD_COLS = [
     ['Tir', [['tirLoin', '9 m'], ['tirPres', '6 m'], ['tirAile', 'Aile'], ['penalty', '7 m']]],
     ['Jeu', [['passes', 'Pas.'], ['vision', 'Vis.'], ['position', 'Pos.']]],
-    ['Physique', [['duel', 'Duel'], ['vitesse', 'Vit.'], ['endurance', 'End.']]],
+    ['Physique', [['duel', 'Duel'], ['vitesse', 'Vit.'], ['endurance', 'End.'], ['robustesse', 'Rob.']]],
     ['Défense', [['contre', 'Ctr.'], ['duelDef', 'Duel D'], ['discipline', 'Disc.']]],
     ['Mental', [['sangfroid', 'S-F']]],
     ['Profil', [['excentricite', 'Exc.'], ['collectif', 'Coll.']]]
   ];
   const TRAIT_KEYS = ['excentricite', 'collectif'];
-  const GK_COLS = [['Gardien', [['reflexes', 'Réfl.'], ['placement', 'Plac.'], ['gk7m', '7 m'], ['relance', 'Rel.'], ['endurance', 'End.']]]];
-  const ATTR_LABEL = Object.fromEntries(H.FIELD.concat(H.GKA, H.TRAITS));
+  const GK_COLS = [['Gardien', [['reflexes', 'Réfl.'], ['placement', 'Plac.'], ['gk7m', '7 m'], ['relance', 'Rel.'], ['endurance', 'End.'], ['robustesse', 'Rob.']]]];
+  const ATTR_LABEL = Object.fromEntries(H.FIELD.concat(H.GKA, H.TRAITS, [H.ROBUST]));
+  // Infobulle de la robustesse : le risque de blessure, en mots
+  const robTxt = (v) => v >= 16 ? 'très solide, se blesse rarement' : v >= 13 ? 'solide' : v >= 9 ? 'dans la moyenne' : v >= 6 ? 'fragile, se blesse plus souvent' : 'très fragile, souvent blessé';
   const heat = (v) => v >= 16 ? 'h5' : v >= 13 ? 'h4' : v >= 10 ? 'h3' : v >= 7 ? 'h2' : 'h1';
   // Colonnes visibles de l'effectif (choix mémorisé dans ce navigateur)
   function hiddenCols() { if (!U.hidden) { try { U.hidden = JSON.parse(localStorage.getItem('hbm-cols') || '[]'); } catch (e) { U.hidden = []; } } return U.hidden; }
@@ -949,7 +951,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
         <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r nw">${p.mvpBoost === G.round ? `<span class="mvpmini" title="Confiance de MVP : +1 de forme pour ce match">${CROWN}</span> ` : ''}${formTxt(p.form)}</td>
         <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
-        ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
+        ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}${k === 'robustesse' ? ` (${robTxt(p.a[k])})` : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
     return `<div class="scroll"><table class="sq"><thead>${head1}${head2}</thead><tbody>${rows}</tbody></table></div>`;
@@ -1052,7 +1054,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const ref = sref(), at = (p) => H.ovrAt(p, y.pos);
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => at(b) - at(a));
     const sec = t.players.filter((p) => p.pos !== y.pos && H.SECONDARY[p.pos].includes(y.pos)).sort((a, b) => at(b) - at(a));
-    const cols = H.POS_ATTRS[y.pos], keys = Object.keys(H.WEIGHTS[y.pos]);
+    const cols = H.POS_ATTRS[y.pos].concat('robustesse'), keys = Object.keys(H.WEIGHTS[y.pos]);
     const row = (p, cls, tag) => `<tr class="${cls}"><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}"${p.pos !== y.pos ? ` title="${esc(H.POS_LABEL[p.pos])}, peut dépanner à ce poste"` : ''}>${p.pos}</span> ${cls === 'me' ? `<b>${esc(short(p.name))}</b>` : esc(short(p.name))}${tag}</td><td class="r">${p.age}</td>
       <td class="nw">${vstars(at(p), { sm: true, title: p.pos === y.pos ? undefined : `Au poste ${H.POS_LABEL[y.pos].toLowerCase()} : ${H.starLabel(H.stars(at(p), ref)).toLowerCase()}` })}</td><td class="nw">${pot(p, { sm: true })}</td>
       ${cols.map((k, i) => `<td class="ac ${heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}"><span class="v">${p.a[k]}</span></td>`).join('')}</tr>`;
@@ -1061,7 +1063,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const none = !same.length && !sec.length ? `<tr><td colspan="${4 + cols.length}" class="muted">Personne à ce poste dans ton effectif.</td></tr>` : '';
     return `<div class="ycmp" style="margin-top:14px"><span class="label">Face à ton effectif · ${H.POS_LABEL[y.pos].toLowerCase()}</span>
       <div class="scroll"><table class="sq ly"><thead><tr><th>Joueur</th><th class="r">Âge</th><th title="Niveau à ce poste, par rapport à ton club">Niveau</th><th>Potentiel</th>${cols.map((k, i) => `<th class="ac${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])}">${ATTR_SHORT[k]}</th>`).join('')}</tr></thead><tbody>${rows}${none}</tbody></table></div>
-      <p class="legend" style="margin:6px 0 0">Attributs du poste ; encadrés : ceux qui comptent le plus.</p></div>`;
+      <p class="legend" style="margin:6px 0 0">Attributs du poste, plus la robustesse (résistance aux blessures) ; encadrés : ceux qui comptent le plus.</p></div>`;
   }
   function youthCard(modal) {
     if (U.yBatch) return youthBatch();
@@ -1069,7 +1071,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const nb = (G.leagueYouth || []).filter((l) => l.round === G.youth.round).length + 1;
     const full = t.players.length >= 16;
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
-    const attrs = y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS);
+    const attrs = (y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS)).concat([H.ROBUST]);
     const keys = Object.keys(H.WEIGHTS[y.pos]);
     const rel = U.yRelease;
     const relName = rel ? (t.players.find((p) => p.id === rel) || {}).name : null;
@@ -1629,7 +1631,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const log = (G.injLog || []).filter((x) => x.team === t.id).slice().reverse();
     const card = (p) => {
       const i = p.inj, ok = H.canRushBack(t, p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
-      return `<div class="injcard"><div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="spacer" style="flex:1"></span><span class="tag sev ${i.sev}">${H.INJ_LABEL[i.sev]}</span></div>
+      return `<div class="injcard"><div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="muted" style="font-size:0.85rem" title="Robustesse ${p.a.robustesse} : ${robTxt(p.a.robustesse)}">${robTxt(p.a.robustesse).split(',')[0].replace(/^./, (c) => c.toUpperCase())}</span><span class="spacer" style="flex:1"></span><span class="tag sev ${i.sev}">${H.INJ_LABEL[i.sev]}</span></div>
         <p style="margin:6px 0 0">${esc(i.type)} <span class="muted">· ${i.ctx === 'train' ? "à l'entraînement" : 'en match'}, journée ${i.round}</span></p>
         <div class="row" style="gap:10px;margin-top:6px"><span class="injprog" title="${done} match${done > 1 ? 's' : ''} manqué${done > 1 ? 's' : ''} sur ${i.n0}"><span style="width:${(done / i.n0) * 100}%"></span></span><span>${absTxt(i.n)} · retour prévu à la journée ${G.round + i.n + 1}</span></div>
         ${ok ? (ask ? `<div class="opt injask"><p style="margin:0">Il rejoue dès le prochain match, mais reste fragile pendant ${i.n + 2} semaines : environ une chance sur quatre de rechute, plus longue que la blessure de départ.</p>
@@ -1644,7 +1646,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       </div></section>
       <div style="display:grid;gap:20px;min-width:0">
         <section class="panel"><h3>Blessures de la saison</h3>${log.length ? `<div class="scroll"><table><thead><tr><th class="r">J.</th><th>Joueur</th><th>Blessure</th><th class="r">Absence</th></tr></thead><tbody>${log.map((x) => `<tr><td class="r num">${x.round}</td><td class="nw"><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span> ${esc(short(x.name))}</td><td>${esc(x.type)}<span class="muted"> · ${x.ctx === 'train' ? 'entraînement' : 'match'}</span></td><td class="r num">${x.n} match${x.n > 1 ? 's' : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucune blessure pour l\'instant.</p>'}</section>
-        <section class="panel"><h3>Ce qui joue sur les blessures</h3><p style="margin:0">Un joueur fatigué se blesse bien plus souvent, en match comme à l'entraînement : faire tourner l'effectif protège. En match, l'intensité, l'homme à homme et la défense agressive augmentent un peu le risque ; à l'entraînement, l'intensité Intense le double presque. Un blessé ne peut pas aller sur la feuille de match. Blessé en cours de match, il sort aussitôt et le meilleur du banc à son poste le remplace.${H.hasMod(t, 'soins+') ? ' Ton kiné aux mains de fée limite les blessures et raccourcit parfois les absences.' : H.hasMod(t, 'soins-') ? ' Ton kiné est à Ibiza : un peu plus de blessures, et des absences parfois plus longues.' : ''}</p></section>
+        <section class="panel"><h3>Ce qui joue sur les blessures</h3><p style="margin:0">Chaque joueur a sa robustesse (colonne Rob. de l'effectif) : un joueur fragile se blesse environ quatre fois plus souvent qu'un joueur très solide. Un joueur fatigué se blesse aussi bien plus souvent, en match comme à l'entraînement : faire tourner l'effectif protège. En match, l'intensité, l'homme à homme et la défense agressive augmentent un peu le risque ; à l'entraînement, l'intensité Intense le double presque. Un blessé ne peut pas aller sur la feuille de match. Blessé en cours de match, il sort aussitôt et le meilleur du banc à son poste le remplace.${H.hasMod(t, 'soins+') ? ' Ton kiné aux mains de fée limite les blessures et raccourcit parfois les absences.' : H.hasMod(t, 'soins-') ? ' Ton kiné est à Ibiza : un peu plus de blessures, et des absences parfois plus longues.' : ''}</p></section>
       </div></div>`;
   }
 

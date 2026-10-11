@@ -47,6 +47,9 @@
     ['contre', 'Contre'], ['duelDef', 'Duel défensif'], ['discipline', 'Discipline'], ['endurance', 'Endurance'], ['sangfroid', 'Sang-froid']
   ];
   const TRAITS = [['excentricite', 'Excentricité'], ['collectif', 'Esprit collectif']];
+  // Robustesse (tous les joueurs, gardiens compris) : résistance aux blessures, ne compte pas dans le niveau et ne s'entraîne pas
+  const ROBUST = ['robustesse', 'Robustesse'];
+  const robustOf = (age) => clamp(Math.round(12.5 - Math.max(0, age - 30) * 0.6 + gauss() * 3.5), 1, 20);
   const GKA = [['reflexes', 'Réflexes'], ['placement', 'Placement'], ['gk7m', 'Arrêts sur 7 m'], ['relance', 'Relance'], ['endurance', 'Endurance']];
   const WEIGHTS = {
     GB: { reflexes: 0.4, placement: 0.35, gk7m: 0.15, relance: 0.1 },
@@ -275,6 +278,7 @@
         else if (r0 < 0.72) { a.tirLoin = clamp(a.tirLoin - 2, 1, 20); a.duel = clamp(a.duel + 2, 1, 20); a.tirPres = clamp(a.tirPres + 2, 1, 20); }
       }
     }
+    a.robustesse = robustOf(age);
     // Côté droit (arrière et ailier droits) : toujours des gauchers ; ailleurs, environ 15 % de gauchers
     const left = (pos === 'ArD' || pos === 'AiD') ? true : rnd() < 0.15;
     const p = {
@@ -371,11 +375,13 @@
     for (const t of st.teams) for (const p of t.players) if (LEG_OLD[p.name]) p.name = LEG_OLD[p.name];
     if (st.youth && LEG_OLD[st.youth.p.name]) st.youth.p.name = LEG_OLD[st.youth.p.name];
     if (st.youth === undefined) st.youth = null;
+    if (st.youth && st.youth.p.a.robustesse === undefined) st.youth.p.a.robustesse = robustOf(st.youth.p.age);
     for (const t of st.teams) {
       for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
         p.a.excentricite = clamp(Math.round(9 + gauss() * 3.8), 1, 20);
         p.a.collectif = clamp(Math.round(11 + gauss() * 3.2), 1, 20);
       }
+      for (const p of t.players) if (p.a.robustesse === undefined) p.a.robustesse = robustOf(p.age);
       const tc = t.tactic;
       if (!tc.rules) tc.rules = defaultRules();
       if (!tc.dstyle) tc.dstyle = 'zone';
@@ -421,7 +427,7 @@
     // Loterie, mais réaliste : niveau calé sur celui du club (un joueur de rotation, environ 2 étoiles), attributs du poste
     // autour de la référence du club moins 2,4, les autres plus bas ; traits de personnalité libres
     const off = academyOff(t), keys = Object.keys(WEIGHTS[pos]), lvl = starRef(t) - 2.4 + off;
-    for (const k in p.a) p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round((keys.includes(k) ? lvl : lvl - 1.8) + gauss() * 2), 2, 17);
+    for (const k in p.a) if (k !== 'robustesse') p.a[k] = (k === 'excentricite' || k === 'collectif') ? ri(1, 20) : clamp(Math.round((keys.includes(k) ? lvl : lvl - 1.8) + gauss() * 2), 2, 17);
     p.age = ri(17, 19);
     p.ovr = overall(p);
     // Marge de progression : 1,5 à 5,5 points (±0,5 selon le centre), et une pépite (+3 en plus) de 6 % (centre à 1) à 20 % (centre à 5)
@@ -620,6 +626,8 @@
     const fit = t.players.filter(x => !hurt(x) && !(extra && extra.has(x.id)));
     return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > MIN_FIELD;
   }
+  // Robustesse : ×2 de risque tous les 5 points sous 12, ÷2 tous les 5 points au-dessus
+  function robMult(p) { return Math.pow(2, (12 - (p.a.robustesse ?? 12)) / 5); }
   function injMods(t) { return hasMod(t, 'soins+') ? 0.85 : hasMod(t, 'soins-') ? 1.15 : 1; }
   function rollInjury(st, t, p, ctx) {
     let r = rnd(), sev = 'leger';
@@ -653,7 +661,7 @@
     for (const p of t.players) {
       if (hurt(p) || !canHurt(t, p)) continue;
       const f = 1 + Math.max(0, (p.fatigue || 0) - 40) / 30;
-      if (rnd() < INJ.train * I * f * injMods(t) * (p.frag > 0 ? INJ.fragTrain : 1) * (p.pos === 'GB' ? INJ.gk * 1.5 : 1)) out.push(rollInjury(st, t, p, 'train'));
+      if (rnd() < INJ.train * I * f * injMods(t) * robMult(p) * (p.frag > 0 ? INJ.fragTrain : 1) * (p.pos === 'GB' ? INJ.gk * 1.5 : 1)) out.push(rollInjury(st, t, p, 'train'));
     }
     return out;
   }
@@ -896,7 +904,7 @@
     for (const id of onIds) {
       const p = s.team.players.find(x => x.id === id);
       const f = s.fat[id] || 0;
-      const r = INJ.match * mult * (1 + Math.max(0, f - 40) / 25) * (p.frag > 0 ? INJ.frag : 1) * (p.pos === 'GB' ? INJ.gk : 1);
+      const r = INJ.match * mult * robMult(p) * (1 + Math.max(0, f - 40) / 25) * (p.frag > 0 ? INJ.frag : 1) * (p.pos === 'GB' ? INJ.gk : 1);
       if (rnd() >= r || !canHurt(s.team, p, s.hurt)) continue;
       const pos = s.at[id];
       const c = s.bench.filter(b => !gone(s, b.id) && (pos === 'GB') === (b.pos === 'GB'));
@@ -1475,7 +1483,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
