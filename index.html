@@ -2656,7 +2656,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const m = U.m;
     if (!m || U.view !== 'live') return '';
     const s = m.S[U.side];
-    return JSON.stringify([U.tPanel, U.paused, U.speed, s.to, m.half(), m.minute(Math.min(m.i, m.N - 1)) >= 50, s.empty, s.tac, s.forceDef, s.lineup.GB.id]);
+    return JSON.stringify([U.tPanel, U.paused, U.speed, s.to, m.half(), s.empty, s.tac, s.forceDef, s.lineup.GB.id]);
   }
   function ctlHtml() {
     const m = U.m, s = m.S[U.side], h = m.half();
@@ -2672,14 +2672,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="opt"><span class="label">Consignes (2 maximum)</span><div class="row">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="mcons" data-id="${k}" aria-pressed="${s.tac.cons.includes(k)}">${l}</button>`).join('')}</div></div>
         <div><button class="btn primary" data-act="resume">${ht ? 'Lancer la 2e mi-temps' : 'Reprendre le match'}</button></div></div>`;
     }
-    const late = m.minute(Math.min(m.i, m.N - 1)) >= 50;
     return `<h3>Banc de touche</h3><div style="display:grid;gap:12px">
       <div class="row"><button class="btn" data-act="pause">${U.paused ? 'Reprendre' : 'Pause'}</button>
         <div class="seg" role="group" aria-label="Vitesse">${[1, 2, 4].map((v) => `<button data-act="speed" data-id="${v}" aria-pressed="${U.speed === v}">×${v}</button>`).join('')}</div>
         <button class="btn" data-act="finish">Aller au coup de sifflet final</button></div>
       <div class="row">${(() => { const left = 3 - s.to[0] - s.to[1], ok = U.m.canTO(U.side); return `<button class="btn primary" data-act="timeout" ${ok ? '' : 'disabled'} title="3 temps morts par match, 2 au plus par mi-temps">${ok ? `Temps mort · ${left} restant${left > 1 ? 's' : ''}` : left ? 'Plus de temps mort cette mi-temps' : 'Temps morts épuisés'}</button>`; })()}
-        <button class="btn" data-act="empty" aria-pressed="${s.empty}" ${late ? '' : 'disabled'}>${s.empty ? 'Arrêter le 7 contre 6' : 'Passer à 7 contre 6'}</button></div>
-      <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Trois temps morts par match, deux au plus par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à partir de la 50e minute : bonus en attaque, mais cage vide en cas de perte.</p>
+        <button class="btn" data-act="empty" aria-pressed="${s.empty}">${s.empty ? 'Arrêter le 7 contre 6' : 'Passer à 7 contre 6'}</button></div>
+      <p class="legend" style="margin:0">Pause automatique à la mi-temps pour tes ajustements. Trois temps morts par match, deux au plus par mi-temps. Le 7 contre 6 (gardien remplacé par un joueur de champ) s'active à tout moment : bonus en attaque, mais cage vide en cas de perte.</p>
       <p class="legend" style="margin:0">${tacLine(s.tac)}${s.tac.int ? ` · intensité ${H.INTENSITY_LV[s.tac.int].toLowerCase()}` : ''}<br>${s.forceDef ? 'Défense ' + s.forceDef + ' forcée' : rulesLine(s.tac.rules)}</p></div>`;
   }
   const INT_TXT = {

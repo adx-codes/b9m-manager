@@ -189,7 +189,7 @@ Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvr
 
 **Consignes (deux au choix) :** cibler le pivot, cibler les ailes, défense agressive, rotations fréquentes.
 
-**Pendant le match :** un temps mort par mi-temps pour changer de rythme, de jeu, de style, de gardien, ou forcer un système (5-1 ou 4-2) à la place des règles. Il donne aussi un petit regain (+3 % au tir pendant 6 possessions, 4 points de fatigue en moins). Pause automatique à la mi-temps. 7 contre 6 activable à partir de la 50e. Curseur d'intensité (de Gestion à Tout donner) dans les temps morts et à la mi-temps.
+**Pendant le match :** un temps mort par mi-temps pour changer de rythme, de jeu, de style, de gardien, ou forcer un système (5-1 ou 4-2) à la place des règles. Il donne aussi un petit regain (+3 % au tir pendant 6 possessions, 4 points de fatigue en moins). Pause automatique à la mi-temps. 7 contre 6 activable à tout moment. Curseur d'intensité (de Gestion à Tout donner) dans les temps morts et à la mi-temps.
 
 ## Jeu des arrières et face-à-face
 
