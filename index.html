@@ -3184,7 +3184,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderFormation() {
     const t = me(), nr = nextYouthRound();
     const left = nr ? nr - G.round : 0;
-    const youths = t.players.filter((p) => p.youth);
+    const youths = t.players.filter((p) => p.youth).sort((a, b) => b.ovr - a.ovr || b.pot - a.pot);
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
