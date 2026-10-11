@@ -390,6 +390,8 @@
     for (const t of st.teams) { const c = CLUBS.find(x => x.id === t.id); if (c) t.name = c.name; }
     // Entraînement de la semaine lancé à la main après chaque journée
     if (st.trainPending === undefined) st.trainPending = false;
+    // Blessures : journal de la saison (les joueurs sans champ « inj » sont valides)
+    if (!st.injLog) st.injLog = [];
     return st;
   }
   // ---------- Centre de formation et feuille de match ----------
@@ -473,26 +475,51 @@
     return { pw, pd, pl, ow: o(pw), od: o(pd), ol: o(pl) };
   }
   function sheetScore(p) { return p.ovr - (p.fatigue || 0) * 0.04; }
+  // Feuille de match : 14 joueurs valides au plus ; les blessés n'y figurent pas et ne comptent pas dans la tribune
   function ensureSheet(t) {
+    fixLineup(t);
     const starters = new Set(Object.values(t.lineup));
-    const need = Math.max(0, t.players.length - 14);
-    t.out = (t.out || []).filter(id => !starters.has(id) && t.players.some(p => p.id === id));
+    const fit = t.players.filter(p => !hurt(p));
+    const need = Math.max(0, fit.length - 14);
+    t.out = (t.out || []).filter(id => !starters.has(id) && fit.some(p => p.id === id));
     while (t.out.length > need) t.out.shift();
     if (t.out.length < need) {
-      const cands = t.players.filter(p => !starters.has(p.id) && !t.out.includes(p.id))
+      const cands = fit.filter(p => !starters.has(p.id) && !t.out.includes(p.id))
         .sort((x, y) => sheetScore(x) - sheetScore(y));
       for (const p of cands) {
         if (t.out.length >= need) break;
-        const left = t.players.filter(q => q.pos === p.pos && !t.out.includes(q.id) && q.id !== p.id).length;
+        const left = fit.filter(q => q.pos === p.pos && !t.out.includes(q.id) && q.id !== p.id).length;
         if (left >= 1) t.out.push(p.id);
       }
     }
     return t.out;
   }
-  function autoLineup(t) {
+  // Remplaçant d'un poste parmi les joueurs valides : même poste, sinon le meilleur niveau à ce poste
+  function bestFor(t, pos, taken) {
+    const c = t.players.filter(p => !hurt(p) && !taken.has(p.id) && (pos === 'GB') === (p.pos === 'GB'));
+    c.sort((x, y) => (y.pos === pos) - (x.pos === pos) || (ovrAt(y, pos) - y.fatigue * 0.04) - (ovrAt(x, pos) - x.fatigue * 0.04));
+    return c[0] || null;
+  }
+  // Titulaire blessé (ou parti) : remplacé dans le 7 de départ ; renvoie les changements faits
+  function fixLineup(t) {
+    const out = [], taken = new Set();
+    for (const pos of POS) { const p = t.players.find(x => x.id === t.lineup[pos]); if (p && !hurt(p)) taken.add(p.id); }
     for (const pos of POS) {
-      const c = t.players.filter(p => p.pos === pos).sort((x, y) => (y.ovr - y.fatigue * 0.04) - (x.ovr - x.fatigue * 0.04));
-      t.lineup[pos] = c[0].id;
+      const p = t.players.find(x => x.id === t.lineup[pos]);
+      if (p && !hurt(p)) continue;
+      const r = bestFor(t, pos, taken);
+      if (!r) continue;
+      t.lineup[pos] = r.id; taken.add(r.id);
+      out.push({ pos, from: p ? p.id : null, to: r.id });
+    }
+    return out;
+  }
+  function autoLineup(t) {
+    const taken = new Set();
+    for (const pos of POS) {
+      const c = t.players.filter(p => p.pos === pos && !hurt(p) && !taken.has(p.id)).sort((x, y) => (y.ovr - y.fatigue * 0.04) - (x.ovr - x.fatigue * 0.04));
+      const p = c[0] || bestFor(t, pos, taken) || t.players.find(x => x.pos === pos);
+      t.lineup[pos] = p.id; taken.add(p.id);
     }
   }
   // Championnat aller-retour ; avec un nombre impair de clubs, une équipe est au repos à chaque journée
@@ -548,7 +575,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
   }
 
   // ---------- Moteur de match ----------
@@ -574,16 +601,81 @@
   };
   const ZONE_TXT = { loin: 'tir de loin', aile: "à l'aile", pivot: 'au pivot', percee: 'en percée', ca: 'en contre-attaque', er: 'sur engagement rapide', '7m': 'sur 7 m', vide: 'dans la cage vide' };
 
+  // ---------- Blessures ----------
+  // Risque par possession pour un joueur sur le terrain (environ 3,5 blessures par équipe et par saison en match),
+  // et par joueur et par semaine d'entraînement (environ 1,2). La fatigue, l'engagement et le retour anticipé l'augmentent.
+  const INJ = { match: 0.95e-4, train: 0.0026, gk: 0.4, frag: 9, fragTrain: 5 };
+  const INJ_TYPES = {
+    leger: { w: 0.58, n: [1, 1], labels: ['Contracture à la cuisse', 'Coup au genou', 'Petite entorse de la cheville', 'Doigt retourné', 'Contusion à la hanche', 'Torticolis'] },
+    moyen: { w: 0.29, n: [2, 4], labels: ["Entorse de la cheville", 'Élongation aux ischios', 'Lombalgie', 'Déchirure au mollet', "Douleur à l'épaule", 'Entorse du pouce'] },
+    serieux: { w: 0.11, n: [5, 8], labels: ['Déchirure musculaire à la cuisse', 'Fracture de la main', 'Entorse du genou', 'Luxation de l\'épaule'] },
+    grave: { w: 0.02, n: [10, 16], labels: ['Rupture du ligament croisé', "Rupture du tendon d'Achille"] }
+  };
+  const INJ_LABEL = { leger: 'Légère', moyen: 'Moyenne', serieux: 'Sérieuse', grave: 'Grave' };
+  function hurt(p) { return !!(p && p.inj && p.inj.n > 0); }
+  function gone(s, id) { return s.red.has(id) || s.hurt.has(id); }
+  // Un joueur peut se blesser si l'équipe garde un gardien valide et au moins 8 joueurs de champ valides
+  function canHurt(t, p, extra) {
+    const fit = t.players.filter(x => !hurt(x) && !(extra && extra.has(x.id)));
+    return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > 8;
+  }
+  function injMods(t) { return hasMod(t, 'soins+') ? 0.85 : hasMod(t, 'soins-') ? 1.15 : 1; }
+  function rollInjury(st, t, p, ctx) {
+    let r = rnd(), sev = 'leger';
+    for (const k in INJ_TYPES) { r -= INJ_TYPES[k].w; if (r <= 0) { sev = k; break; } }
+    const T = INJ_TYPES[sev];
+    let n = ri(T.n[0], T.n[1]), type = pick(p.pos === 'GB' && sev === 'leger' ? T.labels.concat(['Doigt luxé']) : T.labels);
+    if (hasMod(t, 'soins+') && n > 1 && rnd() < 0.5) n--;
+    if (hasMod(t, 'soins-') && rnd() < 0.5) n++;
+    const relapse = (p.frag || 0) > 0;
+    if (relapse) { n = Math.ceil(n * 1.5) + 1; type = 'Rechute : ' + type.charAt(0).toLowerCase() + type.slice(1); if (sev === 'leger') sev = 'moyen'; }
+    p.inj = { n, n0: n, type, sev, round: st.round + 1, ctx };
+    // Blessé pendant la journée qui se termine : la semaine qui suit ne compte pas encore
+    if (ctx === 'match') p.inj.fresh = true;
+    p.frag = 0;
+    (st.injLog = st.injLog || []).push({ round: st.round + 1, team: t.id, id: p.id, name: p.name, pos: p.pos, type, sev, n, ctx, relapse });
+    return { id: p.id, name: p.name, pos: p.pos, type, sev, n, ctx, team: t.id, relapse };
+  }
+  // Une semaine passe : chaque blessé a manqué un match (ou une semaine de repos) de plus
+  function heal(st) {
+    const back = [];
+    for (const t of st.teams) for (const p of t.players) {
+      if (p.frag > 0) p.frag--;
+      if (p.inj && p.inj.fresh) { delete p.inj.fresh; continue; }
+      if (p.inj && p.inj.n > 0) { p.inj.n--; if (!p.inj.n) { back.push({ team: t.id, id: p.id, name: p.name, type: p.inj.type }); p.inj = null; } }
+    }
+    return back;
+  }
+  // Blessures de la semaine d'entraînement
+  function trainInjuries(st, t, intensity) {
+    const I = intensity === 'intense' ? 1.8 : intensity === 'legere' ? 0.5 : 1, out = [];
+    for (const p of t.players) {
+      if (hurt(p) || !canHurt(t, p)) continue;
+      const f = 1 + Math.max(0, (p.fatigue || 0) - 40) / 30;
+      if (rnd() < INJ.train * I * f * injMods(t) * (p.frag > 0 ? INJ.fragTrain : 1) * (p.pos === 'GB' ? INJ.gk * 1.5 : 1)) out.push(rollInjury(st, t, p, 'train'));
+    }
+    return out;
+  }
+  // Retour anticipé : disponible tout de suite, mais fragile pendant quelques semaines (rechute plus longue)
+  function canRushBack(p) { return hurt(p) && p.inj.sev !== 'grave' && !/^Rechute/.test(p.inj.type); }
+  function rushBack(t, p) {
+    if (!canRushBack(p)) return false;
+    p.frag = p.inj.n + 2;
+    p.inj = null;
+    ensureSheet(t);
+    return true;
+  }
+
   function makeSide(team) {
     const lineup = {};
     for (const p of POS) lineup[p] = team.players.find(x => x.id === team.lineup[p]);
     const ids = new Set(Object.values(lineup).map(p => p.id));
     return {
-      team, lineup, bench: team.players.filter(p => !ids.has(p.id) && !(team.out || []).includes(p.id)),
+      team, lineup, bench: team.players.filter(p => !ids.has(p.id) && !(team.out || []).includes(p.id) && !hurt(p)),
       tac: JSON.parse(JSON.stringify(team.tactic)),
       curDef: '6-0', forceDef: null, coh: team.cohesion || 50, exp: experience(team), boost: -1,
       fat: Object.fromEntries(team.players.map(p => [p.id, (p.fatigue || 0) + (hasMod(team, 'physique-') ? 8 : 0)])),
-      played: new Set(ids), excl: [], ex2: {}, red: new Set(),
+      played: new Set(ids), excl: [], ex2: {}, red: new Set(), hurt: new Set(),
       starters: Object.fromEntries(POS.map(p => [p, lineup[p].id])), at: Object.fromEntries(POS.map(p => [lineup[p].id, p])),
       mins: {}, ps: {}, gkLock: false, manual: {}, lastSub: -9, styleMin: {},
       // Plan de rotation propre à chaque poste et à chaque match : décalage, temps de jeu visé, marge
@@ -635,7 +727,7 @@
     const out = [];
     for (const pos of POS) {
       const p = s.lineup[pos];
-      if (!p || s.red.has(p.id)) continue;
+      if (!p || gone(s, p.id)) continue;
       if (s.excl.some(e => e.id === p.id && e.until > i)) continue;
       out.push({ pos, p });
     }
@@ -711,7 +803,7 @@
   P.manualSub = function (si, pos, pid) {
     const s = this.S[si], i = Math.min(this.i, this.N - 1);
     const cur = s.lineup[pos], p = s.bench.find(b => b.id === pid);
-    if (!p || s.red.has(p.id) || (pos === 'GB') !== (p.pos === 'GB')) return false;
+    if (!p || gone(s, p.id) || (pos === 'GB') !== (p.pos === 'GB')) return false;
     if (cur && s.excl.some(e => e.id === cur.id && e.until > i)) return false;
     this.swap(s, pos, p);
     s.manual[pos] = this.i;
@@ -725,7 +817,7 @@
   };
   P.setGK = function (si, pid) {
     const s = this.S[si], p = s.team.players.find(x => x.id === pid && x.pos === 'GB');
-    if (!p || s.red.has(p.id)) return false;
+    if (!p || gone(s, p.id)) return false;
     this.swap(s, 'GB', p);
     s.gkLock = true;
     return true;
@@ -748,7 +840,7 @@
       this.push('mt', -1, `Mi-temps : ${this.h.score} – ${this.a.score}`, true);
       this.S.forEach((s, si) => {
         if (s.gkLock) return;
-        const other = s.bench.filter(b => b.pos === 'GB' && !s.red.has(b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id])[0];
+        const other = s.bench.filter(b => b.pos === 'GB' && !gone(s, b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id])[0];
         if (other) { this.swap(s, 'GB', other); this.push('gk', si, `${other.name} remplace le gardien pour la 2e mi-temps`, false); }
       });
     }
@@ -773,6 +865,7 @@
       const sty = s.tac.jeu === 'collectif' ? 1 : s.tac.jeu === 'individuel' ? -1 : 0;
       for (const id of onIds) { s.mins[id] = (s.mins[id] || 0) + dm; if (sty) s.styleMin[id] = (s.styleMin[id] || 0) + dm * sty; }
       const mult = (1 + intensity(s) * 0.16) * (s.tac.att === 'rapide' ? (hasMod(s.team, 'physique+') ? 1.05 : hasMod(s.team, 'physique-') ? 1.25 : 1.15) : 1) * (s.curDef === '4-2' ? 1.12 : 1) * (s.tac.dstyle === 'homme' ? 1.08 : 1) * (hasMod(s.team, 'soins+') ? 0.8 : 1) * (s.tac.cons.includes('agressive') ? 1.05 : 1);
+      this.injure(s, i, onIds);
       for (const p of s.team.players) {
         if (onIds.has(p.id)) {
           const base = p.pos === 'GB' ? FAT.gk : FAT.gain;
@@ -782,6 +875,28 @@
           s.fat[p.id] = Math.max(0, s.fat[p.id] - FAT.rest);
         }
       }
+    }
+  };
+
+  // Blessure en cours de match : le joueur sort aussitôt, remplacé par le meilleur du banc à ce poste
+  P.injure = function (s, i, onIds) {
+    if (this.noInj) return;
+    const si = this.S.indexOf(s);
+    const mult = (1 + intensity(s) * 0.2) * (s.tac.dstyle === 'homme' ? 1.1 : 1) * (s.tac.cons.includes('agressive') ? 1.1 : 1) * injMods(s.team);
+    for (const id of onIds) {
+      const p = s.team.players.find(x => x.id === id);
+      const f = s.fat[id] || 0;
+      const r = INJ.match * mult * (1 + Math.max(0, f - 40) / 25) * (p.frag > 0 ? INJ.frag : 1) * (p.pos === 'GB' ? INJ.gk : 1);
+      if (rnd() >= r || !canHurt(s.team, p, s.hurt)) continue;
+      const pos = s.at[id];
+      const c = s.bench.filter(b => !gone(s, b.id) && (pos === 'GB') === (b.pos === 'GB'));
+      c.sort((x, y) => (y.pos === pos) - (x.pos === pos) || (ovrAt(y, pos) - s.fat[y.id] * 0.04) - (ovrAt(x, pos) - s.fat[x.id] * 0.04));
+      if (pos === 'GB' && !c.length) continue;
+      s.hurt.add(id);
+      if (c.length) { if (s.starters[pos] === id) s.starters[pos] = c[0].id; this.swap(s, pos, c[0]); }
+      if (pos === 'GB') s.gkLock = true;
+      delete s.manual[pos];
+      (this.inj = this.inj || []).push({ si, id, name: p.name, pos, m: this.minute(i), rep: c.length ? c[0].id : null });
     }
   };
 
@@ -803,9 +918,9 @@
       const cur = s.lineup[pos];
       if (!cur || s.excl.some(e => e.id === cur.id && e.until > i)) continue;
       const st = s.team.players.find(p => p.id === s.starters[pos]);
-      const stAvail = st && !s.red.has(st.id) && (st.id === cur.id || s.bench.some(b => b.id === st.id));
+      const stAvail = st && !gone(s, st.id) && (st.id === cur.id || s.bench.some(b => b.id === st.id));
       if (!stAvail) continue;
-      const subs = s.bench.filter(b => b.pos === pos && b.id !== st.id && !s.red.has(b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id]);
+      const subs = s.bench.filter(b => b.pos === pos && b.id !== st.id && !gone(s, b.id)).sort((x, y) => s.fat[x.id] - s.fat[y.id]);
       let want = st;
       if (!(close && min >= 50) && subs.length && (s.mins[st.id] || 0) >= share * elapsed + plan.slack) want = subs[0];
       let urgent = false;
@@ -832,7 +947,7 @@
     if (D.ex2[p.id] >= 3) {
       D.red.add(p.id);
       const pos = Object.keys(D.lineup).find(k => D.lineup[k] && D.lineup[k].id === p.id);
-      const rep = D.bench.find(b => b.pos === pos && !D.red.has(b.id));
+      const rep = D.bench.find(b => b.pos === pos && !gone(D, b.id));
       if (rep && pos) {
         D.lineup[pos] = rep;
         D.bench = D.bench.filter(b => b.id !== rep.id);
@@ -1140,7 +1255,7 @@
     // Gardien en difficulté : le coach tente l'autre
     const gk = s.lineup.GB, gs = s.ps[gk.id];
     if (!c.gk && min >= 12 && min <= 52 && gs && gs.fa >= 8 && gs.sv / gs.fa < (atTO ? 0.28 : 0.2)) {
-      const alt = s.bench.filter(x => x.pos === 'GB' && !s.red.has(x.id))[0];
+      const alt = s.bench.filter(x => x.pos === 'GB' && !gone(s, x.id))[0];
       if (alt) { this.swap(s, 'GB', alt); s.gkLock = true; c.gk = true; say(`change de gardien : ${alt.name} entre`); }
     }
     if (diff <= -(4 - b) && min >= 30 && s.tac.att !== 'rapide') { s.tac.att = 'rapide'; say('accélère : passage en jeu rapide pour revenir'); }
@@ -1159,7 +1274,7 @@
   P.result = function () {
     const sideRes = (s) => ({
       id: s.team.id, score: s.score, half: s.half, st: s.st, goals: s.goals, saves: s.saves,
-      fat: s.fat, played: Array.from(s.played), mins: s.mins, ps: s.ps, styleMin: s.styleMin
+      fat: s.fat, played: Array.from(s.played), mins: s.mins, ps: s.ps, styleMin: s.styleMin, hurt: Array.from(s.hurt)
     });
     return { h: sideRes(this.h), a: sideRes(this.a), ev: this.ev };
   };
@@ -1244,6 +1359,11 @@
       }
     }
     r.mvp = pickMvp(st, r);
+    r.inj = [];
+    for (const side of [r.h, r.a]) {
+      const t = team(st, side.id);
+      for (const id of side.hurt || []) { const p = t.players.find(x => x.id === id); if (p && !hurt(p)) r.inj.push(rollInjury(st, t, p, 'match')); }
+    }
     return styleLog;
   }
   function recover(st) {
@@ -1345,7 +1465,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

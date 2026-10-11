@@ -164,7 +164,7 @@
     const mine = t.id === G.userId;
     return `<div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="pstitle">
       <div class="shead"><div><div class="row" style="gap:8px"><span class="pos${gk ? ' gb' : ''}">${p.pos}</span><span class="muted">${esc(H.POS_LABEL[p.pos])}</span>${p.age < 23 ? '<span title="Moins de 23 ans">🌱</span>' : ''}${p.youth ? '<span class="yt" title="Formé au club">J</span>' : ''}</div>
-        <h2 id="pstitle">${esc(p.name)}</h2>
+        <h2 id="pstitle">${esc(p.name)}</h2>${H.hurt(p) ? `<p class="injline"><span class="inj">✚</span> ${esc(p.inj.type)} · ${absTxt(p.inj.n)}${t.id === G.userId ? ` · retour prévu à la journée ${G.round + p.inj.n + 1}` : ''}</p>` : p.frag > 0 ? `<p class="injline"><span class="inj frag">✚</span> Revenu plus tôt de blessure · fragile encore ${p.frag} semaine${p.frag > 1 ? 's' : ''}</p>` : ''}
         <div class="row" style="gap:10px">${badge(t, true)}<span>${esc(t.name)}</span><span class="muted">${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'}${H.SECONDARY[p.pos].length ? ' · dépanne en ' + H.SECONDARY[p.pos].join(', ') : ''}${H.BACK_POS.includes(p.pos) ? ' · jeu ' + H.BACK_STYLES[H.backStyle(p)].toLowerCase() : ''}</span></div></div>
         <div class="sovr"><span class="label">Niveau</span>${lstars(p)}<span class="label" style="margin-top:6px">Potentiel</span>${pot(p)}<span class="${d >= 0.05 ? 'dlt' : d <= -0.05 ? 'dlt neg' : 'muted'}">${d >= 0.05 ? '▲ en progrès' : d <= -0.05 ? '▼ en baisse' : 'stable'} cette saison</span></div>
         <button class="btn sclose" data-act="psclose" aria-label="Fermer la fiche">✕</button></div>
@@ -200,7 +200,11 @@
     const o = document.getElementById('psheet');
     if (o) { o.remove(); if (U.sheetFrom && document.body.contains(U.sheetFrom)) U.sheetFrom.focus(); }
   }
-  const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>${H.flagOf(p) ? ` <span class="flag" title="Joueur étranger">${H.flagOf(p)}</span>` : ''}`;
+  const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>${H.flagOf(p) ? ` <span class="flag" title="Joueur étranger">${H.flagOf(p)}</span>` : ''}${injTag(p)}`;
+  // Blessures : petite croix, le détail au survol
+  const absTxt = (n) => n > 1 ? `absent encore ${n} matchs` : 'absent pour le prochain match';
+  const injTag = (p) => H.hurt(p) ? ` <span class="inj" title="Blessé : ${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}" aria-label="Blessé">✚</span>`
+    : p.frag > 0 ? ` <span class="inj frag" title="Revenu plus tôt de blessure : risque de rechute pendant encore ${p.frag} semaine${p.frag > 1 ? 's' : ''}" aria-label="Fragile">✚</span>` : '';
 
   // ---------- Thème du club ----------
   // Accueil neutre ; une fois le club choisi, sa couleur (adoucie) devient la base et sa couleur de contraste les touches
@@ -274,7 +278,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const app = document.getElementById('app');
     applyTheme();
     if (!G) { app.innerHTML = renderHome() + deviceModal(); return; }
-    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
+    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
     app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
@@ -595,13 +599,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const onCards = MATCH_ORDER.map((pos) => {
       const p = s.lineup[pos];
       if (!p) return '';
-      const out = exc.has(p.id) || s.red.has(p.id);
+      const out = exc.has(p.id) || s.red.has(p.id) || s.hurt.has(p.id);
       const dis = !paused || out;
       return `<button class="ccard${sel === pos ? ' sel' : ''}${out ? ' out' : ''}" data-act="subpick" data-id="${pos}" ${dis ? 'disabled' : ''} aria-pressed="${sel === pos}">
         <span class="chead"><span class="pos${pos === 'GB' ? ' gb' : ''}">${pos}</span>${p.age < 23 ? `<span class="cyouth" title="${p.youth ? 'Formé au centre de formation, ' : ''}${p.age} ans : progresse plus vite, surtout avec du temps de jeu">🌱</span>` : ''}${pos in s.manual ? `<span class="ctag" title="Le staff reprend ce poste dans ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))} min">Coach · ${Math.max(1, Math.ceil(H.MANUAL_MIN - (i - s.manual[pos]) * 60 / m.N))}'</span>` : ''}${out ? '<span class="tag excl">2 min</span>' : ''}</span>
         <b>${esc(short(p.name))}</b>${info(p)}${noteLine(p, pos, '')}</button>`;
     }).join('');
-    const bench = s.bench.filter((b) => !s.red.has(b.id)).sort((a, b) => MATCH_ORDER.indexOf(a.pos) - MATCH_ORDER.indexOf(b.pos));
+    const bench = s.bench.filter((b) => !s.red.has(b.id) && !s.hurt.has(b.id)).sort((a, b) => MATCH_ORDER.indexOf(a.pos) - MATCH_ORDER.indexOf(b.pos));
     const benchCards = bench.map((p) => {
       let cls = '', ok = false, note = '';
       if (sel) {
@@ -724,9 +728,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     G.results.push(rd);
     for (const p of me().players) delete p.matchStyle;
     G.round++;
+    // Infirmerie : une semaine de soins pour les blessés d'avant, puis les blessés du jour
+    const back = H.heal(G).filter((b) => b.team === G.userId);
     H.recover(G);
     for (const t of G.teams) if (!playing.has(t.id)) for (const p of t.players) { p.fatigue = Math.max(0, p.fatigue - 20); p.lastMins = undefined; }
-    for (const t of G.teams) if (t.id !== G.userId) H.train(t, 'equilibre', 'normale');
+    for (const t of G.teams) if (t.id !== G.userId) { H.train(t, 'equilibre', 'normale'); H.trainInjuries(G, t, 'normale'); }
+    G.lastInj = { round: G.round, inj: r ? (r.inj || []).filter((x) => x.team === G.userId) : [], back, fixed: lineupFix() };
     if (G.round >= G.sched.length) G.ended = true;
     // Ton entraînement attend le clic « Lancer l'entraînement » (sauf après la dernière journée)
     if (G.ended) runTraining(); else G.trainPending = true;
@@ -736,7 +743,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function runTraining() {
     G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
+    G.lastTraining.inj = G.ended ? [] : H.trainInjuries(G, me(), G.training.intensity);
+    G.lastTraining.fixed = G.lastTraining.inj.length ? lineupFix() : [];
     G.trainPending = false;
+  }
+  // Titulaires blessés remplacés dans le 7 de départ : [{ pos, from, to }] pour l'affichage
+  function lineupFix() { const fx = H.fixLineup(me()); H.ensureSheet(me()); return fx; }
+  function injLines(inj, fixed) {
+    const t = me(), nm = (id) => { const q = t.players.find((x) => x.id === id); return q ? esc(q.name) : ''; };
+    return inj.map((x) => { const f = (fixed || []).find((y) => y.from === x.id);
+      return `<div class="injrow"><span class="inj">✚</span><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span><span><b>${esc(x.name)}</b> · ${esc(x.type.toLowerCase())}, ${x.n > 1 ? `absent ${x.n} matchs` : 'absent un match'}${f ? `<br><span class="muted">${nm(f.to)} le remplace dans le 7 de départ.</span>` : ''}</span></div>`; }).join('');
   }
   // Clic « Lancer la semaine » au gymnase : semaine simulée, résultat affiché sur place
   function doTraining() {
@@ -745,6 +761,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     U.post = null; U.view = 'pre'; U.trainAnim = true;
     save();
     render();
+    const ti = G.lastTraining.inj || [];
+    if (ti.length) notify(`<span class="nbadge nbinj">✚</span><span><b>Blessure à l'entraînement</b><br>${ti.map((x) => `${esc(x.name)} : ${esc(x.type.toLowerCase())}, ${x.n > 1 ? `absent ${x.n} matchs` : 'absent un match'}.`).join('<br>')}</span>`, false);
     const el = document.getElementById('trainres');
     if (el) el.scrollIntoView({ block: 'nearest' });
   }
@@ -767,7 +785,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
     U.prevSc = null;
     U.side = nf.h === G.userId ? 0 : 1;
-    U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false;
+    U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false; U.injSeen = 0;
     render();
     schedule();
   }
@@ -787,6 +805,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (dec.length && !U.notifSticky) {
       const opp = m.S[1 - U.side].team;
       notify(`<span class="nbadge" style="background:${opp.color}">${esc(opp.id)}</span><span><b>Coach adverse · ${dec[0].m}'</b><br>${dec.map((e) => esc(e.text.replace(opp.name + ' ', '').replace(/^./, (c) => c.toUpperCase()))).join('<br>')}</span>`, false);
+    }
+    // Blessure d'un de tes joueurs : il sort tout seul, notification courte (rien dans le fil du match)
+    const hz = (m.inj || []).slice(U.injSeen || 0).filter((x) => x.si === U.side);
+    U.injSeen = (m.inj || []).length;
+    if (hz.length && !U.notifSticky) {
+      const nm = (id) => { const q = m.S[U.side].team.players.find((x) => x.id === id); return q ? esc(short(q.name)) : ''; };
+      notify(`<span class="nbadge nbinj">✚</span><span><b>Blessure · ${hz[0].m}'</b><br>${hz.map((x) => `${esc(x.name)} sort${x.rep ? `, ${nm(x.rep)} le remplace` : ''}.`).join('<br>')} Le staff médical fera le point après le match.</span>`, false);
     }
     const atm = evs.find((e) => e.type === 'tm' && e.side !== U.side);
     if (atm) {
@@ -844,6 +869,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <section class="panel"><h3>Temps forts</h3><div class="feed">${p.ev.map((e) => evHtml(e, [h, a])).join('')}</div></section>
         <div style="display:grid;gap:20px;min-width:0">
           ${p.mvp ? mvpCard(p.mvp) : ''}
+          ${(() => { const li = G.lastInj; if (!li || li.round !== p.round || !(li.inj.length || li.back.length)) return '';
+            return `<section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h3 style="margin:0">Infirmerie</h3><button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div>${injLines(li.inj, li.fixed)}${li.back.length ? `<p class="muted" style="margin:8px 0 0">De retour de blessure : ${li.back.map((b) => esc(b.name)).join(', ')}.</p>` : ''}</section>`; })()}
           <section class="panel"><h3>Tes buteurs</h3>${sc.length ? sc.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos">${x.p.pos}</span><span>${esc(x.p.name)}</span><span class="spacer" style="flex:1"></span><b class="num">${x.n}</b></div>`).join('') : '<p class="muted">Aucun but.</p>'}
             ${gk.map((x) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos gb">GB</span><span>${esc(x.p.name)}</span><span style="flex:1"></span><span class="num muted">${x.n} arrêt${x.n > 1 ? 's' : ''}</span></div>`).join('')}</section>
           <section class="panel"><h3>Statistiques</h3><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label">${h.id}</span><span class="label">${a.id}</span></div>${statsHtml(p.h.st, p.a.st)}</section>
@@ -989,11 +1016,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <section class="panel"><h3>Gymnase · programme de la semaine</h3><div style="display:grid;gap:18px">
         <div class="opt"><span class="label">Focus</span><div class="focusgrid">${Object.entries(H.TRAIN).map(([k, f]) => `<button class="focus" data-act="tfocus" data-id="${k}" aria-pressed="${tr.focus === k}"${lock}><b>${f.label}</b><span>${k === 'equilibre' ? 'Tous les attributs du poste, plus endurance et discipline, progression lente' : [['Ailiers', 'AiG'], ['Arrières', 'ArG'], ['DC', 'DC'], ['Pivots', 'Piv']].map(([lab, pos]) => { const at = f.attrs.filter((x) => H.POS_ATTRS[pos].includes(x)); return at.length ? `${lab} : ${at.map((x) => ATTR_LABEL[x].toLowerCase()).join(', ')}` : ''; }).filter(Boolean).join(' · ')}</span></button>`).join('')}</div></div>
         <div class="opt"><span class="label">Intensité</span><div class="seg">${Object.entries(H.INTENSITY).map(([k, x]) => `<button data-act="tint" data-id="${k}" aria-pressed="${tr.intensity === k}"${lock}>${x.label}</button>`).join('')}</div>
-          <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match.' : 'Progression normale, récupération normale.'}</p></div>
+          <p>${tr.intensity === 'legere' ? 'Progression réduite de moitié, 10 points de fatigue récupérés en plus avant le match, deux fois moins de blessures à l\'entraînement.' : tr.intensity === 'intense' ? 'Progression ×1,6, mais 12 points de fatigue en plus pour le prochain match et presque deux fois plus de blessures à l\'entraînement.' : 'Progression normale, récupération normale.'}</p></div>
         ${launch}
         <p class="legend" style="margin:0">Le programme s'applique après chaque journée, quand tu lances l'entraînement. Les moins de 23 ans progressent plus vite (${young} dans ton effectif), les plus de 31 ans rarement (${old}). Chaque joueur ne travaille que les attributs de son poste. Le temps de jeu compte aussi : de ×0,7 pour un joueur qui n'a pas joué à ×1,3 pour 45 minutes et plus (×0,4 à ×1,6 avant 23 ans). Les gardiens suivent toujours leur programme spécifique.${H.hasMod(t, 'staff+') ? ' Ton staff bac+12 multiplie les progrès par 1,8.' : H.hasMod(t, 'staff-') ? ' Ton staff joue à Fortnite : progrès ×0,4.' : ''}</p>
       </div></section>
-      <div style="display:grid;gap:20px;min-width:0">${G.ended ? '' : fatigueRecap(t)}${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel${reveal ? ' reveal' : ''}" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
+      <div style="display:grid;gap:20px;min-width:0">${G.ended ? '' : fatigueRecap(t)}${adviceHtml(t, 'training') ? `<section class="panel">${adviceHtml(t, 'training')}</section>` : ''}<section class="panel${reveal ? ' reveal' : ''}" id="trainres"><h3>${fresh ? 'Résultat de la semaine' : 'Progrès de la dernière semaine'}</h3>${prog}${lt && (lt.inj || []).length ? `<div class="injbox"><span class="label">Blessé${lt.inj.length > 1 ? 's' : ''} à l'entraînement</span>${injLines(lt.inj, lt.fixed)}</div>` : ''}${fresh ? '<div class="row" style="margin-top:14px"><button class="btn primary" data-act="gonext">Préparer le match →</button></div>' : ''}</section></div></div>`;
   }
 
   // ---------- Centre de formation ----------
@@ -1316,13 +1343,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
       { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
       { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
+      { key: 'infirmerie', tab: 'infirmerie', label: 'Infirmerie', sub: (() => { const n = t.players.filter(H.hurt).length; return n ? `${n} blessé${n > 1 ? 's' : ''} en soins` : 'Tout le monde est valide'; })(), c: 'var(--iso-med)', at: [3.85, 10.25, 26], cta: 'Voir les soins' },
       { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', sub: H.fansOf(t).name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters' },
       { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement' }
     ];
   }
   const GHOSTS = [
     { key: 'siege', label: 'Siège du club', sub: 'Mercato et finances · bientôt', at: [1.8, 1.8, 64] },
-    { key: 'infirmerie', label: 'Infirmerie', sub: 'Blessures et soins · bientôt', at: [3.85, 10.25, 26] },
     { key: 'boutique', label: 'Boutique du club', sub: 'Supporters et recettes · bientôt', at: [8, 11.4, 18] }
   ];
   // Détails décoratifs de la ville (clins d'œil, purement visuels)
@@ -1487,12 +1514,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     shade(si);
     add(1.8, 1.8, gwrap(gh.siege, isoBox(si) + parapet(si) + winL(si, 7, 3, WIN, 0.4) + winR(si, 7, 3, WIN, 0.35) + door(1.6, 2.0, 2.6, 8) + unit(1.2, 1.2, 62) + unit(2.0, 1.9, 62, 0.8)
       + isoBox({ x: 1.5, y: 1.5, w: 0.6, d: 0.6, h: 6, z: 62, c: G1 })));
-    const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: G1 };
+    const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: 'var(--iso-med)' };
     shade(inf);
-    add(3.85, 10.25, gwrap(gh.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
+    add(3.85, 10.25, bwrap(pl.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
       // Croix d'hôpital dressée sur le toit
       // Croix d'hôpital peinte à plat sur le toit
-      + (() => { const cx = 3.85, cy = 10.25, L = 0.42, W = 0.14; return poly([[-W, -L], [W, -L], [W, -W], [L, -W], [L, W], [W, W], [W, L], [-W, L], [-W, W], [-L, W], [-L, -W], [-W, -W]].map(([dx, dy]) => P(cx + dx, cy + dy, 24)), 'var(--iso-mark)', EDGE); })()));
+      + (() => { const cx = 3.85, cy = 10.25, L = 0.42, W = 0.14; return poly([[-W, -L], [W, -L], [W, -W], [L, -W], [L, W], [W, W], [W, L], [-W, L], [-W, W], [-L, W], [-L, -W], [-W, -W]].map(([dx, dy]) => P(cx + dx, cy + dy, 24)), 'var(--iso-cross)', EDGE); })()));
     const bo = { x: 7.2, y: 11.0, w: 1.6, d: 0.8, h: 15, c: G1 };
     shade(bo);
     let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);
@@ -1591,6 +1618,32 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       </tbody></table></div><p class="legend">Au survol des pastilles, l'effet sur les matchs.</p></section></div>`;
   }
 
+  // ---------- Infirmerie ----------
+  function renderInfirmerie() {
+    const t = me(), hurtP = t.players.filter(H.hurt).sort((a, b) => b.inj.n - a.inj.n);
+    const frag = t.players.filter((p) => !H.hurt(p) && p.frag > 0);
+    const log = (G.injLog || []).filter((x) => x.team === t.id).slice().reverse();
+    const card = (p) => {
+      const i = p.inj, ok = H.canRushBack(p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
+      return `<div class="injcard"><div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="spacer" style="flex:1"></span><span class="tag sev ${i.sev}">${H.INJ_LABEL[i.sev]}</span></div>
+        <p style="margin:6px 0 0">${esc(i.type)} <span class="muted">· ${i.ctx === 'train' ? "à l'entraînement" : 'en match'}, journée ${i.round}</span></p>
+        <div class="row" style="gap:10px;margin-top:6px"><span class="injprog" title="${done} match${done > 1 ? 's' : ''} manqué${done > 1 ? 's' : ''} sur ${i.n0}"><span style="width:${(done / i.n0) * 100}%"></span></span><span>${absTxt(i.n)} · retour prévu à la journée ${G.round + i.n + 1}</span></div>
+        ${ok ? (ask ? `<div class="opt injask"><p style="margin:0">Il rejoue dès le prochain match, mais reste fragile pendant ${i.n + 2} semaines : environ une chance sur quatre de rechute, plus longue que la blessure de départ.</p>
+            <div class="row" style="margin-top:8px"><button class="btn primary" data-act="rushyes" data-id="${p.id}">Oui, il revient</button><button class="btn" data-act="rush" data-id="${p.id}">Annuler</button></div></div>`
+          : `<div class="row" style="margin-top:8px"><button class="btn" data-act="rush" data-id="${p.id}">Le faire revenir plus tôt</button></div>`)
+          : `<p class="legend" style="margin:8px 0 0">${i.sev === 'grave' ? 'Blessure grave : le staff médical refuse tout retour anticipé.' : 'Rechute : le staff médical le garde jusqu\'au bout.'}</p>`}</div>`;
+    };
+    return `<div class="grid2">
+      <section class="panel"><h3>En soins</h3><div style="display:grid;gap:12px">
+        ${hurtP.length ? hurtP.map(card).join('') : '<p class="muted" style="margin:0">Personne à l\'infirmerie. Le kiné en profite pour ranger ses strappings.</p>'}
+        ${frag.length ? `<div class="opt"><span class="label">Revenus plus tôt</span>${frag.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="muted">fragile encore ${p.frag} semaine${p.frag > 1 ? 's' : ''}</span></div>`).join('')}</div>` : ''}
+      </div></section>
+      <div style="display:grid;gap:20px;min-width:0">
+        <section class="panel"><h3>Blessures de la saison</h3>${log.length ? `<div class="scroll"><table><thead><tr><th class="r">J.</th><th>Joueur</th><th>Blessure</th><th class="r">Absence</th></tr></thead><tbody>${log.map((x) => `<tr><td class="r num">${x.round}</td><td class="nw"><span class="pos${x.pos === 'GB' ? ' gb' : ''}">${x.pos}</span> ${esc(short(x.name))}</td><td>${esc(x.type)}<span class="muted"> · ${x.ctx === 'train' ? 'entraînement' : 'match'}</span></td><td class="r num">${x.n} match${x.n > 1 ? 's' : ''}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucune blessure pour l\'instant.</p>'}</section>
+        <section class="panel"><h3>Ce qui joue sur les blessures</h3><p style="margin:0">Un joueur fatigué se blesse bien plus souvent, en match comme à l'entraînement : faire tourner l'effectif protège. En match, l'intensité, l'homme à homme et la défense agressive augmentent un peu le risque ; à l'entraînement, l'intensité Intense le double presque. Un blessé ne peut pas aller sur la feuille de match. Blessé en cours de match, il sort aussitôt et le meilleur du banc à son poste le remplace.${H.hasMod(t, 'soins+') ? ' Ton kiné aux mains de fée limite les blessures et raccourcit parfois les absences.' : H.hasMod(t, 'soins-') ? ' Ton kiné est à Ibiza : un peu plus de blessures, et des absences parfois plus longues.' : ''}</p></section>
+      </div></div>`;
+  }
+
   // ---------- Tactique ----------
   const COURT = `<svg viewBox="0 0 200 150" preserveAspectRatio="none" aria-hidden="true">
     <path d="M25 0 A60 60 0 0 0 85 60 L115 60 A60 60 0 0 0 175 0 Z" fill="var(--zone)" fill-opacity="0.92"/>
@@ -1602,7 +1655,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   </svg>`;
   function slotHtml(t, pos) {
     const cur = t.players.find((p) => p.id === t.lineup[pos]);
-    const opts = t.players.filter((p) => pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB')
+    const opts = t.players.filter((p) => (pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB') && !H.hurt(p))
       .sort((x, y) => (y.pos === pos) - (x.pos === pos) || ovrAt(y, pos) - ovrAt(x, pos));
     return `<div class="slot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"><span class="label">${H.POS_LABEL[pos]}</span>
       <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${sfmt(H.stars(ovrAt(p, pos), sref()))}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
@@ -1614,7 +1667,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // Glisser-déposer de la composition : banc ⇄ tribune, et vers un poste du terrain
   function setLineup(t, pos, pid) {
     const p = t.players.find((x) => x.id === pid);
-    if (!p || (pos === 'GB') !== (p.pos === 'GB')) return false;
+    if (!p || H.hurt(p) || (pos === 'GB') !== (p.pos === 'GB')) return false;
     const other = Object.keys(t.lineup).find((k) => k !== pos && t.lineup[k] === pid);
     if (other) t.lineup[other] = t.lineup[pos];
     t.out = (t.out || []).filter((x) => x !== pid);
@@ -1626,7 +1679,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     t.out = t.out || [];
     const P = (id) => t.players.find((x) => x.id === id);
     const p = P(pid);
-    if (!p) return;
+    if (!p || H.hurt(p)) return;
     const starters = new Set(Object.values(t.lineup));
     const inOut = t.out.includes(pid);
     if (zone === 'slot') { if (!setLineup(t, pos, pid)) return; }
@@ -1636,7 +1689,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       if (!back) return;
       t.out = t.out.map((x) => x === back ? pid : x);
     } else if (zone === 'bench' && inOut) {
-      const bench = t.players.filter((x) => !starters.has(x.id) && !t.out.includes(x.id));
+      const bench = t.players.filter((x) => !starters.has(x.id) && !t.out.includes(x.id) && !H.hurt(x));
       let go = targetId && bench.some((x) => x.id === targetId) ? targetId : null;
       if (!go) { const g = bench.slice().sort((a, b) => (b.pos === p.pos) - (a.pos === p.pos) || a.ovr - b.ovr)[0]; go = g && g.id; }
       if (!go) return;
@@ -1672,18 +1725,20 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre en Équilibré</button></div>`;
   }
   function renderTactics() {
-    if (me().players.length > 14) H.ensureSheet(me());
+    H.ensureSheet(me());
     const t = me(), tac = t.tactic, r = tac.rules, fi = fitInfo(t);
+    const hurtP = t.players.filter(H.hurt), fitN = t.players.length - hurtP.length;
     const sel = (rule, field, opts, cur, fmt) => `<select class="rsel" data-rule="${rule}" data-field="${field}" aria-label="${rule} ${field}">${opts.map((o) => `<option value="${o}" ${String(o) === String(cur) ? 'selected' : ''}>${fmt ? fmt(o) : o}</option>`).join('')}</select>`;
     const starters = new Set(Object.values(t.lineup));
-    const bench = t.players.filter((p) => !starters.has(p.id)).sort((x, y) => H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos));
+    const bench = t.players.filter((p) => !starters.has(p.id) && !H.hurt(p)).sort((x, y) => H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos));
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">Composition</h3><button class="btn" data-act="auto">Composition auto</button></div>
         <div class="court">${COURT}${H.POS.map((p) => slotHtml(t, p)).join('')}</div>
         <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
-        <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${t.players.length > 14 ? ` Feuille de match : 14 joueurs sur ${t.players.length}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
-        <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, t.players.length > 14, false)).join('')}</div></div>
-        ${t.players.length > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+        <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${fitN > 14 ? ` Feuille de match : 14 joueurs sur ${fitN}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
+        <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, fitN > 14, false)).join('')}</div></div>
+        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+        ${hurtP.length ? `<div class="dropzone infz"><span class="label">À l'infirmerie · ${hurtP.length}</span><div class="row" style="gap:6px">${hurtP.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}</span>`).join('')}<button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div></div>` : ''}
       </section>
       <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
         ${adviceHtml(t, 'tactique')}
@@ -1803,6 +1858,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
       case 'ycmp': U.yCmp = !U.yCmp; render(); return;
+      case 'rush': U.rushAsk = U.rushAsk === id ? null : id; render(); return;
+      case 'rushyes': { const p = me().players.find((x) => x.id === id); if (p && H.rushBack(me(), p)) { U.rushAsk = null; save(); render(); } return; }
       case 'ylater': U.youthModal = false; U.yBatch = false; render(); return;
       case 'yflip': U.yStage = null; U.yAnim = true; render(); return;
       case 'ybatch': U.yBatch = !U.yBatch; render(); { const m = document.querySelector('.ymodal, .ycard, .ybatch'); if (m) m.scrollTop = 0; } return;
@@ -1830,11 +1887,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       }
       case 'tribune': {
         const tm = me();
+        if (H.hurt(tm.players.find((p) => p.id === id))) return;
         tm.out = tm.out || [];
         if (tm.out.includes(id)) {
           tm.out = tm.out.filter((x) => x !== id);
           const starters = new Set(Object.values(tm.lineup));
-          const c = tm.players.filter((p) => !starters.has(p.id) && !tm.out.includes(p.id) && p.id !== id).sort((a, b) => a.ovr - b.ovr)[0];
+          const c = tm.players.filter((p) => !starters.has(p.id) && !tm.out.includes(p.id) && p.id !== id && !H.hurt(p)).sort((a, b) => a.ovr - b.ovr)[0];
           if (c) tm.out.push(c.id);
         } else tm.out.push(id);
         H.ensureSheet(tm); save(); render(); return;
