@@ -663,7 +663,15 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 /* Détails de la ville et bouton bonus/malus */
 .city .blink { animation: blink 1.6s steps(2, start) infinite; }
 @keyframes blink { to { opacity: 0.25; } }
-@media (prefers-reduced-motion: reduce) { .city .blink { animation: none; } }
+/* Sirène de l'infirmerie : pulsation lente en vert, plus vive en rouge */
+.city .siren .halo { opacity: 0.3; }
+.city .siren { animation: siren 1.8s ease-in-out infinite; }
+.city .siren.alert { animation-duration: 0.9s; }
+.city .siren .halo { animation: halo 1.8s ease-in-out infinite; }
+.city .siren.alert .halo { animation-duration: 0.9s; }
+@keyframes siren { 50% { opacity: 0.45; } }
+@keyframes halo { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .city .blink, .city .siren, .city .siren .halo { animation: none; } }
 .modsbtn { display: inline-flex; gap: 3px; vertical-align: 3px; margin-left: 6px; padding: 2px 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); cursor: pointer; }
 .modsbtn span { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 800 0.75rem/1 var(--f-body); color: #fff; }
 .modsbtn .mp { background: var(--good); } .modsbtn .mm { background: var(--bad); }

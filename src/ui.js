@@ -329,7 +329,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
     const pos = G.results.length ? `${ord(rank())} de la ${LEAGUE}` : 'Avant la 1re journée';
-    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
+    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['infirmerie', 'Infirmerie'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
       <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
@@ -1519,7 +1519,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     add(3.85, 10.25, bwrap(pl.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
       // Croix d'hôpital dressée sur le toit
       // Croix d'hôpital peinte à plat sur le toit
-      + (() => { const cx = 3.85, cy = 10.25, L = 0.42, W = 0.14; return poly([[-W, -L], [W, -L], [W, -W], [L, -W], [L, W], [W, W], [W, L], [-W, L], [-W, W], [-L, W], [-L, -W], [-W, -W]].map(([dx, dy]) => P(cx + dx, cy + dy, 24)), 'var(--iso-cross)', EDGE); })()));
+      + (() => { const cx = 3.85, cy = 10.25, L = 0.42, W = 0.14; return poly([[-W, -L], [W, -L], [W, -W], [L, -W], [L, W], [W, W], [W, L], [-W, L], [-W, W], [-L, W], [-L, -W], [-W, -W]].map(([dx, dy]) => P(cx + dx, cy + dy, 24)), 'var(--iso-cross)', EDGE); })()
+      // Sirène sur le toit : verte si tout le monde est valide, rouge dès qu'un joueur est en soins
+      + (() => { const n = t.players.filter(H.hurt).length, col = n ? 'var(--bad)' : 'var(--good)', [sx, sy] = P(3.5, 9.8, 26.2);
+        return isoBox({ x: 3.39, y: 9.69, w: 0.22, d: 0.22, h: 2.2, z: 24, c: 'var(--iso-stone)' })
+          + `<g class="siren${n ? ' alert' : ''}"><circle class="halo" cx="${sx.toFixed(1)}" cy="${(sy - 2.6).toFixed(1)}" r="9" fill="${col}"/><path d="M${(sx - 3.6).toFixed(1)} ${sy.toFixed(1)} A3.6 4.6 0 0 1 ${(sx + 3.6).toFixed(1)} ${sy.toFixed(1)} Z" fill="${col}" stroke="var(--iso-edge)" stroke-width="0.6"/><circle cx="${(sx - 1.1).toFixed(1)}" cy="${(sy - 2.8).toFixed(1)}" r="0.9" fill="#fff" opacity="0.7"/></g>`; })()));
     const bo = { x: 7.2, y: 11.0, w: 1.6, d: 0.8, h: 15, c: G1 };
     shade(bo);
     let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);
