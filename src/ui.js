@@ -277,7 +277,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
     if (U.youthModal && G.youth) { if (U.yStage !== 'alert') U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
@@ -1020,6 +1020,23 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <button class="btn" data-act="ybatch">← Retour à ton jeune</button></div>
       <div class="scroll" style="max-height:min(60vh, 520px);overflow-y:auto;margin-top:12px"><table class="ly"><thead><tr><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   }
+  // Comparaison : le jeune face aux joueurs de l'effectif qui peuvent tenir son poste
+  const ATTR_SHORT = Object.fromEntries(FIELD_COLS.concat(GK_COLS).flatMap(([, cols]) => cols));
+  function youthCompare(y, t, rel) {
+    const ref = sref(), at = (p) => H.ovrAt(p, y.pos);
+    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => at(b) - at(a));
+    const sec = t.players.filter((p) => p.pos !== y.pos && H.SECONDARY[p.pos].includes(y.pos)).sort((a, b) => at(b) - at(a));
+    const cols = H.POS_ATTRS[y.pos], keys = Object.keys(H.WEIGHTS[y.pos]);
+    const row = (p, cls, tag) => `<tr class="${cls}"><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}"${p.pos !== y.pos ? ` title="${esc(H.POS_LABEL[p.pos])}, peut dépanner à ce poste"` : ''}>${p.pos}</span> ${cls === 'me' ? `<b>${esc(short(p.name))}</b>` : esc(short(p.name))}${tag}</td><td class="r">${p.age}</td>
+      <td class="nw">${vstars(at(p), { sm: true, title: p.pos === y.pos ? undefined : `Au poste ${H.POS_LABEL[y.pos].toLowerCase()} : ${H.starLabel(H.stars(at(p), ref)).toLowerCase()}` })}</td><td class="nw">${pot(p, { sm: true })}</td>
+      ${cols.map((k, i) => `<td class="ac ${heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}"><span class="v">${p.a[k]}</span></td>`).join('')}</tr>`;
+    const tagOf = (p) => (p.id === rel ? ' <span class="tag refused">Part</span>' : '') ;
+    const rows = row(y, 'me', ' <span class="yt" title="Le jeune du centre">J</span>') + same.concat(sec).map((p) => row(p, p.id === rel ? 'refused' : '', tagOf(p))).join('');
+    const none = !same.length && !sec.length ? `<tr><td colspan="${4 + cols.length}" class="muted">Personne à ce poste dans ton effectif.</td></tr>` : '';
+    return `<div class="ycmp" style="margin-top:14px"><span class="label">Face à ton effectif · ${H.POS_LABEL[y.pos].toLowerCase()}</span>
+      <div class="scroll"><table class="sq ly"><thead><tr><th>Joueur</th><th class="r">Âge</th><th title="Niveau à ce poste, par rapport à ton club">Niveau</th><th>Potentiel</th>${cols.map((k, i) => `<th class="ac${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])}">${ATTR_SHORT[k]}</th>`).join('')}</tr></thead><tbody>${rows}${none}</tbody></table></div>
+      <p class="legend" style="margin:6px 0 0">Attributs du poste ; encadrés : ceux qui comptent le plus.</p></div>`;
+  }
   function youthCard(modal) {
     if (U.yBatch) return youthBatch();
     const y = G.youth.p, t = me();
@@ -1037,11 +1054,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="ynotes">${(() => { const r = H.potRange(y, sref()); return `<div><span class="label">Niveau</span>${vstars(y.ovr)}</div><div><span class="label">Potentiel estimé</span>${potbar(r)}<span class="muted" style="font-size:0.8rem">${potTxt(r).replace(', estimation du staff', '')}</span></div>`; })()}</div></div>
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
+      ${U.yCmp ? youthCompare(y, t, rel) : ''}
       ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/16) : choisis qui part pour lui faire de la place</span>
         <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
         : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
-        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
+        <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ycmp" aria-pressed="${!!U.yCmp}" title="Ses attributs face à ceux de tes joueurs au même poste">${U.yCmp ? 'Masquer la comparaison' : 'Comparer avec l\'effectif'}</button><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
   function renderFormation() {
@@ -1785,6 +1803,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'cons': toggleCons(t.tactic, id); save(); render(); return;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
+      case 'ycmp': U.yCmp = !U.yCmp; render(); return;
       case 'ylater': U.youthModal = false; U.yBatch = false; render(); return;
       case 'yflip': U.yStage = null; U.yAnim = true; render(); return;
       case 'ybatch': U.yBatch = !U.yBatch; render(); { const m = document.querySelector('.ymodal, .ycard, .ybatch'); if (m) m.scrollTop = 0; } return;
