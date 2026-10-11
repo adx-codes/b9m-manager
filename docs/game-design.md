@@ -151,7 +151,7 @@ Génération : excentricité centrée sur 9 avec une forte dispersion, esprit co
 
 **Jeunes du centre :** niveau calé sur le club, pour pouvoir entrer dans la rotation : attributs du poste autour de la référence étoiles du club moins 2,4 points, plus le décalage du centre de formation (−1 à +1 ; les autres attributs 1,8 plus bas, écart type 2), soit le plus souvent 1½ à 2½ étoiles, parfois 3 ou plus ; potentiel = note + 1,5 à 5,5 points (±0,5 selon le centre), une vraie pépite (+3) dans 6 % à 20 % des cas selon le centre.
 
-**Légendes (regens) :** 20 jeunes aux noms qui rappellent des légendes, au même poste (Thomas Omeyrac, Nikolaï Karabatov, Mikael Hanstrup, Uli Gensmeier, Luca Abalone, Bertrand Gillot…). Trois sont dispersées chez des clubs adverses au début de partie, puis environ un jeune sur cinq du centre de formation en est une. Attributs clés relevés, potentiel de 16,5 à 19,5, aucun signe distinctif. Chaque nom n'apparaît qu'une fois par partie.
+**Légendes (regens) :** 20 jeunes aux noms qui rappellent des légendes, au même poste (Thomas Omeyrac, Nikolaï Karabatov, Mikael Hanstrup, Uli Gensmeier, Luca Abalone, Bertrand Gillot…). Aucune au début de partie : elles n'apparaissent que parmi les jeunes sortis des centres pendant la saison, environ un jeune sur cinq dans ton centre, 4 % dans les centres des clubs adverses (environ 3 par saison). Attributs clés relevés, potentiel de 16,5 à 19,5, aucun signe distinctif. Chaque nom n'apparaît qu'une fois par partie.
 
 ## Tactique
 
@@ -378,7 +378,7 @@ Toutes les 5 journées (après J5, J10, J15, J20…), une fenêtre propose un je
 
 Le centre garde l'historique des jeunes proposés et de la décision prise. Les jeunes recrutés portent l'étiquette J dans l'effectif.
 
-**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, réglé par son propre centre de formation, avec le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les légendes ne sortent pas des centres IA (les 3 placées en début de partie suffisent).
+**Clubs IA :** chaque club adverse a aussi un jeune de son centre aux mêmes journées, réglé par son propre centre de formation, avec le même plafond de 16 joueurs. Son staff juge sur le potentiel (moins une marge, avec un peu d'aléa) : sous 16 joueurs, il recrute si le jeune vaut nettement mieux que le plus faible du poste (1,8 point) ; à 16, il ne libère ce joueur que si le jeune le dépasse de 2,5 points sur sa valeur projetée. La feuille de match des IA reste à 14, les autres en tribune. Mesuré : environ 50 % des jeunes recrutés, avec un départ dans un cas sur quatre ; les centres IA sortent aussi des légendes, plus rarement (4 % des jeunes).
 
 **Récap de la SparLigue :** sous le centre, un encart liste tous les jeunes recrutés dans le championnat (IA et joueur), du plus récent au plus ancien : journée, club, joueur (fiche cliquable), âge, niveau et potentiel en étoiles à jour, joueur libéré le cas échéant. En tête, le nombre de recrues et le club le plus friand ; le nombre de jeunes refusés par les adversaires est indiqué dans la légende.
 

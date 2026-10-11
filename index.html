@@ -1559,9 +1559,10 @@ html.locked #gate { display: grid; }
     p.legend = true;
     if (st) (st.legends = st.legends || []).push(L.name);
   }
-  function makeYouth(t, st) {
+  // Jeune du centre ; une légende avec la probabilité legendP (0,18 pour le joueur, 0,04 pour les clubs IA)
+  function makeYouth(t, st, legendP) {
     const free = st ? LEGENDS.filter(L => !(st.legends || []).includes(L.name)) : [];
-    const L = free.length && rnd() < 0.18 ? pick(free) : null;
+    const L = free.length && rnd() < (legendP ?? 0.18) ? pick(free) : null;
     const pos = L ? L.pos : pick(POS);
     const p = makePlayer(pos, 10, t.id);
     // Loterie, mais réaliste : niveau calé sur celui du club (un joueur de rotation, environ 2 étoiles), attributs du poste
@@ -1582,9 +1583,9 @@ html.locked #gate { display: grid; }
   }
   // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…), même plafond de 16.
   // Le staff IA recrute un jeune prometteur, et à 16 ne libère le plus faible du poste que si le jeune vaut nettement mieux.
-  // Les légendes restent réservées aux 3 placées en début de partie et au centre du joueur.
+  // Les centres IA sortent aussi des légendes, plus rarement (4 % des jeunes, environ 3 par saison).
   function aiYouth(st, t) {
-    const y = makeYouth(t, null);
+    const y = makeYouth(t, st, 0.04);
     const same = t.players.filter(p => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr || b.age - a.age);
     const worst = same[0];
     const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
@@ -1692,15 +1693,8 @@ html.locked #gate { display: grid; }
     pid = 0;
     const teams = CLUBS.map(makeTeam);
     const pool = Object.keys(MODS).filter(k => k !== 'calendrier');
-    // Trois jeunes « légendes » éparpillées chez les clubs adverses dès le début
+    // Légendes : jamais en début de partie, seulement parmi les jeunes sortis des centres pendant la saison
     const legends = [];
-    { const ais = teams.filter(t => t.id !== userId).sort(() => rnd() - 0.5), picks = LEGENDS.slice().sort(() => rnd() - 0.5).slice(0, 3);
-      picks.forEach((L, k) => { const t = ais[k], cands = t.players.filter(p => p.pos === L.pos).sort((a, b) => a.ovr - b.ovr), p = cands[0];
-        if (!p) return;
-        const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[t.rep];
-        const np = makePlayer(L.pos, base - 3.2, t.id); np.age = ri(18, 20); np.pot = 0;
-        legendize(np, L, { legends });
-        t.players[t.players.indexOf(p)] = np; }); }
     for (const t of teams) {
       if (t.id === userId) t.mods = (userMods || []).slice();
       else { const b = pick(pool); const m = pick(pool.filter(k => k !== b)); t.mods = [b + '+', m + '-']; }
