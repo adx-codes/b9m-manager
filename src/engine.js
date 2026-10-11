@@ -1427,16 +1427,26 @@
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
   // Réserve : les joueurs en tribune (ni sur la feuille de match, ni blessés) jouent avec la réserve le même jour,
-  // sans match simulé : 20 à 60 minutes tirées au hasard, qui comptent pour 60 % dans l'expérience de match
-  const RESERVE = { min: 20, max: 60, xp: 0.6 };
+  // sans match simulé. 60 minutes à 7 : les gardiens se partagent la cage, les joueurs de champ les 6 autres places
+  // (plus ils sont nombreux, moins chacun joue). Moins de 7 joueurs : pas de match, une séance d'entraînement
+  // au hasard à la place. Une minute en réserve vaut 20 % d'une minute en Starligue pour la progression.
+  const RESERVE = { size: 7, xp: 0.2 };
   function reserveRound(st, ids) {
     for (const t of st.teams) {
       if (ids && !ids.has(t.id)) continue;
-      const out = new Set(t.out || []);
-      for (const p of t.players) {
-        p.lastRes = out.has(p.id) && !hurt(p) ? ri(RESERVE.min, RESERVE.max) : 0;
-        if (p.lastRes) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
+      const out = new Set(t.out || []), res = t.players.filter(p => out.has(p.id) && !hurt(p));
+      for (const p of t.players) { p.lastRes = 0; delete p.resFocus; }
+      if (res.length < RESERVE.size) {
+        const keys = Object.keys(TRAIN).filter(k => k !== 'equilibre');
+        for (const p of res) p.resFocus = pick(keys);
+        continue;
       }
+      const gk = res.filter(p => p.pos === 'GB'), field = res.filter(p => p.pos !== 'GB');
+      // Parts tirées au hasard puis ramenées au total (60 minutes par place), 60 minutes au plus chacun
+      const share = (grp, slots) => { const w = grp.map(() => 0.7 + rnd() * 0.6), sw = w.reduce((x, y) => x + y, 0);
+        grp.forEach((p, k) => { p.lastRes = Math.max(1, Math.min(60, Math.round(slots * 60 * w[k] / sw))); }); };
+      if (gk.length) { share(gk, 1); share(field, 6); } else share(field, 7);
+      for (const p of res) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
     }
   }
   function matchXP(p) {
@@ -1452,8 +1462,10 @@
     for (const p of t.players) {
       const ageF = p.age < 23 ? 1.4 : p.age <= 28 ? 1 : p.age <= 31 ? 0.5 : 0.2;
       const posA = POS_ATTRS[p.pos];
-      const keys = p.pos === 'GB' ? posA : focus === 'equilibre' ? posA : F.attrs.filter(k => posA.includes(k));
-      const rate = (p.pos === 'GB' ? 0.05 : focus === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
+      // Réserve sans match (moins de 7 joueurs) : la semaine se fait sur un focus tiré au hasard
+      const pf = p.resFocus && TRAIN[p.resFocus] ? p.resFocus : focus, PF = TRAIN[pf];
+      const keys = p.pos === 'GB' ? posA : pf === 'equilibre' ? posA : PF.attrs.filter(k => posA.includes(k));
+      const rate = (p.pos === 'GB' ? 0.05 : pf === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
       for (const k of keys) {
         if (p.a[k] < 20 && rnd() < rate * ageF * I.mult * sm * matchXP(p)) {
           p.a[k]++;

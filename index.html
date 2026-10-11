@@ -2687,16 +2687,26 @@ html.locked #gate { display: grid; }
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
   // Réserve : les joueurs en tribune (ni sur la feuille de match, ni blessés) jouent avec la réserve le même jour,
-  // sans match simulé : 20 à 60 minutes tirées au hasard, qui comptent pour 60 % dans l'expérience de match
-  const RESERVE = { min: 20, max: 60, xp: 0.6 };
+  // sans match simulé. 60 minutes à 7 : les gardiens se partagent la cage, les joueurs de champ les 6 autres places
+  // (plus ils sont nombreux, moins chacun joue). Moins de 7 joueurs : pas de match, une séance d'entraînement
+  // au hasard à la place. Une minute en réserve vaut 20 % d'une minute en Starligue pour la progression.
+  const RESERVE = { size: 7, xp: 0.2 };
   function reserveRound(st, ids) {
     for (const t of st.teams) {
       if (ids && !ids.has(t.id)) continue;
-      const out = new Set(t.out || []);
-      for (const p of t.players) {
-        p.lastRes = out.has(p.id) && !hurt(p) ? ri(RESERVE.min, RESERVE.max) : 0;
-        if (p.lastRes) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
+      const out = new Set(t.out || []), res = t.players.filter(p => out.has(p.id) && !hurt(p));
+      for (const p of t.players) { p.lastRes = 0; delete p.resFocus; }
+      if (res.length < RESERVE.size) {
+        const keys = Object.keys(TRAIN).filter(k => k !== 'equilibre');
+        for (const p of res) p.resFocus = pick(keys);
+        continue;
       }
+      const gk = res.filter(p => p.pos === 'GB'), field = res.filter(p => p.pos !== 'GB');
+      // Parts tirées au hasard puis ramenées au total (60 minutes par place), 60 minutes au plus chacun
+      const share = (grp, slots) => { const w = grp.map(() => 0.7 + rnd() * 0.6), sw = w.reduce((x, y) => x + y, 0);
+        grp.forEach((p, k) => { p.lastRes = Math.max(1, Math.min(60, Math.round(slots * 60 * w[k] / sw))); }); };
+      if (gk.length) { share(gk, 1); share(field, 6); } else share(field, 7);
+      for (const p of res) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
     }
   }
   function matchXP(p) {
@@ -2712,8 +2722,10 @@ html.locked #gate { display: grid; }
     for (const p of t.players) {
       const ageF = p.age < 23 ? 1.4 : p.age <= 28 ? 1 : p.age <= 31 ? 0.5 : 0.2;
       const posA = POS_ATTRS[p.pos];
-      const keys = p.pos === 'GB' ? posA : focus === 'equilibre' ? posA : F.attrs.filter(k => posA.includes(k));
-      const rate = (p.pos === 'GB' ? 0.05 : focus === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
+      // Réserve sans match (moins de 7 joueurs) : la semaine se fait sur un focus tiré au hasard
+      const pf = p.resFocus && TRAIN[p.resFocus] ? p.resFocus : focus, PF = TRAIN[pf];
+      const keys = p.pos === 'GB' ? posA : pf === 'equilibre' ? posA : PF.attrs.filter(k => posA.includes(k));
+      const rate = (p.pos === 'GB' ? 0.05 : pf === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
       for (const k of keys) {
         if (p.a[k] < 20 && rnd() < rate * ageF * I.mult * sm * matchXP(p)) {
           p.a[k]++;
@@ -2940,7 +2952,7 @@ html.locked #gate { display: grid; }
     const tile = (l, v, sub) => `<div class="stile"><span class="label">${l}</span><b class="num">${v}</b>${sub ? `<span class="muted">${sub}</span>` : ''}</div>`;
     const tiles = [tile('Matchs joués', played.length || p.apps || 0, `${hs.length} journée${hs.length > 1 ? 's' : ''}`), tile('Min / match', played.length ? Math.round(sum(2) / played.length) : '–', `${Math.round(sum(2))} min au total`)]
       .concat(gk ? [tile('Arrêts', sum(5), pct(sum(5), sum(6)) + ' des tirs'), tile('Tirs subis', sum(6))] : [tile('Buts', sum(3), `${sum(4)} tirs · ${pct(sum(3), sum(4))}`), tile('Pertes de balle', sum(7)), tile('Exclusions', sum(8))])
-      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('Réserve', p.resApps || 0, p.resApps ? `match${p.resApps > 1 ? 's' : ''} · ${p.resMins} min` : 'aucun match'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
+      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('Réserve', p.resApps || 0, p.resFocus ? `pas de match cette semaine (moins de 7) : séance ${H.TRAIN[p.resFocus].label.toLowerCase()}` : p.resApps ? `match${p.resApps > 1 ? 's' : ''} · ${p.resMins} min` : 'aucun match'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
     const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
     const a0 = p.a0 || p.a;
     const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"${k === 'robustesse' ? ` title="Résistance aux blessures : ${robTxt(v)}"` : ''}><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
@@ -3739,7 +3751,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const st = starters.has(p.id);
       return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ` <span class="yt" title="${p.cf ? 'Joueur du centre de formation' : 'Formé au club'}">J</span>` : ''}</td>
         <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r nw">${p.mvpBoost === G.round ? `<span class="mvpmini" title="Confiance de MVP : +1 de forme pour ce match">${CROWN}</span> ` : ''}${formTxt(p.form)}</td>
-        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match${p.lastRes ? `, ${p.lastRes} min avec la réserve` : ''}">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
+        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match${p.lastRes ? `, ${p.lastRes} min avec la réserve` : p.resFocus ? `, pas de match de réserve (moins de 7 joueurs) : séance ${H.TRAIN[p.resFocus].label.toLowerCase()}` : ''}">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}${k === 'robustesse' ? ` (${robTxt(p.a[k])})` : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
@@ -4525,7 +4537,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
         <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${fitN > 14 ? ` Feuille de match : 14 joueurs sur ${fitN}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
         <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, fitN > 14, false)).join('')}</div></div>
-        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label" title="Les joueurs en tribune jouent avec la réserve le jour du match : 20 à 60 minutes, qui comptent pour leur progression">En tribune · réserve · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label" title="Les joueurs en tribune jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux (moins de minutes chacun quand ils sont nombreux), qui comptent un peu pour leur progression. Moins de 7 : séance d'entraînement au hasard à la place.">En tribune · réserve · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
         ${hurtP.length ? `<div class="dropzone infz"><span class="label">À l'infirmerie · ${hurtP.length}</span><div class="row" style="gap:6px">${hurtP.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}</span>`).join('')}<button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div></div>` : ''}
       </section>
       <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
