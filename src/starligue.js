@@ -2,7 +2,7 @@
 // Clubs : liste 2026-2027 validée ; étoiles validées ; couleurs à revoir plus tard ; buvette pas encore affichée pour tous.
 // Supporters (jeux de mots) validés ; centre de formation et buvette : premières propositions.
 // Effectifs : joueurs professionnels et du centre de formation (cf: true) 2026-2027 de lnh.fr (nom, club, poste, date de naissance, nationalité), relevés le 11/10/2026.
-// Main forte déduite du poste (gaucher à droite, droitier à gauche, au hasard ailleurs) ; Magnus Sondena (Aix) sans fiche : âge généré.
+// Main forte déduite du poste (gaucher à droite, droitier à gauche, au hasard ailleurs) ; Magnus Sondena (Aix) sans fiche : âge généré. 5 jeunes du centre sans poste sur le site (Carriere, Mbemba, Ouanounou, Riva, Siwe-Tsobgny) : poste tiré au hasard.
 // Format d'un joueur : { name: 'Prénom Nom', pos: 'GB'|'AiG'|'ArG'|'DC'|'Piv'|'ArD'|'AiD', hand: 'G'|'D', born: '1998-02-16', nat: 'DK' }
 // (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français ; cf : joueur du centre de formation).
 (function (root) {
@@ -115,6 +115,7 @@
         { name: 'Arthur Prida', pos: 'Piv', born: '2007-04-02', nat: 'FR', cf: true },
         { name: 'Pierre Carbillet', pos: 'ArD', hand: 'G', born: '2006-02-13', nat: 'FR', cf: true },
         { name: 'Jakob Hoffbauer', pos: 'ArD', hand: 'G', born: '2008-01-15', nat: 'FR', cf: true },
+        { name: 'Jacques Siwe-Tsobgny', pos: 'ArD', hand: 'G', born: '2008-05-19', nat: 'FR', cf: true },
         { name: 'Louis Agalede', pos: 'AiD', hand: 'G', born: '2007-02-22', nat: 'FR', cf: true }
       ],
       AIX: [
@@ -307,6 +308,8 @@
         { name: 'Lilian Lombard', pos: 'ArG', hand: 'D', born: '2006-04-28', nat: 'FR', cf: true },
         { name: 'Alexandre Baradat', pos: 'DC', born: '2006-09-19', nat: 'FR', cf: true },
         { name: 'Theo Fradet', pos: 'Piv', born: '2006-07-27', nat: 'FR', cf: true },
+        { name: 'Ruben Ouanounou', pos: 'Piv', born: '2008-01-17', nat: 'FR', cf: true },
+        { name: 'Alexis Riva', pos: 'Piv', born: '2008-02-07', nat: 'FR', cf: true },
         { name: 'Tristan Devevey', pos: 'ArD', hand: 'G', born: '2007-03-23', nat: 'FR', cf: true },
         { name: 'Emerick Gerard', pos: 'ArD', hand: 'G', born: '2006-03-20', nat: 'FR', cf: true }
       ],
@@ -356,6 +359,7 @@
         { name: 'Gabin Martinez', pos: 'ArD', hand: 'G', born: '2000-07-13', nat: 'FR' },
         { name: 'Paul Gourdel', pos: 'AiD', hand: 'G', born: '2004-04-14', nat: 'FR' },
         { name: 'Edouard Kempf', pos: 'AiD', hand: 'G', born: '1998-03-20', nat: 'FR' },
+        { name: 'Samuel Carriere', pos: 'GB', born: '2008-07-09', nat: 'FR', cf: true },
         { name: 'Johan Leroy', pos: 'GB', born: '2007-01-05', nat: 'FR', cf: true },
         { name: 'Gabin Charloton', pos: 'AiG', hand: 'D', born: '2007-02-02', nat: 'FR', cf: true },
         { name: 'Jules Frappier', pos: 'AiG', hand: 'D', born: '2008-10-16', nat: 'FR', cf: true },
@@ -443,6 +447,7 @@
         { name: 'Pol Gremiau', pos: 'AiG', hand: 'D', born: '2006-06-21', nat: 'FR', cf: true },
         { name: 'Kenissa Betare', pos: 'ArG', hand: 'D', born: '2007-04-14', nat: 'FR', cf: true },
         { name: 'Wyliam Carlus', pos: 'ArG', hand: 'D', born: '2008-10-24', nat: 'FR', cf: true },
+        { name: 'Nino Mbemba', pos: 'ArG', hand: 'D', born: '2009-06-21', nat: 'FR', cf: true },
         { name: 'Noah Carriou', pos: 'DC', born: '2008-06-05', nat: 'FR', cf: true },
         { name: 'Vincent Gress Hayet', pos: 'Piv', born: '2006-07-05', nat: 'FR', cf: true },
         { name: 'Samuel Dupuy', pos: 'ArD', hand: 'G', born: '2007-10-14', nat: 'FR', cf: true },

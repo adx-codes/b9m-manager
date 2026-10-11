@@ -1080,25 +1080,48 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
       ${U.yCmp ? youthCompare(y, t) : ''}
-      <p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length} joueurs. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14, les autres jouent avec la réserve.</p>
-      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept">Le recruter</button>
+      <p class="muted" style="margin:14px 0 0">Il rejoint le centre de formation (${H.cfOf(t).length} jeunes aujourd'hui) sans que personne ne parte. Tu pourras le libérer plus tard depuis le centre.</p>
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept">L'intégrer au centre</button>
         <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ycmp" aria-pressed="${!!U.yCmp}" title="Ses attributs face à ceux de tes joueurs au même poste">${U.yCmp ? 'Masquer la comparaison' : 'Comparer avec l\'effectif'}</button><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
   function renderFormation() {
     const t = me(), nr = nextYouthRound();
     const left = nr ? nr - G.round : 0;
-    const youths = t.players.filter((p) => p.youth).sort((a, b) => b.ovr - a.ovr || b.pot - a.pot);
-    return `<div class="grid2">
+    return `<div class="grid2"><div style="display:grid;gap:20px;min-width:0;align-content:start">
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
           <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Pas de limite d'effectif : la feuille de match reste à 14, les joueurs en tribune jouent avec la réserve et prennent de l'expérience.</p>`}
       </section>
-      <div style="display:grid;gap:20px;min-width:0">
-        <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
-          <p class="legend">Effectif : ${t.players.length} joueurs.</p></section>
+      ${cfPanel(t)}</div>
+      <div style="display:grid;gap:20px;min-width:0;align-content:start">
+        ${reservePanel(t)}
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
       </div></div>${leagueYouthPanel()}`;
+  }
+  // Joueurs du centre de formation (moins de 23 ans) : réserve, libération définitive ; pros de moins de 23 ans à y envoyer
+  function cfPanel(t) {
+    const cf = H.cfOf(t).sort((a, b) => b.ovr - a.ovr || b.pot - a.pot);
+    const u23 = t.players.filter(H.canJoinCF).sort((a, b) => a.age - b.age);
+    const starters = new Set(Object.values(t.lineup)), out = new Set(t.out || []);
+    const week = (p) => H.hurt(p) ? '<span class="muted">blessé</span>' : !out.has(p.id) ? `<span class="muted">${starters.has(p.id) ? 'titulaire' : 'feuille de match'}</span>` : p.lastRes ? `${p.lastRes} min` : p.resFocus ? `<span class="muted" title="Moins de 7 joueurs en réserve : pas de match">séance ${esc(H.TRAIN[p.resFocus].label.toLowerCase())}</span>` : '<span class="muted">–</span>';
+    const rows = cf.map((p) => `<tr><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> ${plink(p, short(p.name))}</td><td class="r">${p.age}</td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="nw" title="${p.resApps ? `Réserve cette saison : ${p.resApps} match${p.resApps > 1 ? 's' : ''}, ${p.resMins} min` : 'Pas encore de match avec la réserve'}">${week(p)}</td>
+      <td class="r">${U.relAsk === p.id ? `<span class="nw"><button class="btn sm primary" data-act="relyes" data-id="${p.id}" title="Confirmer le départ définitif">Oui</button> <button class="btn sm" data-act="relask" data-id="${p.id}">Non</button></span>` : `<button class="btn sm" data-act="relask" data-id="${p.id}" title="Départ définitif : un autre club peut le récupérer">Libérer</button>`}</td></tr>`).join('');
+    return `<section class="panel"><h3>Joueurs du centre · ${cf.length}</h3>
+      ${cf.length ? `<div class="scroll"><table class="ly cft"><thead><tr><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th title="Dernière journée ; total de la saison au survol">Semaine</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted" style="margin:0">Personne au centre pour l\'instant.</p>'}
+      ${U.relAsk ? '<p class="legend" style="margin:8px 0 0">Libérer un joueur est définitif : il quitte le club, et un autre club peut le récupérer.</p>' : ''}
+      ${u23.length ? `<div class="opt" style="margin-top:12px"><span class="label">Moins de 23 ans chez les pros</span><div class="row" style="gap:6px">${u23.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))} · ${p.age} ans <button class="btn sm" data-act="tocf" data-id="${p.id}" title="Il rejoint le centre de formation et n'en sortira qu'en fin de saison">Au centre</button></span>`).join('')}</div></div>` : ''}
+      <p class="legend" style="margin:8px 0 0">Le centre accueille les moins de 23 ans. Ses éducateurs font progresser ses jeunes de ${H.academyOf(t) >= 3 ? '+' : '−'}${Math.abs((H.academyOf(t) - 3) * 10)} % (niveau ${H.academyOf(t)}). Un joueur du centre peut jouer avec les pros ; il ne passe pro qu'en fin de saison.</p></section>`;
+  }
+  // Réserve de la dernière journée : minutes de chacun, ou séance d'entraînement si moins de 7 joueurs
+  function reservePanel(t) {
+    const res = t.players.filter((p) => p.lastRes || p.resFocus).sort((a, b) => (b.lastRes || 0) - (a.lastRes || 0));
+    const moves = (G.moves || []).filter((m) => m.from === t.id).slice().reverse();
+    return `<section class="panel"><h3>Réserve · dernière journée</h3>${!res.length ? '<p class="muted" style="margin:0">Pas encore de match de réserve.</p>'
+      : res[0].resFocus ? `<p style="margin:0">Moins de 7 joueurs disponibles : pas de match, séance d'entraînement à la place.</p><p class="muted" style="margin:6px 0 0">${res.map((p) => `${esc(short(p.name))} (${esc(H.TRAIN[p.resFocus].label.toLowerCase())})`).join(', ')}</p>`
+      : `<div class="reslist">${res.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${p.cf ? ' <span class="yt" title="Joueur du centre de formation">J</span>' : ''} <b class="num">${p.lastRes}'</b></span>`).join('')}</div>`}
+      <p class="legend" style="margin:8px 0 0">Les joueurs en tribune jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux. Une minute en réserve compte pour ${Math.round(H.RESERVE.xp * 100)} % d'une minute en ${LEAGUE} dans la progression. Ni fatigue ni blessure.</p>
+      ${moves.length ? `<div class="opt" style="margin-top:12px"><span class="label">Joueurs libérés</span>${moves.map((m) => `<div class="row" style="gap:8px"><span class="muted num">J${m.round}</span><span class="pos${m.pos === 'GB' ? ' gb' : ''}">${m.pos}</span>${esc(m.name)}<span class="muted">${m.to ? `signe à ${esc(T(m.to).name)}` : 'sans club'}</span></div>`).join('')}</div>` : ''}</section>`;
   }
   // Recrues des centres de formation de toute la SparLigue (IA et joueur), de la plus récente à la plus ancienne
   // Forme de l'adversaire : ses 5 derniers matchs, du plus récent au plus ancien
@@ -1225,7 +1248,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const top = Object.entries(byClub).sort((a, b) => b[1] - a[1])[0];
     return `<section class="panel" style="margin-top:20px"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Jeunes des centres de formation · ${LEAGUE}</h3>
         <span class="muted">${recruited.length} recruté${recruited.length > 1 ? 's' : ''}, ${nRef} refusé${nRef > 1 ? 's' : ''} cette saison${top ? ` · club le plus friand : <b style="color:var(--fg)">${esc(T(top[0]).name)}</b> (${top[1]})` : ''}</span></div>
-      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées. Son staff le garde s'il est nettement meilleur que le plus faible du poste ; à 16 joueurs, il libère ce dernier seulement si le jeune vaut nettement mieux. Niveau et potentiel : étoiles par rapport à ton club ; valeurs actuelles pour les recrues, à la sortie du centre pour les refusés.</p>
+      <p class="legend" style="margin:0 0 10px">Comme toi, chaque club voit sortir un jeune de son centre toutes les 5 journées ; il rejoint son centre de formation. Au-delà de ${H.CF.aiMax} jeunes, le staff libère le moins prometteur, qu'un autre club peut récupérer. Niveau et potentiel : étoiles par rapport à ton club ; valeurs actuelles pour les recrues, à la sortie du centre pour les refusés.</p>
       ${every.length ? filters : ''}${every.length && !shown.length ? '<p class="muted" style="margin:0">Aucun jeune ne correspond à ces filtres.</p>' : ''}${shown.length ? `<div class="scroll" style="max-height:460px;overflow-y:auto"><table class="ly"><thead><tr><th class="r">J.</th><th>Club</th><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Décision</th></tr></thead><tbody>${rows}</tbody></table></div>` : every.length ? '' : `<p class="muted" style="margin:0">Aucun jeune sorti des centres pour l'instant : les premiers arrivent après la journée 5.</p>`}</section>`;
   }
 
@@ -1859,6 +1882,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
       case 'ycmp': U.yCmp = !U.yCmp; render(); return;
+      case 'relask': U.relAsk = U.relAsk === id ? null : id; render(); return;
+      case 'relyes': { const t = me(), p = t.players.find((x) => x.id === id); if (!p || !p.cf) return; const mv = H.releasePlayer(G, t, p); U.relAsk = null; save(); render();
+        if (mv) notify(`<span class="nbadge" style="background:var(--iso-youth)">J</span><span><b>${esc(mv.name)} quitte le centre</b><br>${mv.to ? `Il signe à ${esc(T(mv.to).name)}.` : 'Il reste sans club pour l\'instant.'}</span>`, false); return; }
+      case 'tocf': { const p = me().players.find((x) => x.id === id); if (H.joinCF(p)) { save(); render(); } return; }
       case 'rush': U.rushAsk = U.rushAsk === id ? null : id; render(); return;
       case 'rushyes': { const p = me().players.find((x) => x.id === id); if (p && H.rushBack(me(), p)) { U.rushAsk = null; save(); render(); } return; }
       case 'ylater': U.youthModal = false; U.yBatch = false; render(); return;
@@ -1868,7 +1895,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'yaccept': {
         if (!G.youth) return;
         const tm = me(), y = G.youth.p;
-        const decision = 'Recruté';
+        const decision = 'Intégré au centre';
+        y.cf = true;
         tm.players.push(y);
         for (const pos of H.POS) if (!tm.players.some((p) => p.id === tm.lineup[pos])) tm.lineup[pos] = y.id;
         H.ensureSheet(tm);

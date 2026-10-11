@@ -425,6 +425,9 @@
     if (st.trainPending === undefined) st.trainPending = false;
     // Blessures : journal de la saison (les joueurs sans champ « inj » sont valides)
     if (!st.injLog) st.injLog = [];
+    // Centre de formation : les jeunes formés au club de moins de 23 ans y entrent ; journal des départs
+    for (const t of st.teams) for (const p of t.players) if (p.youth && p.cf === undefined && p.age < 23) p.cf = true;
+    if (!st.moves) st.moves = [];
     return st;
   }
   // ---------- Centre de formation et feuille de match ----------
@@ -468,25 +471,53 @@
     p.hist = [];
     return p;
   }
-  // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…), même plafond de 16.
-  // Le staff IA recrute un jeune prometteur, et à 16 ne libère le plus faible du poste que si le jeune vaut nettement mieux.
+  // ---------- Centre de formation : statut, libération, reprise par un club IA ----------
+  // Le centre de formation accueille les moins de 23 ans ; un joueur du centre ne passe pro qu'en fin de saison.
+  const CF = { maxAge: 23, aiMax: 12 };
+  const canJoinCF = (p) => !!p && !p.cf && p.age < CF.maxAge;
+  const cfOf = (t) => t.players.filter(p => p.cf);
+  function joinCF(p) { if (!canJoinCF(p)) return false; p.cf = true; return true; }
+  // Joueur libéré (définitif) : il quitte le club ; un club IA peut le récupérer s'il l'intéresse
+  function releasePlayer(st, t, p) {
+    if (!t.players.includes(p)) return null;
+    t.players = t.players.filter(x => x.id !== p.id);
+    t.out = (t.out || []).filter(id => id !== p.id);
+    if (Object.values(t.lineup).includes(p.id)) fixLineup(t);
+    ensureSheet(t);
+    let to = null;
+    const cands = st.teams.filter(o => o.id !== t.id && o.id !== st.userId && (p.age >= CF.maxAge || cfOf(o).length < CF.aiMax))
+      .map(o => ({ o, gap: (p.pot ?? p.ovr) - starRef(o) })).sort((a, b) => b.gap - a.gap).slice(0, 3);
+    if (cands.length) {
+      const c = cands[Math.floor(rnd() * cands.length)];
+      if (rnd() < clamp(0.25 + (c.gap + 2) * 0.15, 0.1, 0.9)) {
+        to = c.o;
+        delete p.matchStyle; p.cf = p.age < CF.maxAge; p.form = 0;
+        to.players.push(p);
+        ensureSheet(to);
+      }
+    }
+    const mv = { round: st.round, id: p.id, name: p.name, pos: p.pos, age: p.age, from: t.id, to: to ? to.id : null };
+    (st.moves = st.moves || []).push(mv);
+    return mv;
+  }
+  // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…). Le jeune rejoint le centre ;
+  // au-delà de 12 jeunes, le staff libère le moins prometteur (qu'un autre club peut récupérer).
   // Les centres IA sortent aussi des légendes, plus rarement (4 % des jeunes, environ 3 par saison).
   function aiYouth(st, t) {
     const y = makeYouth(t, st, 0.04);
-    const same = t.players.filter(p => p.pos === y.pos).sort((a, b) => a.ovr - b.ovr || b.age - a.age);
-    const worst = same[0];
-    const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
-    const yv = y.pot - 1 + (rnd() - 0.5) * 2;
-    let out = null, ok = false;
-    // Pas de plafond d'effectif : le staff garde le jeune s'il vaut nettement mieux que le plus faible du poste
-    ok = !worst || yv >= worst.ovr + 1.8;
-    if (ok) {
-      if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
-      t.players.push(y);
-      autoLineup(t);
-      ensureSheet(t);
+    y.cf = true;
+    t.players.push(y);
+    let out = null;
+    const cf = cfOf(t);
+    if (cf.length > CF.aiMax) {
+      const proj = (p) => Math.max(p.ovr, (p.pot ?? p.ovr) - 1) - p.age * 0.05;
+      out = cf.slice().sort((a, b) => proj(a) - proj(b))[0];
+      releasePlayer(st, t, out);
     }
-    (st.leagueYouth = st.leagueYouth || []).push({ round: st.round, team: t.id, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, ok, out: out ? out.name : null });
+    autoLineup(t);
+    ensureSheet(t);
+    const ok = !out || out.id !== y.id;
+    (st.leagueYouth = st.leagueYouth || []).push({ round: st.round, team: t.id, id: y.id, name: y.name, pos: y.pos, age: y.age, ovr: y.ovr, pot: y.pot, ok, out: out && ok ? out.name : null });
     return ok;
   }
   function youthRound(st) {
@@ -602,7 +633,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], moves: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
   }
 
   // ---------- Moteur de match ----------
@@ -1465,7 +1496,8 @@
       // Réserve sans match (moins de 7 joueurs) : la semaine se fait sur un focus tiré au hasard
       const pf = p.resFocus && TRAIN[p.resFocus] ? p.resFocus : focus, PF = TRAIN[pf];
       const keys = p.pos === 'GB' ? posA : pf === 'equilibre' ? posA : PF.attrs.filter(k => posA.includes(k));
-      const rate = (p.pos === 'GB' ? 0.05 : pf === 'equilibre' ? 0.04 : 0.075) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
+      // Centre de formation : ses éducateurs font progresser ses jeunes de −20 % (niveau 1) à +20 % (niveau 5)
+      const rate = (p.pos === 'GB' ? 0.05 : pf === 'equilibre' ? 0.04 : 0.075) * (p.cf ? 1 + (academyOf(t) - 3) * 0.1 : 1) * (focus !== 'equilibre' && hasMod(t, 'staff+') ? 1.1 : 1) * (p.pot !== undefined ? (p.pot > p.ovr ? Math.min(1 + (p.pot - p.ovr) / 4, 3) : 0.05) : 1);
       for (const k of keys) {
         if (p.a[k] < 20 && rnd() < rate * ageF * I.mult * sm * matchXP(p)) {
           p.a[k]++;
@@ -1529,7 +1561,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
