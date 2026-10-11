@@ -1460,13 +1460,14 @@
     intense: { label: 'Intense', mult: 1.6, rec: -12 }
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
-  // Réserve : seuls les jeunes du centre de formation hors de la feuille de match (et non blessés) jouent avec la réserve,
-  // le même jour ; un pro hors de la feuille reste en tribune, sans match.
+  // Réserve : les jeunes du centre de formation et les pros de moins de 23 ans hors de la feuille de match (et non blessés)
+  // jouent avec la réserve le même jour ; un pro de 23 ans et plus hors de la feuille reste en tribune, sans match.
   // sans match simulé. 60 minutes à 7 : les gardiens se partagent la cage, les joueurs de champ les 6 autres places
   // (plus ils sont nombreux, moins chacun joue). Moins de 7 joueurs : pas de match, une séance d'entraînement
   // au hasard à la place. Une minute en réserve vaut 20 % d'une minute en Starligue pour la progression.
   const RESERVE = { size: 7, xp: 0.2 };
-  const inReserve = (p) => !!(p && p.cf);
+  // Réserve : jeunes du centre de formation et pros de moins de 23 ans
+  const inReserve = (p) => !!(p && (p.cf || p.age < CF.maxAge));
   function reserveRound(st, ids) {
     for (const t of st.teams) {
       if (ids && !ids.has(t.id)) continue;
