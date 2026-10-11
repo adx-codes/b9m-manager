@@ -153,7 +153,7 @@
     const tile = (l, v, sub) => `<div class="stile"><span class="label">${l}</span><b class="num">${v}</b>${sub ? `<span class="muted">${sub}</span>` : ''}</div>`;
     const tiles = [tile('Matchs joués', played.length || p.apps || 0, `${hs.length} journée${hs.length > 1 ? 's' : ''}`), tile('Min / match', played.length ? Math.round(sum(2) / played.length) : '–', `${Math.round(sum(2))} min au total`)]
       .concat(gk ? [tile('Arrêts', sum(5), pct(sum(5), sum(6)) + ' des tirs'), tile('Tirs subis', sum(6))] : [tile('Buts', sum(3), `${sum(4)} tirs · ${pct(sum(3), sum(4))}`), tile('Pertes de balle', sum(7)), tile('Exclusions', sum(8))])
-      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
+      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('Réserve', p.resApps || 0, p.resApps ? `match${p.resApps > 1 ? 's' : ''} · ${p.resMins} min` : 'aucun match'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
     const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
     const a0 = p.a0 || p.a;
     const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"${k === 'robustesse' ? ` title="Résistance aux blessures : ${robTxt(v)}"` : ''}><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
@@ -726,6 +726,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       rd.push({ h, a, hs: rr.h.score, as: rr.a.score, mvp: rr.mvp ? rr.mvp.id : null });
     }
     G.results.push(rd);
+    // Réserve : les joueurs en tribune des clubs qui ont joué prennent des minutes avec la réserve
+    H.reserveRound(G, playing);
     for (const p of me().players) delete p.matchStyle;
     G.round++;
     // Infirmerie : une semaine de soins pour les blessés d'avant, puis les blessés du jour
@@ -948,9 +950,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const rows = sorted.map((p) => {
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
-      return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
+      return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ` <span class="yt" title="${p.cf ? 'Joueur du centre de formation' : 'Formé au club'}">J</span>` : ''}</td>
         <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r nw">${p.mvpBoost === G.round ? `<span class="mvpmini" title="Confiance de MVP : +1 de forme pour ce match">${CROWN}</span> ` : ''}${formTxt(p.form)}</td>
-        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
+        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match${p.lastRes ? `, ${p.lastRes} min avec la réserve` : ''}">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}${k === 'robustesse' ? ` (${robTxt(p.a[k])})` : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
@@ -1050,7 +1052,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   // Comparaison : le jeune face aux joueurs de l'effectif qui peuvent tenir son poste
   const ATTR_SHORT = Object.fromEntries(FIELD_COLS.concat(GK_COLS).flatMap(([, cols]) => cols));
-  function youthCompare(y, t, rel) {
+  function youthCompare(y, t) {
     const ref = sref(), at = (p) => H.ovrAt(p, y.pos);
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => at(b) - at(a));
     const sec = t.players.filter((p) => p.pos !== y.pos && H.SECONDARY[p.pos].includes(y.pos)).sort((a, b) => at(b) - at(a));
@@ -1058,8 +1060,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const row = (p, cls, tag) => `<tr class="${cls}"><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}"${p.pos !== y.pos ? ` title="${esc(H.POS_LABEL[p.pos])}, peut dépanner à ce poste"` : ''}>${p.pos}</span> ${cls === 'me' ? `<b>${esc(short(p.name))}</b>` : esc(short(p.name))}${tag}</td><td class="r">${p.age}</td>
       <td class="nw">${vstars(at(p), { sm: true, title: p.pos === y.pos ? undefined : `Au poste ${H.POS_LABEL[y.pos].toLowerCase()} : ${H.starLabel(H.stars(at(p), ref)).toLowerCase()}` })}</td><td class="nw">${pot(p, { sm: true })}</td>
       ${cols.map((k, i) => `<td class="ac ${heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}"><span class="v">${p.a[k]}</span></td>`).join('')}</tr>`;
-    const tagOf = (p) => (p.id === rel ? ' <span class="tag refused">Part</span>' : '') ;
-    const rows = row(y, 'me', ' <span class="yt" title="Le jeune du centre">J</span>') + same.concat(sec).map((p) => row(p, p.id === rel ? 'refused' : '', tagOf(p))).join('');
+    const rows = row(y, 'me', ' <span class="yt" title="Le jeune du centre">J</span>') + same.concat(sec).map((p) => row(p, '', '')).join('');
     const none = !same.length && !sec.length ? `<tr><td colspan="${4 + cols.length}" class="muted">Personne à ce poste dans ton effectif.</td></tr>` : '';
     return `<div class="ycmp" style="margin-top:14px"><span class="label">Face à ton effectif · ${H.POS_LABEL[y.pos].toLowerCase()}</span>
       <div class="scroll"><table class="sq ly"><thead><tr><th>Joueur</th><th class="r">Âge</th><th title="Niveau à ce poste, par rapport à ton club">Niveau</th><th>Potentiel</th>${cols.map((k, i) => `<th class="ac${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])}">${ATTR_SHORT[k]}</th>`).join('')}</tr></thead><tbody>${rows}${none}</tbody></table></div>
@@ -1069,12 +1070,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (U.yBatch) return youthBatch();
     const y = G.youth.p, t = me();
     const nb = (G.leagueYouth || []).filter((l) => l.round === G.youth.round).length + 1;
-    const full = t.players.length >= H.squadMax(t);
-    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
     const attrs = (y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS)).concat([H.ROBUST]);
     const keys = Object.keys(H.WEIGHTS[y.pos]);
-    const rel = U.yRelease;
-    const relName = rel ? (t.players.find((p) => p.id === rel) || {}).name : null;
     return `<div class="ycard">
       <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centre de formation · après la journée ${G.youth.round}</span>
         <h2 id="ytitle" style="margin-top:4px">${esc(y.name)}</h2>
@@ -1082,11 +1079,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="ynotes">${(() => { const r = H.potRange(y, sref()); return `<div><span class="label">Niveau</span>${vstars(y.ovr)}</div><div><span class="label">Potentiel estimé</span>${potbar(r)}<span class="muted" style="font-size:0.8rem">${potTxt(r).replace(', estimation du staff', '')}</span></div>`; })()}</div></div>
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
-      ${U.yCmp ? youthCompare(y, t, rel) : ''}
-      ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/${H.squadMax(t)}) : choisis qui part pour lui faire de la place</span>
-        <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
-        : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/${H.squadMax(t)}. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
-      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
+      ${U.yCmp ? youthCompare(y, t) : ''}
+      <p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length} joueurs. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14, les autres jouent avec la réserve.</p>
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept">Le recruter</button>
         <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ycmp" aria-pressed="${!!U.yCmp}" title="Ses attributs face à ceux de tes joueurs au même poste">${U.yCmp ? 'Masquer la comparaison' : 'Comparer avec l\'effectif'}</button><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
@@ -1097,11 +1092,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
-          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à ${H.squadMax(t)} joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
+          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Pas de limite d'effectif : la feuille de match reste à 14, les joueurs en tribune jouent avec la réserve et prennent de l'expérience.</p>`}
       </section>
       <div style="display:grid;gap:20px;min-width:0">
         <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
-          <p class="legend">Effectif : ${t.players.length}/${H.squadMax(t)} joueurs.</p></section>
+          <p class="legend">Effectif : ${t.players.length} joueurs.</p></section>
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
       </div></div>${leagueYouthPanel()}`;
   }
@@ -1743,7 +1738,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
         <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${fitN > 14 ? ` Feuille de match : 14 joueurs sur ${fitN}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
         <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, fitN > 14, false)).join('')}</div></div>
-        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label" title="Les joueurs en tribune jouent avec la réserve le jour du match : 20 à 60 minutes, qui comptent pour leur progression">En tribune · réserve · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
         ${hurtP.length ? `<div class="dropzone infz"><span class="label">À l'infirmerie · ${hurtP.length}</span><div class="row" style="gap:6px">${hurtP.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}</span>`).join('')}<button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div></div>` : ''}
       </section>
       <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
@@ -1873,18 +1868,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'yaccept': {
         if (!G.youth) return;
         const tm = me(), y = G.youth.p;
-        let decision = 'Recruté';
-        if (tm.players.length >= H.squadMax(tm)) {
-          const out = tm.players.find((p) => p.id === U.yRelease);
-          if (!out) return;
-          tm.players = tm.players.filter((p) => p.id !== out.id);
-          tm.out = (tm.out || []).filter((id) => id !== out.id);
-          for (const pos of H.POS) if (tm.lineup[pos] === out.id) {
-            const rep = tm.players.filter((p) => p.pos === pos).sort((a, b) => b.ovr - a.ovr)[0] || y;
-            tm.lineup[pos] = rep.id;
-          }
-          decision = `Recruté, ${out.name} quitte le club`;
-        }
+        const decision = 'Recruté';
         tm.players.push(y);
         for (const pos of H.POS) if (!tm.players.some((p) => p.id === tm.lineup[pos])) tm.lineup[pos] = y.id;
         H.ensureSheet(tm);

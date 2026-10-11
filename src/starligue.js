@@ -1,10 +1,10 @@
 // Saison réelle de Starligue : clubs et effectifs (À VALIDER point par point avant de pousser).
 // Clubs : liste 2026-2027 validée ; étoiles validées ; couleurs à revoir plus tard ; buvette pas encore affichée pour tous.
 // Supporters (jeux de mots) validés ; centre de formation et buvette : premières propositions.
-// Effectifs : joueurs professionnels 2026-2027 de lnh.fr (nom, club, poste, date de naissance, nationalité), relevés le 11/10/2026.
+// Effectifs : joueurs professionnels et du centre de formation (cf: true) 2026-2027 de lnh.fr (nom, club, poste, date de naissance, nationalité), relevés le 11/10/2026.
 // Main forte déduite du poste (gaucher à droite, droitier à gauche, au hasard ailleurs) ; Magnus Sondena (Aix) sans fiche : âge généré.
 // Format d'un joueur : { name: 'Prénom Nom', pos: 'GB'|'AiG'|'ArG'|'DC'|'Piv'|'ArD'|'AiD', hand: 'G'|'D', born: '1998-02-16', nat: 'DK' }
-// (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français).
+// (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français ; cf : joueur du centre de formation).
 (function (root) {
   const HBDATA = {
     season: '2026-2027',
@@ -48,7 +48,17 @@
         { name: 'Yahia Khaled Fathy Omar', pos: 'ArD', hand: 'G', born: '1997-09-09', nat: 'EG' },
         { name: 'Mateo Maras', pos: 'ArD', hand: 'G', born: '2000-12-17', nat: 'HR' },
         { name: 'Sebastian Karlsson', pos: 'AiD', hand: 'G', born: '1995-01-21', nat: 'SE' },
-        { name: 'Ferran Sole', pos: 'AiD', hand: 'G', born: '1992-08-25', nat: 'ES' }
+        { name: 'Ferran Sole', pos: 'AiD', hand: 'G', born: '1992-08-25', nat: 'ES' },
+        { name: 'Elouan Brocandel', pos: 'GB', born: '2008-02-13', nat: 'FR', cf: true },
+        { name: 'Djibril Sarre', pos: 'GB', born: '2006-04-29', nat: 'FR', cf: true },
+        { name: 'Nathan Lafosse', pos: 'ArG', hand: 'D', born: '2007-02-14', nat: 'FR', cf: true },
+        { name: 'Ethan Hulugalle Bandaranayake', pos: 'DC', born: '2005-02-18', nat: 'FR', cf: true },
+        { name: 'Lucas Richard', pos: 'DC', born: '2007-04-17', nat: 'FR', cf: true },
+        { name: 'Seraphin Marie', pos: 'Piv', born: '2008-07-25', nat: 'FR', cf: true },
+        { name: 'Vladimir Rousseau', pos: 'Piv', born: '2005-10-31', nat: 'FR', cf: true },
+        { name: 'Tidiane Firmesse', pos: 'ArD', hand: 'G', born: '2005-05-18', nat: 'FR', cf: true },
+        { name: 'Emilien Montauban', pos: 'ArD', hand: 'G', born: '2008-10-01', nat: 'FR', cf: true },
+        { name: 'Theo Ducap', pos: 'AiD', hand: 'G', born: '2006-04-03', nat: 'FR', cf: true }
       ],
       HBN: [
         { name: 'Christoffer Bonde', pos: 'GB', born: '1999-01-05', nat: 'DK' },
@@ -68,7 +78,17 @@
         { name: 'Imanol Garciandia A.', pos: 'ArD', hand: 'G', born: '1995-04-30', nat: 'ES' },
         { name: 'Mateja Dodic', pos: 'AiD', hand: 'G', born: '2003-04-14', nat: 'RS' },
         { name: 'Kauldi Odriozola Yeregui', pos: 'AiD', hand: 'G', born: '1997-01-07', nat: 'ES' },
-        { name: 'Luka Peric', pos: 'AiD', hand: 'G', born: '2003-03-13', nat: 'BA' }
+        { name: 'Luka Peric', pos: 'AiD', hand: 'G', born: '2003-03-13', nat: 'BA' },
+        { name: 'Sirius Rambaud', pos: 'GB', born: '2006-01-18', nat: 'FR', cf: true },
+        { name: 'Yoni Peyrabout', pos: 'AiG', hand: 'D', born: '2006-06-07', nat: 'FR', cf: true },
+        { name: 'Léo Gendronneau', pos: 'ArG', hand: 'D', born: '2007-02-28', nat: 'FR', cf: true },
+        { name: 'Felipe Garcia', pos: 'DC', born: '2008-02-13', nat: 'IT', cf: true },
+        { name: 'Sacha Henry', pos: 'DC', born: '2007-04-13', nat: 'FR', cf: true },
+        { name: 'Gabriel Ledoux', pos: 'Piv', born: '2007-08-25', nat: 'FR', cf: true },
+        { name: 'Mathis Lobgeois', pos: 'Piv', born: '2005-03-11', nat: 'FR', cf: true },
+        { name: 'Jules Berriau', pos: 'ArD', hand: 'G', born: '2005-04-21', nat: 'FR', cf: true },
+        { name: 'Isaac Saillard', pos: 'ArD', hand: 'G', born: '2009-02-11', nat: 'FR', cf: true },
+        { name: 'Raphael Mani', pos: 'AiD', hand: 'G', born: '2008-01-29', nat: 'FR', cf: true }
       ],
       MHB: [
         { name: 'Charles Bolzinger', pos: 'GB', born: '2000-12-14', nat: 'FR' },
@@ -87,7 +107,15 @@
         { name: 'Valentin Porte', pos: 'ArD', hand: 'G', born: '1990-09-07', nat: 'FR' },
         { name: 'Jack Thurin', pos: 'ArD', hand: 'G', born: '1999-06-09', nat: 'SE' },
         { name: 'David Balaguer', pos: 'AiD', hand: 'G', born: '1991-08-17', nat: 'ES' },
-        { name: 'Benjamin Richert', pos: 'AiD', hand: 'G', born: '1998-04-18', nat: 'FR' }
+        { name: 'Benjamin Richert', pos: 'AiD', hand: 'G', born: '1998-04-18', nat: 'FR' },
+        { name: 'Nollan Garain', pos: 'GB', born: '2008-07-07', nat: 'FR', cf: true },
+        { name: 'Adrien Godard-Capdeville', pos: 'GB', born: '2007-08-07', nat: 'ES', cf: true },
+        { name: 'Elliot Deltombe', pos: 'ArG', hand: 'D', born: '2008-07-07', nat: 'FR', cf: true },
+        { name: 'Noé Calbry', pos: 'DC', born: '2008-04-08', nat: 'FR', cf: true },
+        { name: 'Arthur Prida', pos: 'Piv', born: '2007-04-02', nat: 'FR', cf: true },
+        { name: 'Pierre Carbillet', pos: 'ArD', hand: 'G', born: '2006-02-13', nat: 'FR', cf: true },
+        { name: 'Jakob Hoffbauer', pos: 'ArD', hand: 'G', born: '2008-01-15', nat: 'FR', cf: true },
+        { name: 'Louis Agalede', pos: 'AiD', hand: 'G', born: '2007-02-22', nat: 'FR', cf: true }
       ],
       AIX: [
         { name: 'Gustaf Banke', pos: 'GB', born: '1999-01-07', nat: 'SE' },
@@ -105,7 +133,17 @@
         { name: 'Magnus Sondena', pos: 'ArD', hand: 'G' },
         { name: 'Alexandre Tritta', pos: 'ArD', hand: 'G', born: '1994-12-09', nat: 'FR' },
         { name: 'Gabriel Loesch', pos: 'AiD', hand: 'G', born: '1995-07-12', nat: 'FR' },
-        { name: 'Antoine Tissot', pos: 'AiD', hand: 'G', born: '2001-07-30', nat: 'FR' }
+        { name: 'Antoine Tissot', pos: 'AiD', hand: 'G', born: '2001-07-30', nat: 'FR' },
+        { name: 'Wilson Schultz', pos: 'GB', born: '2006-06-13', nat: 'FR', cf: true },
+        { name: 'Eliott Josserand', pos: 'AiG', hand: 'D', born: '2008-12-29', nat: 'FR', cf: true },
+        { name: 'Alexiou Stavros', pos: 'AiG', hand: 'D', born: '2006-04-16', nat: 'GR', cf: true },
+        { name: 'Mohamed Ahmed Helmy', pos: 'ArG', hand: 'D', born: '2007-06-19', nat: 'EG', cf: true },
+        { name: 'Noah Thiery', pos: 'ArG', hand: 'D', born: '2005-07-27', nat: 'FR', cf: true },
+        { name: 'Noah Grandvuillemin', pos: 'DC', born: '2006-02-20', nat: 'FR', cf: true },
+        { name: 'Luis Juarez Fernandez', pos: 'DC', born: '2006-01-20', nat: 'ES', cf: true },
+        { name: 'Kimany Laroue', pos: 'Piv', born: '2007-08-27', nat: 'FR', cf: true },
+        { name: 'Maxence Depuiset', pos: 'ArD', hand: 'G', born: '2005-08-31', nat: 'FR', cf: true },
+        { name: 'Aurelien Ambrogini', pos: 'AiD', hand: 'G', born: '2006-07-13', nat: 'FR', cf: true }
       ],
       LIM: [
         { name: 'Gauthier Ivah', pos: 'GB', born: '1999-01-06', nat: 'FR' },
@@ -123,7 +161,19 @@
         { name: 'Ewan Kervadec', pos: 'ArD', hand: 'G', born: '1998-07-15', nat: 'FR' },
         { name: 'Tom Pelayo', pos: 'ArD', hand: 'G', born: '1997-02-23', nat: 'FR' },
         { name: 'Lucas Petit', pos: 'AiD', hand: 'G', born: '1999-09-04', nat: 'FR' },
-        { name: 'Jenilson Varela Monteiro', pos: 'AiD', hand: 'G', born: '1998-01-05', nat: 'PT' }
+        { name: 'Jenilson Varela Monteiro', pos: 'AiD', hand: 'G', born: '1998-01-05', nat: 'PT' },
+        { name: 'Evan Quinet', pos: 'GB', born: '2008-04-10', nat: 'FR', cf: true },
+        { name: 'Maxence Pineau Gaillard', pos: 'AiG', hand: 'D', born: '2007-08-24', nat: 'FR', cf: true },
+        { name: 'Gabriel Bussard', pos: 'ArG', hand: 'D', born: '2008-05-28', nat: 'FR', cf: true },
+        { name: 'Mathias Comte', pos: 'ArG', hand: 'D', born: '2005-06-19', nat: 'FR', cf: true },
+        { name: 'Yanis Rousseau', pos: 'ArG', hand: 'D', born: '2005-05-31', nat: 'FR', cf: true },
+        { name: 'Gaby Dallet', pos: 'DC', born: '2007-01-04', nat: 'FR', cf: true },
+        { name: 'Benjamin Mbala', pos: 'DC', born: '2007-10-20', nat: 'FR', cf: true },
+        { name: 'Yael Delalcon-Longeaux', pos: 'Piv', born: '2006-06-26', nat: 'FR', cf: true },
+        { name: 'Jules Piquard', pos: 'Piv', born: '2007-02-01', nat: 'FR', cf: true },
+        { name: 'Azeez Olaitan Sulaimon', pos: 'ArD', hand: 'G', born: '2006-07-11', nat: 'NG', cf: true },
+        { name: 'Yoni Bourrigault', pos: 'AiD', hand: 'G', born: '2005-06-29', nat: 'FR', cf: true },
+        { name: 'Charles-Emile Parverie', pos: 'AiD', hand: 'G', born: '2008-01-24', nat: 'FR', cf: true }
       ],
       CHA: [
         { name: 'David Bernard', pos: 'GB', born: '2000-03-29', nat: 'FR' },
@@ -142,7 +192,19 @@
         { name: 'Matic Groselj', pos: 'ArD', hand: 'G', born: '1997-09-22', nat: 'SI' },
         { name: 'Achilleas Toskas', pos: 'ArD', hand: 'G', born: '2004-10-01', nat: 'GR' },
         { name: 'Eugen Josip Zaja', pos: 'ArD', hand: 'G', born: '2000-05-01', nat: 'HR' },
-        { name: 'Emilien Peyronnet', pos: 'AiD', hand: 'G', born: '2004-04-22', nat: 'FR' }
+        { name: 'Emilien Peyronnet', pos: 'AiD', hand: 'G', born: '2004-04-22', nat: 'FR' },
+        { name: 'Jean Baradat', pos: 'GB', born: '2008-01-07', nat: 'FR', cf: true },
+        { name: 'Adrien Seguin', pos: 'GB', born: '2005-11-23', nat: 'FR', cf: true },
+        { name: 'Djibril Ouattara', pos: 'AiG', hand: 'D', born: '2007-01-03', nat: 'FR', cf: true },
+        { name: 'Dimitri Claude', pos: 'ArG', hand: 'D', born: '2005-08-29', nat: 'FR', cf: true },
+        { name: 'Harold Metmer', pos: 'ArG', hand: 'D', born: '2008-02-29', nat: 'FR', cf: true },
+        { name: 'Aitor Antonio Lopez', pos: 'DC', born: '2008-03-14', nat: 'ES', cf: true },
+        { name: 'Adam Hafid', pos: 'DC', born: '2008-01-28', nat: 'FR', cf: true },
+        { name: 'Nathan Brunon', pos: 'Piv', born: '2008-03-07', nat: 'FR', cf: true },
+        { name: 'Victor Gildas', pos: 'Piv', born: '2006-04-15', nat: 'FR', cf: true },
+        { name: 'Gaspard Gildas', pos: 'ArD', hand: 'G', born: '2007-08-23', nat: 'FR', cf: true },
+        { name: 'Antoine Herard', pos: 'ArD', hand: 'G', born: '2007-04-28', nat: 'FR', cf: true },
+        { name: 'Loan Felix - Andrieu', pos: 'AiD', hand: 'G', born: '2006-04-22', nat: 'FR', cf: true }
       ],
       SRA: [
         { name: 'Alexandre Demaille', pos: 'GB', born: '1993-04-22', nat: 'FR' },
@@ -159,7 +221,17 @@
         { name: 'Illia Blyzniuk', pos: 'ArD', hand: 'G', born: '2001-01-19', nat: 'UA' },
         { name: 'Micke Brasseleur', pos: 'ArD', hand: 'G', born: '1993-04-16', nat: 'FR' },
         { name: 'Marc Leyvigne', pos: 'AiD', hand: 'G', born: '2001-02-16', nat: 'FR' },
-        { name: 'Arthur Vigneron', pos: 'AiD', hand: 'G', born: '1995-01-30', nat: 'FR' }
+        { name: 'Arthur Vigneron', pos: 'AiD', hand: 'G', born: '1995-01-30', nat: 'FR' },
+        { name: 'Lyrick Cozier', pos: 'GB', born: '2007-09-17', nat: 'FR', cf: true },
+        { name: 'Enzo Gorgibus', pos: 'AiG', hand: 'D', born: '2006-06-26', nat: 'FR', cf: true },
+        { name: 'Loris Mihy', pos: 'AiG', hand: 'D', born: '2007-10-03', nat: 'FR', cf: true },
+        { name: 'Roman Cermelj', pos: 'ArG', hand: 'D', born: '2008-04-14', nat: 'FR', cf: true },
+        { name: 'Dimitrije Maksovic', pos: 'ArG', hand: 'D', born: '2007-11-03', nat: 'FR', cf: true },
+        { name: 'Adrian Entrerrios', pos: 'DC', born: '2008-01-31', nat: 'FR', cf: true },
+        { name: 'Damian Siuda', pos: 'Piv', born: '2007-04-20', nat: 'FR', cf: true },
+        { name: 'Camille Ambrun', pos: 'ArD', hand: 'G', born: '2008-02-24', nat: 'FR', cf: true },
+        { name: 'Mathias Burdet', pos: 'ArD', hand: 'G', born: '2006-09-24', nat: 'FR', cf: true },
+        { name: 'Gabin Barras', pos: 'AiD', hand: 'G', born: '2007-10-23', nat: 'FR', cf: true }
       ],
       FTH: [
         { name: 'Robin Kerdudo', pos: 'GB', born: '2000-08-18', nat: 'FR' },
@@ -177,7 +249,15 @@
         { name: 'Jérémy Robert', pos: 'Piv', born: '2004-03-08', nat: 'FR' },
         { name: 'Uros Kojadinovic', pos: 'ArD', hand: 'G', born: '2000-09-26', nat: 'RS' },
         { name: 'Ernest Pineau', pos: 'ArD', hand: 'G', born: '2003-01-30', nat: 'FR' },
-        { name: 'Andrea Guillaume', pos: 'AiD', hand: 'G', born: '1998-05-03', nat: 'FR' }
+        { name: 'Andrea Guillaume', pos: 'AiD', hand: 'G', born: '1998-05-03', nat: 'FR' },
+        { name: 'Gabin Saltel', pos: 'GB', born: '2008-01-23', nat: 'FR', cf: true },
+        { name: 'Isaac Maurice', pos: 'AiG', hand: 'D', born: '2008-11-10', nat: 'FR', cf: true },
+        { name: 'Siméo Renaud', pos: 'ArG', hand: 'D', born: '2007-01-03', nat: 'FR', cf: true },
+        { name: 'Jules Gougeon', pos: 'DC', born: '2007-04-06', nat: 'FR', cf: true },
+        { name: 'Issa Seck', pos: 'DC', born: '2008-08-19', nat: 'FR', cf: true },
+        { name: 'Lukas Jacques-Antoine', pos: 'Piv', born: '2008-03-01', nat: 'FR', cf: true },
+        { name: 'Mattéo Anduze', pos: 'ArD', hand: 'G', born: '2007-05-25', nat: 'FR', cf: true },
+        { name: 'Zacharie Dermigny', pos: 'AiD', hand: 'G', born: '2008-05-25', nat: 'FR', cf: true }
       ],
       NIM: [
         { name: 'Harun Hodzic', pos: 'GB', born: '2000-06-07', nat: 'BA' },
@@ -195,7 +275,17 @@
         { name: 'Maté Onodi Janoskuti', pos: 'ArD', hand: 'G', born: '2002-06-17', nat: 'HU' },
         { name: 'Damien Gibernon', pos: 'AiD', hand: 'G', born: '2000-05-17', nat: 'FR' },
         { name: 'Remi Peyre', pos: 'AiD', hand: 'G', born: '2004-01-30', nat: 'FR' },
-        { name: 'Mohammad Sanad', pos: 'AiD', hand: 'G', born: '1991-01-16', nat: 'FR' }
+        { name: 'Mohammad Sanad', pos: 'AiD', hand: 'G', born: '1991-01-16', nat: 'FR' },
+        { name: 'Clément Grosjean', pos: 'GB', born: '2006-04-05', nat: 'FR', cf: true },
+        { name: 'Lenny Berthet-Macle', pos: 'AiG', hand: 'D', born: '2006-05-03', nat: 'FR', cf: true },
+        { name: 'Axel Dugalic', pos: 'ArG', hand: 'D', born: '2007-12-21', nat: 'FR', cf: true },
+        { name: 'Samuel Gorisse', pos: 'ArG', hand: 'D', born: '2008-01-24', nat: 'FR', cf: true },
+        { name: 'Kelidjee Boisne-Noc', pos: 'DC', born: '2008-02-02', nat: 'FR', cf: true },
+        { name: 'Jordan Fluet', pos: 'Piv', born: '2008-04-05', nat: 'FR', cf: true },
+        { name: 'Gabin Gaumier', pos: 'Piv', born: '2007-01-25', nat: 'FR', cf: true },
+        { name: 'Roméo Cortes', pos: 'ArD', hand: 'G', born: '2007-08-10', nat: 'FR', cf: true },
+        { name: 'Bastien Lafosse', pos: 'ArD', hand: 'G', born: '2006-04-24', nat: 'FR', cf: true },
+        { name: 'Sam Tuxagues', pos: 'AiD', hand: 'G', born: '2007-11-14', nat: 'FR', cf: true }
       ],
       CES: [
         { name: 'Jean-Emmanuel Kouassi', pos: 'GB', born: '1999-03-24', nat: 'FR' },
@@ -211,7 +301,14 @@
         { name: 'Gustavo Rodrigues', pos: 'ArD', hand: 'G', born: '1995-04-09', nat: 'BR' },
         { name: 'Mathieu Salou', pos: 'ArD', hand: 'G', born: '2000-05-26', nat: 'FR' },
         { name: 'Martial Caïs', pos: 'AiD', hand: 'G', born: '2002-03-07', nat: 'FR' },
-        { name: 'Alex Moran', pos: 'AiD', hand: 'G', born: '1999-12-20', nat: 'FR' }
+        { name: 'Alex Moran', pos: 'AiD', hand: 'G', born: '1999-12-20', nat: 'FR' },
+        { name: 'Roméo Lemoine', pos: 'AiG', hand: 'D', born: '2006-08-24', nat: 'FR', cf: true },
+        { name: 'Keldi Bastoini', pos: 'ArG', hand: 'D', born: '2006-02-13', nat: 'FR', cf: true },
+        { name: 'Lilian Lombard', pos: 'ArG', hand: 'D', born: '2006-04-28', nat: 'FR', cf: true },
+        { name: 'Alexandre Baradat', pos: 'DC', born: '2006-09-19', nat: 'FR', cf: true },
+        { name: 'Theo Fradet', pos: 'Piv', born: '2006-07-27', nat: 'FR', cf: true },
+        { name: 'Tristan Devevey', pos: 'ArD', hand: 'G', born: '2007-03-23', nat: 'FR', cf: true },
+        { name: 'Emerick Gerard', pos: 'ArD', hand: 'G', born: '2006-03-20', nat: 'FR', cf: true }
       ],
       DUN: [
         { name: 'Alejandro Romero Carreras', pos: 'GB', born: '1994-09-17', nat: 'CU' },
@@ -228,7 +325,19 @@
         { name: 'Yanis Busselier', pos: 'ArD', hand: 'G', born: '2002-08-01', nat: 'FR' },
         { name: 'Matthieu Marmier', pos: 'ArD', hand: 'G', born: '2000-06-08', nat: 'FR' },
         { name: 'Thibaud Arteaga', pos: 'AiD', hand: 'G', born: '1998-06-05', nat: 'FR' },
-        { name: 'Florian Billant', pos: 'AiD', hand: 'G', born: '1996-07-07', nat: 'FR' }
+        { name: 'Florian Billant', pos: 'AiD', hand: 'G', born: '1996-07-07', nat: 'FR' },
+        { name: 'Timothe Riss', pos: 'GB', born: '2006-01-13', nat: 'FR', cf: true },
+        { name: 'Jean-Rosny Kolenda', pos: 'AiG', hand: 'D', born: '2006-01-15', nat: 'FR', cf: true },
+        { name: 'Marwan Ancoub', pos: 'ArG', hand: 'D', born: '2008-11-13', nat: 'FR', cf: true },
+        { name: 'Amil Maliki', pos: 'ArG', hand: 'D', born: '2005-05-05', nat: 'FR', cf: true },
+        { name: 'Lukas Delattre', pos: 'DC', born: '2006-01-30', nat: 'FR', cf: true },
+        { name: 'Mathieu Machtelinckx', pos: 'Piv', born: '2007-01-22', nat: 'FR', cf: true },
+        { name: 'Zacharie Pille', pos: 'Piv', born: '2006-10-21', nat: 'FR', cf: true },
+        { name: 'Yann Six', pos: 'Piv', born: '2005-02-10', nat: 'FR', cf: true },
+        { name: 'Tristan Gourguechon', pos: 'ArD', hand: 'G', born: '2006-04-07', nat: 'FR', cf: true },
+        { name: 'Thibault Guille', pos: 'ArD', hand: 'G', born: '2007-07-03', nat: 'FR', cf: true },
+        { name: 'Martin Hemery', pos: 'ArD', hand: 'G', born: '2008-05-03', nat: 'FR', cf: true },
+        { name: 'Nathan Laforge', pos: 'AiD', hand: 'G', born: '2006-07-26', nat: 'FR', cf: true }
       ],
       CHR: [
         { name: 'Mehdi Harbaoui', pos: 'GB', born: '1996-09-11', nat: 'FR' },
@@ -246,7 +355,18 @@
         { name: 'Oussama Hosni', pos: 'ArD', hand: 'G', born: '1992-09-17', nat: 'TN' },
         { name: 'Gabin Martinez', pos: 'ArD', hand: 'G', born: '2000-07-13', nat: 'FR' },
         { name: 'Paul Gourdel', pos: 'AiD', hand: 'G', born: '2004-04-14', nat: 'FR' },
-        { name: 'Edouard Kempf', pos: 'AiD', hand: 'G', born: '1998-03-20', nat: 'FR' }
+        { name: 'Edouard Kempf', pos: 'AiD', hand: 'G', born: '1998-03-20', nat: 'FR' },
+        { name: 'Johan Leroy', pos: 'GB', born: '2007-01-05', nat: 'FR', cf: true },
+        { name: 'Gabin Charloton', pos: 'AiG', hand: 'D', born: '2007-02-02', nat: 'FR', cf: true },
+        { name: 'Jules Frappier', pos: 'AiG', hand: 'D', born: '2008-10-16', nat: 'FR', cf: true },
+        { name: 'Tomas Barral', pos: 'ArG', hand: 'D', born: '2008-04-27', nat: 'FR', cf: true },
+        { name: 'Nikita Solomon', pos: 'ArG', hand: 'D', born: '2008-05-13', nat: 'FR', cf: true },
+        { name: 'Sacha Durasnel', pos: 'DC', born: '2006-02-02', nat: 'FR', cf: true },
+        { name: 'Amaury Siegler', pos: 'DC', born: '2008-11-10', nat: 'FR', cf: true },
+        { name: 'Inza Diaby-Fofana', pos: 'Piv', born: '2007-03-06', nat: 'FR', cf: true },
+        { name: 'Jules Rose', pos: 'Piv', born: '2005-11-14', nat: 'FR', cf: true },
+        { name: 'Seifeldin Ibrahim', pos: 'ArD', hand: 'G', born: '2006-06-16', nat: 'FR', cf: true },
+        { name: 'Rémi Fernandez-Gonzalez', pos: 'AiD', hand: 'G', born: '2007-04-12', nat: 'FR', cf: true }
       ],
       TRE: [
         { name: 'Kévin Bonnefoi', pos: 'GB', born: '1991-12-03', nat: 'FR' },
@@ -263,7 +383,16 @@
         { name: 'Raphael Kötters', pos: 'ArD', hand: 'G', born: '2001-01-21', nat: 'BE' },
         { name: 'Antoine Leger', pos: 'ArD', hand: 'G', born: '1998-02-06', nat: 'FR' },
         { name: 'Théo Avelange Demouge', pos: 'AiD', hand: 'G', born: '1996-03-11', nat: 'FR' },
-        { name: 'Mathis Barelle', pos: 'AiD', hand: 'G', born: '2006-04-04', nat: 'FR' }
+        { name: 'Mathis Barelle', pos: 'AiD', hand: 'G', born: '2006-04-04', nat: 'FR' },
+        { name: 'Clement Francoise', pos: 'GB', born: '2008-11-19', nat: 'FR', cf: true },
+        { name: 'Yaniss Azur', pos: 'AiG', hand: 'D', born: '2006-12-29', nat: 'FR', cf: true },
+        { name: 'Madih Sinitambirivoutin', pos: 'AiG', hand: 'D', born: '2008-08-06', nat: 'FR', cf: true },
+        { name: 'Selim Berrou', pos: 'ArG', hand: 'D', born: '2006-03-09', nat: 'FR', cf: true },
+        { name: 'Martin Bialkowski', pos: 'ArG', hand: 'D', born: '2005-06-07', nat: 'FR', cf: true },
+        { name: 'Matthias Rathelot-Launay', pos: 'DC', born: '2007-10-05', nat: 'FR', cf: true },
+        { name: 'Ewen Sidhoum', pos: 'Piv', born: '2006-01-09', nat: 'FR', cf: true },
+        { name: 'Mory Toure', pos: 'ArD', hand: 'G', born: '2008-03-18', nat: 'FR', cf: true },
+        { name: 'Mayron Varin', pos: 'AiD', hand: 'G', born: '2008-05-12', nat: 'FR', cf: true }
       ],
       SEL: [
         { name: 'Romain Mathias', pos: 'GB', born: '1997-09-13', nat: 'FR' },
@@ -282,7 +411,14 @@
         { name: 'Quentin Eymann', pos: 'ArD', hand: 'G', born: '1991-04-22', nat: 'FR' },
         { name: 'Tony Mendy', pos: 'ArD', hand: 'G', born: '2002-12-10', nat: 'FR' },
         { name: 'Oreste Vescovo', pos: 'ArD', hand: 'G', born: '2003-01-04', nat: 'FR' },
-        { name: 'Pedro Portela', pos: 'AiD', hand: 'G', born: '1990-01-06', nat: 'PT' }
+        { name: 'Pedro Portela', pos: 'AiD', hand: 'G', born: '1990-01-06', nat: 'PT' },
+        { name: 'Romann Carle', pos: 'GB', born: '2005-06-13', nat: 'FR', cf: true },
+        { name: 'Louis Giesi', pos: 'ArG', hand: 'D', born: '2008-04-28', nat: 'FR', cf: true },
+        { name: 'Gabin Laforce', pos: 'ArG', hand: 'D', born: '2006-03-03', nat: 'FR', cf: true },
+        { name: 'Alex Pompon', pos: 'ArG', hand: 'D', born: '2007-02-23', nat: 'FR', cf: true },
+        { name: 'Kays Ighirri', pos: 'DC', born: '2007-10-18', nat: 'FR', cf: true },
+        { name: 'Paul Laine', pos: 'Piv', born: '2006-08-21', nat: 'FR', cf: true },
+        { name: 'Enzo Herter', pos: 'AiD', hand: 'G', born: '2007-09-23', nat: 'FR', cf: true }
       ],
       SAR: [
         { name: 'Nikola Matovic', pos: 'GB', born: '1998-05-08', nat: 'ME' },
@@ -300,7 +436,17 @@
         { name: 'Clément Damiani', pos: 'ArD', hand: 'G', born: '1998-09-29', nat: 'FR' },
         { name: 'Milos Orbovic', pos: 'ArD', hand: 'G', born: '1993-11-02', nat: 'RS' },
         { name: 'Francisco de Almeida Tavares', pos: 'AiD', hand: 'G', born: '1996-11-14', nat: 'PT' },
-        { name: 'Théo Reuillard', pos: 'AiD', hand: 'G', born: '2001-06-12', nat: 'FR' }
+        { name: 'Théo Reuillard', pos: 'AiD', hand: 'G', born: '2001-06-12', nat: 'FR' },
+        { name: 'Maé Dominguez', pos: 'GB', born: '2007-12-20', nat: 'FR', cf: true },
+        { name: 'Noé Epiard', pos: 'GB', born: '2006-05-13', nat: 'FR', cf: true },
+        { name: 'Zachari Bonnin', pos: 'AiG', hand: 'D', born: '2008-02-12', nat: 'FR', cf: true },
+        { name: 'Pol Gremiau', pos: 'AiG', hand: 'D', born: '2006-06-21', nat: 'FR', cf: true },
+        { name: 'Kenissa Betare', pos: 'ArG', hand: 'D', born: '2007-04-14', nat: 'FR', cf: true },
+        { name: 'Wyliam Carlus', pos: 'ArG', hand: 'D', born: '2008-10-24', nat: 'FR', cf: true },
+        { name: 'Noah Carriou', pos: 'DC', born: '2008-06-05', nat: 'FR', cf: true },
+        { name: 'Vincent Gress Hayet', pos: 'Piv', born: '2006-07-05', nat: 'FR', cf: true },
+        { name: 'Samuel Dupuy', pos: 'ArD', hand: 'G', born: '2007-10-14', nat: 'FR', cf: true },
+        { name: 'Nathan Louis Sidney', pos: 'ArD', hand: 'G', born: '2008-08-04', nat: 'FR', cf: true }
       ],
       CAE: [
         { name: 'Milos Mocevic', pos: 'GB', born: '1995-08-16', nat: 'BA' },
@@ -317,7 +463,8 @@
         { name: 'Fares Ghoul', pos: 'Piv', born: '1995-03-15', nat: 'TN' },
         { name: 'Yassine Ben Salem', pos: 'ArD', hand: 'G', born: '2003-11-03', nat: 'TN' },
         { name: 'Louis Tournellec', pos: 'ArD', hand: 'G', born: '2000-06-20', nat: 'FR' },
-        { name: 'Antonio Areia', pos: 'AiD', hand: 'G', born: '1990-06-21', nat: 'PT' }
+        { name: 'Antonio Areia', pos: 'AiD', hand: 'G', born: '1990-06-21', nat: 'PT' },
+        { name: 'Robin Molliex', pos: 'AiD', hand: 'G', born: '2005-01-23', nat: 'FR', cf: true }
       ]
     }
   };

@@ -787,10 +787,10 @@ html.locked #gate { display: grid; }
 // Saison réelle de Starligue : clubs et effectifs (À VALIDER point par point avant de pousser).
 // Clubs : liste 2026-2027 validée ; étoiles validées ; couleurs à revoir plus tard ; buvette pas encore affichée pour tous.
 // Supporters (jeux de mots) validés ; centre de formation et buvette : premières propositions.
-// Effectifs : joueurs professionnels 2026-2027 de lnh.fr (nom, club, poste, date de naissance, nationalité), relevés le 11/10/2026.
+// Effectifs : joueurs professionnels et du centre de formation (cf: true) 2026-2027 de lnh.fr (nom, club, poste, date de naissance, nationalité), relevés le 11/10/2026.
 // Main forte déduite du poste (gaucher à droite, droitier à gauche, au hasard ailleurs) ; Magnus Sondena (Aix) sans fiche : âge généré.
 // Format d'un joueur : { name: 'Prénom Nom', pos: 'GB'|'AiG'|'ArG'|'DC'|'Piv'|'ArD'|'AiD', hand: 'G'|'D', born: '1998-02-16', nat: 'DK' }
-// (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français).
+// (hand, born et nat facultatifs ; nat en code pays à deux lettres, rien ou 'FR' pour un Français ; cf : joueur du centre de formation).
 (function (root) {
   const HBDATA = {
     season: '2026-2027',
@@ -834,7 +834,17 @@ html.locked #gate { display: grid; }
         { name: 'Yahia Khaled Fathy Omar', pos: 'ArD', hand: 'G', born: '1997-09-09', nat: 'EG' },
         { name: 'Mateo Maras', pos: 'ArD', hand: 'G', born: '2000-12-17', nat: 'HR' },
         { name: 'Sebastian Karlsson', pos: 'AiD', hand: 'G', born: '1995-01-21', nat: 'SE' },
-        { name: 'Ferran Sole', pos: 'AiD', hand: 'G', born: '1992-08-25', nat: 'ES' }
+        { name: 'Ferran Sole', pos: 'AiD', hand: 'G', born: '1992-08-25', nat: 'ES' },
+        { name: 'Elouan Brocandel', pos: 'GB', born: '2008-02-13', nat: 'FR', cf: true },
+        { name: 'Djibril Sarre', pos: 'GB', born: '2006-04-29', nat: 'FR', cf: true },
+        { name: 'Nathan Lafosse', pos: 'ArG', hand: 'D', born: '2007-02-14', nat: 'FR', cf: true },
+        { name: 'Ethan Hulugalle Bandaranayake', pos: 'DC', born: '2005-02-18', nat: 'FR', cf: true },
+        { name: 'Lucas Richard', pos: 'DC', born: '2007-04-17', nat: 'FR', cf: true },
+        { name: 'Seraphin Marie', pos: 'Piv', born: '2008-07-25', nat: 'FR', cf: true },
+        { name: 'Vladimir Rousseau', pos: 'Piv', born: '2005-10-31', nat: 'FR', cf: true },
+        { name: 'Tidiane Firmesse', pos: 'ArD', hand: 'G', born: '2005-05-18', nat: 'FR', cf: true },
+        { name: 'Emilien Montauban', pos: 'ArD', hand: 'G', born: '2008-10-01', nat: 'FR', cf: true },
+        { name: 'Theo Ducap', pos: 'AiD', hand: 'G', born: '2006-04-03', nat: 'FR', cf: true }
       ],
       HBN: [
         { name: 'Christoffer Bonde', pos: 'GB', born: '1999-01-05', nat: 'DK' },
@@ -854,7 +864,17 @@ html.locked #gate { display: grid; }
         { name: 'Imanol Garciandia A.', pos: 'ArD', hand: 'G', born: '1995-04-30', nat: 'ES' },
         { name: 'Mateja Dodic', pos: 'AiD', hand: 'G', born: '2003-04-14', nat: 'RS' },
         { name: 'Kauldi Odriozola Yeregui', pos: 'AiD', hand: 'G', born: '1997-01-07', nat: 'ES' },
-        { name: 'Luka Peric', pos: 'AiD', hand: 'G', born: '2003-03-13', nat: 'BA' }
+        { name: 'Luka Peric', pos: 'AiD', hand: 'G', born: '2003-03-13', nat: 'BA' },
+        { name: 'Sirius Rambaud', pos: 'GB', born: '2006-01-18', nat: 'FR', cf: true },
+        { name: 'Yoni Peyrabout', pos: 'AiG', hand: 'D', born: '2006-06-07', nat: 'FR', cf: true },
+        { name: 'Léo Gendronneau', pos: 'ArG', hand: 'D', born: '2007-02-28', nat: 'FR', cf: true },
+        { name: 'Felipe Garcia', pos: 'DC', born: '2008-02-13', nat: 'IT', cf: true },
+        { name: 'Sacha Henry', pos: 'DC', born: '2007-04-13', nat: 'FR', cf: true },
+        { name: 'Gabriel Ledoux', pos: 'Piv', born: '2007-08-25', nat: 'FR', cf: true },
+        { name: 'Mathis Lobgeois', pos: 'Piv', born: '2005-03-11', nat: 'FR', cf: true },
+        { name: 'Jules Berriau', pos: 'ArD', hand: 'G', born: '2005-04-21', nat: 'FR', cf: true },
+        { name: 'Isaac Saillard', pos: 'ArD', hand: 'G', born: '2009-02-11', nat: 'FR', cf: true },
+        { name: 'Raphael Mani', pos: 'AiD', hand: 'G', born: '2008-01-29', nat: 'FR', cf: true }
       ],
       MHB: [
         { name: 'Charles Bolzinger', pos: 'GB', born: '2000-12-14', nat: 'FR' },
@@ -873,7 +893,15 @@ html.locked #gate { display: grid; }
         { name: 'Valentin Porte', pos: 'ArD', hand: 'G', born: '1990-09-07', nat: 'FR' },
         { name: 'Jack Thurin', pos: 'ArD', hand: 'G', born: '1999-06-09', nat: 'SE' },
         { name: 'David Balaguer', pos: 'AiD', hand: 'G', born: '1991-08-17', nat: 'ES' },
-        { name: 'Benjamin Richert', pos: 'AiD', hand: 'G', born: '1998-04-18', nat: 'FR' }
+        { name: 'Benjamin Richert', pos: 'AiD', hand: 'G', born: '1998-04-18', nat: 'FR' },
+        { name: 'Nollan Garain', pos: 'GB', born: '2008-07-07', nat: 'FR', cf: true },
+        { name: 'Adrien Godard-Capdeville', pos: 'GB', born: '2007-08-07', nat: 'ES', cf: true },
+        { name: 'Elliot Deltombe', pos: 'ArG', hand: 'D', born: '2008-07-07', nat: 'FR', cf: true },
+        { name: 'Noé Calbry', pos: 'DC', born: '2008-04-08', nat: 'FR', cf: true },
+        { name: 'Arthur Prida', pos: 'Piv', born: '2007-04-02', nat: 'FR', cf: true },
+        { name: 'Pierre Carbillet', pos: 'ArD', hand: 'G', born: '2006-02-13', nat: 'FR', cf: true },
+        { name: 'Jakob Hoffbauer', pos: 'ArD', hand: 'G', born: '2008-01-15', nat: 'FR', cf: true },
+        { name: 'Louis Agalede', pos: 'AiD', hand: 'G', born: '2007-02-22', nat: 'FR', cf: true }
       ],
       AIX: [
         { name: 'Gustaf Banke', pos: 'GB', born: '1999-01-07', nat: 'SE' },
@@ -891,7 +919,17 @@ html.locked #gate { display: grid; }
         { name: 'Magnus Sondena', pos: 'ArD', hand: 'G' },
         { name: 'Alexandre Tritta', pos: 'ArD', hand: 'G', born: '1994-12-09', nat: 'FR' },
         { name: 'Gabriel Loesch', pos: 'AiD', hand: 'G', born: '1995-07-12', nat: 'FR' },
-        { name: 'Antoine Tissot', pos: 'AiD', hand: 'G', born: '2001-07-30', nat: 'FR' }
+        { name: 'Antoine Tissot', pos: 'AiD', hand: 'G', born: '2001-07-30', nat: 'FR' },
+        { name: 'Wilson Schultz', pos: 'GB', born: '2006-06-13', nat: 'FR', cf: true },
+        { name: 'Eliott Josserand', pos: 'AiG', hand: 'D', born: '2008-12-29', nat: 'FR', cf: true },
+        { name: 'Alexiou Stavros', pos: 'AiG', hand: 'D', born: '2006-04-16', nat: 'GR', cf: true },
+        { name: 'Mohamed Ahmed Helmy', pos: 'ArG', hand: 'D', born: '2007-06-19', nat: 'EG', cf: true },
+        { name: 'Noah Thiery', pos: 'ArG', hand: 'D', born: '2005-07-27', nat: 'FR', cf: true },
+        { name: 'Noah Grandvuillemin', pos: 'DC', born: '2006-02-20', nat: 'FR', cf: true },
+        { name: 'Luis Juarez Fernandez', pos: 'DC', born: '2006-01-20', nat: 'ES', cf: true },
+        { name: 'Kimany Laroue', pos: 'Piv', born: '2007-08-27', nat: 'FR', cf: true },
+        { name: 'Maxence Depuiset', pos: 'ArD', hand: 'G', born: '2005-08-31', nat: 'FR', cf: true },
+        { name: 'Aurelien Ambrogini', pos: 'AiD', hand: 'G', born: '2006-07-13', nat: 'FR', cf: true }
       ],
       LIM: [
         { name: 'Gauthier Ivah', pos: 'GB', born: '1999-01-06', nat: 'FR' },
@@ -909,7 +947,19 @@ html.locked #gate { display: grid; }
         { name: 'Ewan Kervadec', pos: 'ArD', hand: 'G', born: '1998-07-15', nat: 'FR' },
         { name: 'Tom Pelayo', pos: 'ArD', hand: 'G', born: '1997-02-23', nat: 'FR' },
         { name: 'Lucas Petit', pos: 'AiD', hand: 'G', born: '1999-09-04', nat: 'FR' },
-        { name: 'Jenilson Varela Monteiro', pos: 'AiD', hand: 'G', born: '1998-01-05', nat: 'PT' }
+        { name: 'Jenilson Varela Monteiro', pos: 'AiD', hand: 'G', born: '1998-01-05', nat: 'PT' },
+        { name: 'Evan Quinet', pos: 'GB', born: '2008-04-10', nat: 'FR', cf: true },
+        { name: 'Maxence Pineau Gaillard', pos: 'AiG', hand: 'D', born: '2007-08-24', nat: 'FR', cf: true },
+        { name: 'Gabriel Bussard', pos: 'ArG', hand: 'D', born: '2008-05-28', nat: 'FR', cf: true },
+        { name: 'Mathias Comte', pos: 'ArG', hand: 'D', born: '2005-06-19', nat: 'FR', cf: true },
+        { name: 'Yanis Rousseau', pos: 'ArG', hand: 'D', born: '2005-05-31', nat: 'FR', cf: true },
+        { name: 'Gaby Dallet', pos: 'DC', born: '2007-01-04', nat: 'FR', cf: true },
+        { name: 'Benjamin Mbala', pos: 'DC', born: '2007-10-20', nat: 'FR', cf: true },
+        { name: 'Yael Delalcon-Longeaux', pos: 'Piv', born: '2006-06-26', nat: 'FR', cf: true },
+        { name: 'Jules Piquard', pos: 'Piv', born: '2007-02-01', nat: 'FR', cf: true },
+        { name: 'Azeez Olaitan Sulaimon', pos: 'ArD', hand: 'G', born: '2006-07-11', nat: 'NG', cf: true },
+        { name: 'Yoni Bourrigault', pos: 'AiD', hand: 'G', born: '2005-06-29', nat: 'FR', cf: true },
+        { name: 'Charles-Emile Parverie', pos: 'AiD', hand: 'G', born: '2008-01-24', nat: 'FR', cf: true }
       ],
       CHA: [
         { name: 'David Bernard', pos: 'GB', born: '2000-03-29', nat: 'FR' },
@@ -928,7 +978,19 @@ html.locked #gate { display: grid; }
         { name: 'Matic Groselj', pos: 'ArD', hand: 'G', born: '1997-09-22', nat: 'SI' },
         { name: 'Achilleas Toskas', pos: 'ArD', hand: 'G', born: '2004-10-01', nat: 'GR' },
         { name: 'Eugen Josip Zaja', pos: 'ArD', hand: 'G', born: '2000-05-01', nat: 'HR' },
-        { name: 'Emilien Peyronnet', pos: 'AiD', hand: 'G', born: '2004-04-22', nat: 'FR' }
+        { name: 'Emilien Peyronnet', pos: 'AiD', hand: 'G', born: '2004-04-22', nat: 'FR' },
+        { name: 'Jean Baradat', pos: 'GB', born: '2008-01-07', nat: 'FR', cf: true },
+        { name: 'Adrien Seguin', pos: 'GB', born: '2005-11-23', nat: 'FR', cf: true },
+        { name: 'Djibril Ouattara', pos: 'AiG', hand: 'D', born: '2007-01-03', nat: 'FR', cf: true },
+        { name: 'Dimitri Claude', pos: 'ArG', hand: 'D', born: '2005-08-29', nat: 'FR', cf: true },
+        { name: 'Harold Metmer', pos: 'ArG', hand: 'D', born: '2008-02-29', nat: 'FR', cf: true },
+        { name: 'Aitor Antonio Lopez', pos: 'DC', born: '2008-03-14', nat: 'ES', cf: true },
+        { name: 'Adam Hafid', pos: 'DC', born: '2008-01-28', nat: 'FR', cf: true },
+        { name: 'Nathan Brunon', pos: 'Piv', born: '2008-03-07', nat: 'FR', cf: true },
+        { name: 'Victor Gildas', pos: 'Piv', born: '2006-04-15', nat: 'FR', cf: true },
+        { name: 'Gaspard Gildas', pos: 'ArD', hand: 'G', born: '2007-08-23', nat: 'FR', cf: true },
+        { name: 'Antoine Herard', pos: 'ArD', hand: 'G', born: '2007-04-28', nat: 'FR', cf: true },
+        { name: 'Loan Felix - Andrieu', pos: 'AiD', hand: 'G', born: '2006-04-22', nat: 'FR', cf: true }
       ],
       SRA: [
         { name: 'Alexandre Demaille', pos: 'GB', born: '1993-04-22', nat: 'FR' },
@@ -945,7 +1007,17 @@ html.locked #gate { display: grid; }
         { name: 'Illia Blyzniuk', pos: 'ArD', hand: 'G', born: '2001-01-19', nat: 'UA' },
         { name: 'Micke Brasseleur', pos: 'ArD', hand: 'G', born: '1993-04-16', nat: 'FR' },
         { name: 'Marc Leyvigne', pos: 'AiD', hand: 'G', born: '2001-02-16', nat: 'FR' },
-        { name: 'Arthur Vigneron', pos: 'AiD', hand: 'G', born: '1995-01-30', nat: 'FR' }
+        { name: 'Arthur Vigneron', pos: 'AiD', hand: 'G', born: '1995-01-30', nat: 'FR' },
+        { name: 'Lyrick Cozier', pos: 'GB', born: '2007-09-17', nat: 'FR', cf: true },
+        { name: 'Enzo Gorgibus', pos: 'AiG', hand: 'D', born: '2006-06-26', nat: 'FR', cf: true },
+        { name: 'Loris Mihy', pos: 'AiG', hand: 'D', born: '2007-10-03', nat: 'FR', cf: true },
+        { name: 'Roman Cermelj', pos: 'ArG', hand: 'D', born: '2008-04-14', nat: 'FR', cf: true },
+        { name: 'Dimitrije Maksovic', pos: 'ArG', hand: 'D', born: '2007-11-03', nat: 'FR', cf: true },
+        { name: 'Adrian Entrerrios', pos: 'DC', born: '2008-01-31', nat: 'FR', cf: true },
+        { name: 'Damian Siuda', pos: 'Piv', born: '2007-04-20', nat: 'FR', cf: true },
+        { name: 'Camille Ambrun', pos: 'ArD', hand: 'G', born: '2008-02-24', nat: 'FR', cf: true },
+        { name: 'Mathias Burdet', pos: 'ArD', hand: 'G', born: '2006-09-24', nat: 'FR', cf: true },
+        { name: 'Gabin Barras', pos: 'AiD', hand: 'G', born: '2007-10-23', nat: 'FR', cf: true }
       ],
       FTH: [
         { name: 'Robin Kerdudo', pos: 'GB', born: '2000-08-18', nat: 'FR' },
@@ -963,7 +1035,15 @@ html.locked #gate { display: grid; }
         { name: 'Jérémy Robert', pos: 'Piv', born: '2004-03-08', nat: 'FR' },
         { name: 'Uros Kojadinovic', pos: 'ArD', hand: 'G', born: '2000-09-26', nat: 'RS' },
         { name: 'Ernest Pineau', pos: 'ArD', hand: 'G', born: '2003-01-30', nat: 'FR' },
-        { name: 'Andrea Guillaume', pos: 'AiD', hand: 'G', born: '1998-05-03', nat: 'FR' }
+        { name: 'Andrea Guillaume', pos: 'AiD', hand: 'G', born: '1998-05-03', nat: 'FR' },
+        { name: 'Gabin Saltel', pos: 'GB', born: '2008-01-23', nat: 'FR', cf: true },
+        { name: 'Isaac Maurice', pos: 'AiG', hand: 'D', born: '2008-11-10', nat: 'FR', cf: true },
+        { name: 'Siméo Renaud', pos: 'ArG', hand: 'D', born: '2007-01-03', nat: 'FR', cf: true },
+        { name: 'Jules Gougeon', pos: 'DC', born: '2007-04-06', nat: 'FR', cf: true },
+        { name: 'Issa Seck', pos: 'DC', born: '2008-08-19', nat: 'FR', cf: true },
+        { name: 'Lukas Jacques-Antoine', pos: 'Piv', born: '2008-03-01', nat: 'FR', cf: true },
+        { name: 'Mattéo Anduze', pos: 'ArD', hand: 'G', born: '2007-05-25', nat: 'FR', cf: true },
+        { name: 'Zacharie Dermigny', pos: 'AiD', hand: 'G', born: '2008-05-25', nat: 'FR', cf: true }
       ],
       NIM: [
         { name: 'Harun Hodzic', pos: 'GB', born: '2000-06-07', nat: 'BA' },
@@ -981,7 +1061,17 @@ html.locked #gate { display: grid; }
         { name: 'Maté Onodi Janoskuti', pos: 'ArD', hand: 'G', born: '2002-06-17', nat: 'HU' },
         { name: 'Damien Gibernon', pos: 'AiD', hand: 'G', born: '2000-05-17', nat: 'FR' },
         { name: 'Remi Peyre', pos: 'AiD', hand: 'G', born: '2004-01-30', nat: 'FR' },
-        { name: 'Mohammad Sanad', pos: 'AiD', hand: 'G', born: '1991-01-16', nat: 'FR' }
+        { name: 'Mohammad Sanad', pos: 'AiD', hand: 'G', born: '1991-01-16', nat: 'FR' },
+        { name: 'Clément Grosjean', pos: 'GB', born: '2006-04-05', nat: 'FR', cf: true },
+        { name: 'Lenny Berthet-Macle', pos: 'AiG', hand: 'D', born: '2006-05-03', nat: 'FR', cf: true },
+        { name: 'Axel Dugalic', pos: 'ArG', hand: 'D', born: '2007-12-21', nat: 'FR', cf: true },
+        { name: 'Samuel Gorisse', pos: 'ArG', hand: 'D', born: '2008-01-24', nat: 'FR', cf: true },
+        { name: 'Kelidjee Boisne-Noc', pos: 'DC', born: '2008-02-02', nat: 'FR', cf: true },
+        { name: 'Jordan Fluet', pos: 'Piv', born: '2008-04-05', nat: 'FR', cf: true },
+        { name: 'Gabin Gaumier', pos: 'Piv', born: '2007-01-25', nat: 'FR', cf: true },
+        { name: 'Roméo Cortes', pos: 'ArD', hand: 'G', born: '2007-08-10', nat: 'FR', cf: true },
+        { name: 'Bastien Lafosse', pos: 'ArD', hand: 'G', born: '2006-04-24', nat: 'FR', cf: true },
+        { name: 'Sam Tuxagues', pos: 'AiD', hand: 'G', born: '2007-11-14', nat: 'FR', cf: true }
       ],
       CES: [
         { name: 'Jean-Emmanuel Kouassi', pos: 'GB', born: '1999-03-24', nat: 'FR' },
@@ -997,7 +1087,14 @@ html.locked #gate { display: grid; }
         { name: 'Gustavo Rodrigues', pos: 'ArD', hand: 'G', born: '1995-04-09', nat: 'BR' },
         { name: 'Mathieu Salou', pos: 'ArD', hand: 'G', born: '2000-05-26', nat: 'FR' },
         { name: 'Martial Caïs', pos: 'AiD', hand: 'G', born: '2002-03-07', nat: 'FR' },
-        { name: 'Alex Moran', pos: 'AiD', hand: 'G', born: '1999-12-20', nat: 'FR' }
+        { name: 'Alex Moran', pos: 'AiD', hand: 'G', born: '1999-12-20', nat: 'FR' },
+        { name: 'Roméo Lemoine', pos: 'AiG', hand: 'D', born: '2006-08-24', nat: 'FR', cf: true },
+        { name: 'Keldi Bastoini', pos: 'ArG', hand: 'D', born: '2006-02-13', nat: 'FR', cf: true },
+        { name: 'Lilian Lombard', pos: 'ArG', hand: 'D', born: '2006-04-28', nat: 'FR', cf: true },
+        { name: 'Alexandre Baradat', pos: 'DC', born: '2006-09-19', nat: 'FR', cf: true },
+        { name: 'Theo Fradet', pos: 'Piv', born: '2006-07-27', nat: 'FR', cf: true },
+        { name: 'Tristan Devevey', pos: 'ArD', hand: 'G', born: '2007-03-23', nat: 'FR', cf: true },
+        { name: 'Emerick Gerard', pos: 'ArD', hand: 'G', born: '2006-03-20', nat: 'FR', cf: true }
       ],
       DUN: [
         { name: 'Alejandro Romero Carreras', pos: 'GB', born: '1994-09-17', nat: 'CU' },
@@ -1014,7 +1111,19 @@ html.locked #gate { display: grid; }
         { name: 'Yanis Busselier', pos: 'ArD', hand: 'G', born: '2002-08-01', nat: 'FR' },
         { name: 'Matthieu Marmier', pos: 'ArD', hand: 'G', born: '2000-06-08', nat: 'FR' },
         { name: 'Thibaud Arteaga', pos: 'AiD', hand: 'G', born: '1998-06-05', nat: 'FR' },
-        { name: 'Florian Billant', pos: 'AiD', hand: 'G', born: '1996-07-07', nat: 'FR' }
+        { name: 'Florian Billant', pos: 'AiD', hand: 'G', born: '1996-07-07', nat: 'FR' },
+        { name: 'Timothe Riss', pos: 'GB', born: '2006-01-13', nat: 'FR', cf: true },
+        { name: 'Jean-Rosny Kolenda', pos: 'AiG', hand: 'D', born: '2006-01-15', nat: 'FR', cf: true },
+        { name: 'Marwan Ancoub', pos: 'ArG', hand: 'D', born: '2008-11-13', nat: 'FR', cf: true },
+        { name: 'Amil Maliki', pos: 'ArG', hand: 'D', born: '2005-05-05', nat: 'FR', cf: true },
+        { name: 'Lukas Delattre', pos: 'DC', born: '2006-01-30', nat: 'FR', cf: true },
+        { name: 'Mathieu Machtelinckx', pos: 'Piv', born: '2007-01-22', nat: 'FR', cf: true },
+        { name: 'Zacharie Pille', pos: 'Piv', born: '2006-10-21', nat: 'FR', cf: true },
+        { name: 'Yann Six', pos: 'Piv', born: '2005-02-10', nat: 'FR', cf: true },
+        { name: 'Tristan Gourguechon', pos: 'ArD', hand: 'G', born: '2006-04-07', nat: 'FR', cf: true },
+        { name: 'Thibault Guille', pos: 'ArD', hand: 'G', born: '2007-07-03', nat: 'FR', cf: true },
+        { name: 'Martin Hemery', pos: 'ArD', hand: 'G', born: '2008-05-03', nat: 'FR', cf: true },
+        { name: 'Nathan Laforge', pos: 'AiD', hand: 'G', born: '2006-07-26', nat: 'FR', cf: true }
       ],
       CHR: [
         { name: 'Mehdi Harbaoui', pos: 'GB', born: '1996-09-11', nat: 'FR' },
@@ -1032,7 +1141,18 @@ html.locked #gate { display: grid; }
         { name: 'Oussama Hosni', pos: 'ArD', hand: 'G', born: '1992-09-17', nat: 'TN' },
         { name: 'Gabin Martinez', pos: 'ArD', hand: 'G', born: '2000-07-13', nat: 'FR' },
         { name: 'Paul Gourdel', pos: 'AiD', hand: 'G', born: '2004-04-14', nat: 'FR' },
-        { name: 'Edouard Kempf', pos: 'AiD', hand: 'G', born: '1998-03-20', nat: 'FR' }
+        { name: 'Edouard Kempf', pos: 'AiD', hand: 'G', born: '1998-03-20', nat: 'FR' },
+        { name: 'Johan Leroy', pos: 'GB', born: '2007-01-05', nat: 'FR', cf: true },
+        { name: 'Gabin Charloton', pos: 'AiG', hand: 'D', born: '2007-02-02', nat: 'FR', cf: true },
+        { name: 'Jules Frappier', pos: 'AiG', hand: 'D', born: '2008-10-16', nat: 'FR', cf: true },
+        { name: 'Tomas Barral', pos: 'ArG', hand: 'D', born: '2008-04-27', nat: 'FR', cf: true },
+        { name: 'Nikita Solomon', pos: 'ArG', hand: 'D', born: '2008-05-13', nat: 'FR', cf: true },
+        { name: 'Sacha Durasnel', pos: 'DC', born: '2006-02-02', nat: 'FR', cf: true },
+        { name: 'Amaury Siegler', pos: 'DC', born: '2008-11-10', nat: 'FR', cf: true },
+        { name: 'Inza Diaby-Fofana', pos: 'Piv', born: '2007-03-06', nat: 'FR', cf: true },
+        { name: 'Jules Rose', pos: 'Piv', born: '2005-11-14', nat: 'FR', cf: true },
+        { name: 'Seifeldin Ibrahim', pos: 'ArD', hand: 'G', born: '2006-06-16', nat: 'FR', cf: true },
+        { name: 'Rémi Fernandez-Gonzalez', pos: 'AiD', hand: 'G', born: '2007-04-12', nat: 'FR', cf: true }
       ],
       TRE: [
         { name: 'Kévin Bonnefoi', pos: 'GB', born: '1991-12-03', nat: 'FR' },
@@ -1049,7 +1169,16 @@ html.locked #gate { display: grid; }
         { name: 'Raphael Kötters', pos: 'ArD', hand: 'G', born: '2001-01-21', nat: 'BE' },
         { name: 'Antoine Leger', pos: 'ArD', hand: 'G', born: '1998-02-06', nat: 'FR' },
         { name: 'Théo Avelange Demouge', pos: 'AiD', hand: 'G', born: '1996-03-11', nat: 'FR' },
-        { name: 'Mathis Barelle', pos: 'AiD', hand: 'G', born: '2006-04-04', nat: 'FR' }
+        { name: 'Mathis Barelle', pos: 'AiD', hand: 'G', born: '2006-04-04', nat: 'FR' },
+        { name: 'Clement Francoise', pos: 'GB', born: '2008-11-19', nat: 'FR', cf: true },
+        { name: 'Yaniss Azur', pos: 'AiG', hand: 'D', born: '2006-12-29', nat: 'FR', cf: true },
+        { name: 'Madih Sinitambirivoutin', pos: 'AiG', hand: 'D', born: '2008-08-06', nat: 'FR', cf: true },
+        { name: 'Selim Berrou', pos: 'ArG', hand: 'D', born: '2006-03-09', nat: 'FR', cf: true },
+        { name: 'Martin Bialkowski', pos: 'ArG', hand: 'D', born: '2005-06-07', nat: 'FR', cf: true },
+        { name: 'Matthias Rathelot-Launay', pos: 'DC', born: '2007-10-05', nat: 'FR', cf: true },
+        { name: 'Ewen Sidhoum', pos: 'Piv', born: '2006-01-09', nat: 'FR', cf: true },
+        { name: 'Mory Toure', pos: 'ArD', hand: 'G', born: '2008-03-18', nat: 'FR', cf: true },
+        { name: 'Mayron Varin', pos: 'AiD', hand: 'G', born: '2008-05-12', nat: 'FR', cf: true }
       ],
       SEL: [
         { name: 'Romain Mathias', pos: 'GB', born: '1997-09-13', nat: 'FR' },
@@ -1068,7 +1197,14 @@ html.locked #gate { display: grid; }
         { name: 'Quentin Eymann', pos: 'ArD', hand: 'G', born: '1991-04-22', nat: 'FR' },
         { name: 'Tony Mendy', pos: 'ArD', hand: 'G', born: '2002-12-10', nat: 'FR' },
         { name: 'Oreste Vescovo', pos: 'ArD', hand: 'G', born: '2003-01-04', nat: 'FR' },
-        { name: 'Pedro Portela', pos: 'AiD', hand: 'G', born: '1990-01-06', nat: 'PT' }
+        { name: 'Pedro Portela', pos: 'AiD', hand: 'G', born: '1990-01-06', nat: 'PT' },
+        { name: 'Romann Carle', pos: 'GB', born: '2005-06-13', nat: 'FR', cf: true },
+        { name: 'Louis Giesi', pos: 'ArG', hand: 'D', born: '2008-04-28', nat: 'FR', cf: true },
+        { name: 'Gabin Laforce', pos: 'ArG', hand: 'D', born: '2006-03-03', nat: 'FR', cf: true },
+        { name: 'Alex Pompon', pos: 'ArG', hand: 'D', born: '2007-02-23', nat: 'FR', cf: true },
+        { name: 'Kays Ighirri', pos: 'DC', born: '2007-10-18', nat: 'FR', cf: true },
+        { name: 'Paul Laine', pos: 'Piv', born: '2006-08-21', nat: 'FR', cf: true },
+        { name: 'Enzo Herter', pos: 'AiD', hand: 'G', born: '2007-09-23', nat: 'FR', cf: true }
       ],
       SAR: [
         { name: 'Nikola Matovic', pos: 'GB', born: '1998-05-08', nat: 'ME' },
@@ -1086,7 +1222,17 @@ html.locked #gate { display: grid; }
         { name: 'Clément Damiani', pos: 'ArD', hand: 'G', born: '1998-09-29', nat: 'FR' },
         { name: 'Milos Orbovic', pos: 'ArD', hand: 'G', born: '1993-11-02', nat: 'RS' },
         { name: 'Francisco de Almeida Tavares', pos: 'AiD', hand: 'G', born: '1996-11-14', nat: 'PT' },
-        { name: 'Théo Reuillard', pos: 'AiD', hand: 'G', born: '2001-06-12', nat: 'FR' }
+        { name: 'Théo Reuillard', pos: 'AiD', hand: 'G', born: '2001-06-12', nat: 'FR' },
+        { name: 'Maé Dominguez', pos: 'GB', born: '2007-12-20', nat: 'FR', cf: true },
+        { name: 'Noé Epiard', pos: 'GB', born: '2006-05-13', nat: 'FR', cf: true },
+        { name: 'Zachari Bonnin', pos: 'AiG', hand: 'D', born: '2008-02-12', nat: 'FR', cf: true },
+        { name: 'Pol Gremiau', pos: 'AiG', hand: 'D', born: '2006-06-21', nat: 'FR', cf: true },
+        { name: 'Kenissa Betare', pos: 'ArG', hand: 'D', born: '2007-04-14', nat: 'FR', cf: true },
+        { name: 'Wyliam Carlus', pos: 'ArG', hand: 'D', born: '2008-10-24', nat: 'FR', cf: true },
+        { name: 'Noah Carriou', pos: 'DC', born: '2008-06-05', nat: 'FR', cf: true },
+        { name: 'Vincent Gress Hayet', pos: 'Piv', born: '2006-07-05', nat: 'FR', cf: true },
+        { name: 'Samuel Dupuy', pos: 'ArD', hand: 'G', born: '2007-10-14', nat: 'FR', cf: true },
+        { name: 'Nathan Louis Sidney', pos: 'ArD', hand: 'G', born: '2008-08-04', nat: 'FR', cf: true }
       ],
       CAE: [
         { name: 'Milos Mocevic', pos: 'GB', born: '1995-08-16', nat: 'BA' },
@@ -1103,7 +1249,8 @@ html.locked #gate { display: grid; }
         { name: 'Fares Ghoul', pos: 'Piv', born: '1995-03-15', nat: 'TN' },
         { name: 'Yassine Ben Salem', pos: 'ArD', hand: 'G', born: '2003-11-03', nat: 'TN' },
         { name: 'Louis Tournellec', pos: 'ArD', hand: 'G', born: '2000-06-20', nat: 'FR' },
-        { name: 'Antonio Areia', pos: 'AiD', hand: 'G', born: '1990-06-21', nat: 'PT' }
+        { name: 'Antonio Areia', pos: 'AiD', hand: 'G', born: '1990-06-21', nat: 'PT' },
+        { name: 'Robin Molliex', pos: 'AiD', hand: 'G', born: '2005-01-23', nat: 'FR', cf: true }
       ]
     }
   };
@@ -1305,8 +1452,6 @@ html.locked #gate { display: grid; }
   const hasMod = (t, key) => !!(t && t.mods && t.mods.includes(key));
   // Caractéristiques fixes de chaque club (les mêmes à chaque partie) : supporters et centre de formation, de 1 à 5
   const clubOf = (t) => CLUBS.find(c => c.id === (t && t.id)) || LEGACY_CLUBS.find(c => c.id === (t && t.id)) || {};
-  // Taille maximale de l'effectif : 16, ou l'effectif réel de départ s'il est plus grand
-  const squadMax = (t) => Math.max(16, (t && t.cap) || 0);
   const fansOf = (t) => clubOf(t).fans || { h: 3, a: 2, name: 'Les Supporters' };
   const academyOf = (t) => clubOf(t).academy || 3;
   // Décalage de niveau et de potentiel des jeunes : −1 (centre à 1) à +1 (centre à 5)
@@ -1426,6 +1571,7 @@ html.locked #gate { display: grid; }
     if (r.nat && r.nat !== 'FR') p.nat = r.nat; else delete p.nat;
     if (r.hand === 'G' || r.hand === 'D') p.hand = r.hand;
     p.real = true;
+    if (r.cf) { p.cf = true; p.youth = true; }
     return p;
   }
   function makeTeam(club) {
@@ -1433,9 +1579,10 @@ html.locked #gate { display: grid; }
     const players = [], yo = club.academy ? (club.academy - 3) * 0.5 : 0;
     const roster = (DATA && DATA.rosters && DATA.rosters[club.id] || []).filter(r => r && r.name && POS.includes(r.pos));
     for (const pos of POS) {
-      const real = roster.filter(r => r.pos === pos);
+      const real = roster.filter(r => r.pos === pos).sort((a, b) => !!a.cf - !!b.cf);
       // Effectif réel : le premier listé à chaque poste en titulaire, les autres en rotation (à affiner plus tard)
-      real.forEach((r, k) => players.push(realPlayer(r, k === 0 ? base + 1 : base - 0.8, club.id, yo)));
+      // Joueurs du centre de formation (cf) : un cran en dessous, étiquette J comme les jeunes formés au club
+      real.forEach((r, k) => players.push(realPlayer(r, r.cf ? base - 2.2 : k === 0 ? base + 1 : base - 0.8, club.id, yo)));
       // Poste vide dans l'effectif réel (ou club sans effectif) : joueurs générés pour en avoir deux
       for (let k = real.length; k < (roster.length ? 1 : 2); k++) players.push(makePlayer(pos, k === 0 ? base + 1 : base - 0.8, club.id, yo));
     }
@@ -1591,8 +1738,8 @@ html.locked #gate { display: grid; }
     const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
     const yv = y.pot - 1 + (rnd() - 0.5) * 2;
     let out = null, ok = false;
-    if (t.players.length < squadMax(t)) ok = !worst || yv >= worst.ovr + 1.8;
-    else if (worst && yv > proj(worst) + 2.5) { ok = true; out = worst; }
+    // Pas de plafond d'effectif : le staff garde le jeune s'il vaut nettement mieux que le plus faible du poste
+    ok = !worst || yv >= worst.ovr + 1.8;
     if (ok) {
       if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
       t.players.push(y);
@@ -2539,8 +2686,21 @@ html.locked #gate { display: grid; }
     intense: { label: 'Intense', mult: 1.6, rec: -12 }
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
+  // Réserve : les joueurs en tribune (ni sur la feuille de match, ni blessés) jouent avec la réserve le même jour,
+  // sans match simulé : 20 à 60 minutes tirées au hasard, qui comptent pour 60 % dans l'expérience de match
+  const RESERVE = { min: 20, max: 60, xp: 0.6 };
+  function reserveRound(st, ids) {
+    for (const t of st.teams) {
+      if (ids && !ids.has(t.id)) continue;
+      const out = new Set(t.out || []);
+      for (const p of t.players) {
+        p.lastRes = out.has(p.id) && !hurt(p) ? ri(RESERVE.min, RESERVE.max) : 0;
+        if (p.lastRes) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
+      }
+    }
+  }
   function matchXP(p) {
-    const m = p.lastMins === undefined ? 20 : p.lastMins;
+    const m = (p.lastMins === undefined ? 20 : p.lastMins) + (p.lastRes || 0) * RESERVE.xp;
     let f = m < 20 ? 0.7 + 0.3 * (m / 20) : Math.min(1.3, 1 + 0.3 * (m - 20) / 25);
     if (p.age < 23) f = 1 + (f - 1) * 2;
     return Math.round(f * 100) / 100;
@@ -2617,7 +2777,7 @@ html.locked #gate { display: grid; }
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, squadMax, clubOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -2780,7 +2940,7 @@ html.locked #gate { display: grid; }
     const tile = (l, v, sub) => `<div class="stile"><span class="label">${l}</span><b class="num">${v}</b>${sub ? `<span class="muted">${sub}</span>` : ''}</div>`;
     const tiles = [tile('Matchs joués', played.length || p.apps || 0, `${hs.length} journée${hs.length > 1 ? 's' : ''}`), tile('Min / match', played.length ? Math.round(sum(2) / played.length) : '–', `${Math.round(sum(2))} min au total`)]
       .concat(gk ? [tile('Arrêts', sum(5), pct(sum(5), sum(6)) + ' des tirs'), tile('Tirs subis', sum(6))] : [tile('Buts', sum(3), `${sum(4)} tirs · ${pct(sum(3), sum(4))}`), tile('Pertes de balle', sum(7)), tile('Exclusions', sum(8))])
-      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
+      .concat([tile('Note moyenne des matchs', avgN === null ? '–' : avgN.toFixed(1).replace('.', ','), 'sur 10'), tile('Réserve', p.resApps || 0, p.resApps ? `match${p.resApps > 1 ? 's' : ''} · ${p.resMins} min` : 'aucun match'), tile('MVP du match', p.mvp || 0, p.mvpBoost === G.round ? 'en confiance pour ce match' : (p.mvp ? 'cette saison' : '–'))]);
     const keys = H.POS_ATTRS[p.pos], traits = gk ? [] : H.TRAITS.map((x) => x[0]);
     const a0 = p.a0 || p.a;
     const attr = (k) => { const v = p.a[k], g = v - (a0[k] ?? v); return `<div class="sattr${keys.includes(k) ? ' key' : ''}"${k === 'robustesse' ? ` title="Résistance aux blessures : ${robTxt(v)}"` : ''}><span>${esc(ATTR_LABEL[k])}</span><span class="sbar"><span style="width:${v * 5}%" class="${heat(v)}"></span></span><b class="num">${v}</b><span class="num ${g > 0 ? 'dlt' : g < 0 ? 'dlt neg' : 'muted'}">${g > 0 ? '+' + g : g < 0 ? g : ''}</span></div>`; };
@@ -3353,6 +3513,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       rd.push({ h, a, hs: rr.h.score, as: rr.a.score, mvp: rr.mvp ? rr.mvp.id : null });
     }
     G.results.push(rd);
+    // Réserve : les joueurs en tribune des clubs qui ont joué prennent des minutes avec la réserve
+    H.reserveRound(G, playing);
     for (const p of me().players) delete p.matchStyle;
     G.round++;
     // Infirmerie : une semaine de soins pour les blessés d'avant, puis les blessés du jour
@@ -3575,9 +3737,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const rows = sorted.map((p) => {
       const keys = H.POS_ATTRS[p.pos];
       const st = starters.has(p.id);
-      return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ' <span class="yt" title="Formé au club">J</span>' : ''}</td>
+      return `<tr><td class="stick"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> <span class="pname">${plink(p)}</span>${st ? ' <span class="tit" title="Titulaire">T</span>' : ''}${(t.out || []).includes(p.id) ? ' <span class="hand" title="En tribune">Tr</span>' : ''}${p.youth ? ` <span class="yt" title="${p.cf ? 'Joueur du centre de formation' : 'Formé au club'}">J</span>` : ''}</td>
         <td class="r">${p.age}</td><td><span class="lat ${p.hand === 'G' ? 'g' : 'd'}" title="${p.hand === 'G' ? 'Gaucher' : 'Droitier'}">${p.hand}</span></td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td><td class="r">${(() => { const d = dsign(p); return d > 0 ? '<span class="dlt" title="En progrès depuis le début de saison">▲</span>' : d < 0 ? '<span class="dlt neg" title="En baisse depuis le début de saison">▼</span>' : '<span class="muted">·</span>'; })()}</td>${suivi ? `<td class="r nw">${p.mvpBoost === G.round ? `<span class="mvpmini" title="Confiance de MVP : +1 de forme pour ce match">${CROWN}</span> ` : ''}${formTxt(p.form)}</td>
-        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
+        <td><span class="fatbar" title="${p.fatigue}/100"><span style="width:${p.fatigue}%;background:${fatCol(p.fatigue)}"></span></span> <span class="num muted" style="font-size:0.78rem">${p.fatigue}</span></td><td class="r num">${p.apps ? Math.round(p.mins / p.apps) : '–'}</td><td class="r num">${(() => { const x = H.matchXP(p); return `<span class="${x > 1.02 ? 'dlt' : x < 0.98 ? 'dlt neg' : 'muted'}" title="${Math.round(p.lastMins || 0)} min au dernier match${p.lastRes ? `, ${p.lastRes} min avec la réserve` : ''}">×${x.toFixed(1).replace('.', ',')}</span>`; })()}</td>` : ''}
         ${groups.map(([, cols]) => cols.map(([k], ci) => `<td class="ac ${TRAIT_KEYS.includes(k) ? 'tr' + Math.min(5, Math.ceil((p.a[k] || 1) / 4)) : heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${ci === 0 ? ' gs' : ''}${wk.has(p.id + ':' + k) || (k === 'collectif' && sty.get(p.id) > 0) ? ' upw' : ''}${k === 'collectif' && sty.get(p.id) < 0 ? ' dnw' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}${wk.has(p.id + ':' + k) ? ' (+1 à l\'entraînement cette semaine)' : ''}${k === 'collectif' ? (p.a[k] <= 7 ? ' (joueur perso)' : p.a[k] >= 15 ? ' (joueur très collectif)' : '') : ''}${k === 'robustesse' ? ` (${robTxt(p.a[k])})` : ''}"><span class="v">${p.a[k]}</span></td>`).join('')).join('')}
         <td class="r gs">${gk ? p.saves : p.goals}</td></tr>`;
     }).join('');
@@ -3677,7 +3839,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   // Comparaison : le jeune face aux joueurs de l'effectif qui peuvent tenir son poste
   const ATTR_SHORT = Object.fromEntries(FIELD_COLS.concat(GK_COLS).flatMap(([, cols]) => cols));
-  function youthCompare(y, t, rel) {
+  function youthCompare(y, t) {
     const ref = sref(), at = (p) => H.ovrAt(p, y.pos);
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => at(b) - at(a));
     const sec = t.players.filter((p) => p.pos !== y.pos && H.SECONDARY[p.pos].includes(y.pos)).sort((a, b) => at(b) - at(a));
@@ -3685,8 +3847,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const row = (p, cls, tag) => `<tr class="${cls}"><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}"${p.pos !== y.pos ? ` title="${esc(H.POS_LABEL[p.pos])}, peut dépanner à ce poste"` : ''}>${p.pos}</span> ${cls === 'me' ? `<b>${esc(short(p.name))}</b>` : esc(short(p.name))}${tag}</td><td class="r">${p.age}</td>
       <td class="nw">${vstars(at(p), { sm: true, title: p.pos === y.pos ? undefined : `Au poste ${H.POS_LABEL[y.pos].toLowerCase()} : ${H.starLabel(H.stars(at(p), ref)).toLowerCase()}` })}</td><td class="nw">${pot(p, { sm: true })}</td>
       ${cols.map((k, i) => `<td class="ac ${heat(p.a[k])}${keys.includes(k) ? ' key' : ''}${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])} : ${p.a[k]}"><span class="v">${p.a[k]}</span></td>`).join('')}</tr>`;
-    const tagOf = (p) => (p.id === rel ? ' <span class="tag refused">Part</span>' : '') ;
-    const rows = row(y, 'me', ' <span class="yt" title="Le jeune du centre">J</span>') + same.concat(sec).map((p) => row(p, p.id === rel ? 'refused' : '', tagOf(p))).join('');
+    const rows = row(y, 'me', ' <span class="yt" title="Le jeune du centre">J</span>') + same.concat(sec).map((p) => row(p, '', '')).join('');
     const none = !same.length && !sec.length ? `<tr><td colspan="${4 + cols.length}" class="muted">Personne à ce poste dans ton effectif.</td></tr>` : '';
     return `<div class="ycmp" style="margin-top:14px"><span class="label">Face à ton effectif · ${H.POS_LABEL[y.pos].toLowerCase()}</span>
       <div class="scroll"><table class="sq ly"><thead><tr><th>Joueur</th><th class="r">Âge</th><th title="Niveau à ce poste, par rapport à ton club">Niveau</th><th>Potentiel</th>${cols.map((k, i) => `<th class="ac${i === 0 ? ' gs' : ''}" title="${esc(ATTR_LABEL[k])}">${ATTR_SHORT[k]}</th>`).join('')}</tr></thead><tbody>${rows}${none}</tbody></table></div>
@@ -3696,12 +3857,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (U.yBatch) return youthBatch();
     const y = G.youth.p, t = me();
     const nb = (G.leagueYouth || []).filter((l) => l.round === G.youth.round).length + 1;
-    const full = t.players.length >= H.squadMax(t);
-    const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
     const attrs = (y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS)).concat([H.ROBUST]);
     const keys = Object.keys(H.WEIGHTS[y.pos]);
-    const rel = U.yRelease;
-    const relName = rel ? (t.players.find((p) => p.id === rel) || {}).name : null;
     return `<div class="ycard">
       <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="label" style="color:var(--iso-youth)">Centre de formation · après la journée ${G.youth.round}</span>
         <h2 id="ytitle" style="margin-top:4px">${esc(y.name)}</h2>
@@ -3709,11 +3866,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="ynotes">${(() => { const r = H.potRange(y, sref()); return `<div><span class="label">Niveau</span>${vstars(y.ovr)}</div><div><span class="label">Potentiel estimé</span>${potbar(r)}<span class="muted" style="font-size:0.8rem">${potTxt(r).replace(', estimation du staff', '')}</span></div>`; })()}</div></div>
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
-      ${U.yCmp ? youthCompare(y, t, rel) : ''}
-      ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/${H.squadMax(t)}) : choisis qui part pour lui faire de la place</span>
-        <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
-        : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/${H.squadMax(t)}. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
-      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
+      ${U.yCmp ? youthCompare(y, t) : ''}
+      <p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length} joueurs. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14, les autres jouent avec la réserve.</p>
+      <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept">Le recruter</button>
         <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ycmp" aria-pressed="${!!U.yCmp}" title="Ses attributs face à ceux de tes joueurs au même poste">${U.yCmp ? 'Masquer la comparaison' : 'Comparer avec l\'effectif'}</button><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
   }
@@ -3724,11 +3879,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
-          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à ${H.squadMax(t)} joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
+          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Pas de limite d'effectif : la feuille de match reste à 14, les joueurs en tribune jouent avec la réserve et prennent de l'expérience.</p>`}
       </section>
       <div style="display:grid;gap:20px;min-width:0">
         <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
-          <p class="legend">Effectif : ${t.players.length}/${H.squadMax(t)} joueurs.</p></section>
+          <p class="legend">Effectif : ${t.players.length} joueurs.</p></section>
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
       </div></div>${leagueYouthPanel()}`;
   }
@@ -4370,7 +4525,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
         <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${fitN > 14 ? ` Feuille de match : 14 joueurs sur ${fitN}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
         <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, fitN > 14, false)).join('')}</div></div>
-        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label">En tribune · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
+        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label" title="Les joueurs en tribune jouent avec la réserve le jour du match : 20 à 60 minutes, qui comptent pour leur progression">En tribune · réserve · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
         ${hurtP.length ? `<div class="dropzone infz"><span class="label">À l'infirmerie · ${hurtP.length}</span><div class="row" style="gap:6px">${hurtP.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}</span>`).join('')}<button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div></div>` : ''}
       </section>
       <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
@@ -4500,18 +4655,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'yaccept': {
         if (!G.youth) return;
         const tm = me(), y = G.youth.p;
-        let decision = 'Recruté';
-        if (tm.players.length >= H.squadMax(tm)) {
-          const out = tm.players.find((p) => p.id === U.yRelease);
-          if (!out) return;
-          tm.players = tm.players.filter((p) => p.id !== out.id);
-          tm.out = (tm.out || []).filter((id) => id !== out.id);
-          for (const pos of H.POS) if (tm.lineup[pos] === out.id) {
-            const rep = tm.players.filter((p) => p.pos === pos).sort((a, b) => b.ovr - a.ovr)[0] || y;
-            tm.lineup[pos] = rep.id;
-          }
-          decision = `Recruté, ${out.name} quitte le club`;
-        }
+        const decision = 'Recruté';
         tm.players.push(y);
         for (const pos of H.POS) if (!tm.players.some((p) => p.id === tm.lineup[pos])) tm.lineup[pos] = y.id;
         H.ensureSheet(tm);

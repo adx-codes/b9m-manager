@@ -192,8 +192,6 @@
   const hasMod = (t, key) => !!(t && t.mods && t.mods.includes(key));
   // Caractéristiques fixes de chaque club (les mêmes à chaque partie) : supporters et centre de formation, de 1 à 5
   const clubOf = (t) => CLUBS.find(c => c.id === (t && t.id)) || LEGACY_CLUBS.find(c => c.id === (t && t.id)) || {};
-  // Taille maximale de l'effectif : 16, ou l'effectif réel de départ s'il est plus grand
-  const squadMax = (t) => Math.max(16, (t && t.cap) || 0);
   const fansOf = (t) => clubOf(t).fans || { h: 3, a: 2, name: 'Les Supporters' };
   const academyOf = (t) => clubOf(t).academy || 3;
   // Décalage de niveau et de potentiel des jeunes : −1 (centre à 1) à +1 (centre à 5)
@@ -313,6 +311,7 @@
     if (r.nat && r.nat !== 'FR') p.nat = r.nat; else delete p.nat;
     if (r.hand === 'G' || r.hand === 'D') p.hand = r.hand;
     p.real = true;
+    if (r.cf) { p.cf = true; p.youth = true; }
     return p;
   }
   function makeTeam(club) {
@@ -320,9 +319,10 @@
     const players = [], yo = club.academy ? (club.academy - 3) * 0.5 : 0;
     const roster = (DATA && DATA.rosters && DATA.rosters[club.id] || []).filter(r => r && r.name && POS.includes(r.pos));
     for (const pos of POS) {
-      const real = roster.filter(r => r.pos === pos);
+      const real = roster.filter(r => r.pos === pos).sort((a, b) => !!a.cf - !!b.cf);
       // Effectif réel : le premier listé à chaque poste en titulaire, les autres en rotation (à affiner plus tard)
-      real.forEach((r, k) => players.push(realPlayer(r, k === 0 ? base + 1 : base - 0.8, club.id, yo)));
+      // Joueurs du centre de formation (cf) : un cran en dessous, étiquette J comme les jeunes formés au club
+      real.forEach((r, k) => players.push(realPlayer(r, r.cf ? base - 2.2 : k === 0 ? base + 1 : base - 0.8, club.id, yo)));
       // Poste vide dans l'effectif réel (ou club sans effectif) : joueurs générés pour en avoir deux
       for (let k = real.length; k < (roster.length ? 1 : 2); k++) players.push(makePlayer(pos, k === 0 ? base + 1 : base - 0.8, club.id, yo));
     }
@@ -478,8 +478,8 @@
     const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
     const yv = y.pot - 1 + (rnd() - 0.5) * 2;
     let out = null, ok = false;
-    if (t.players.length < squadMax(t)) ok = !worst || yv >= worst.ovr + 1.8;
-    else if (worst && yv > proj(worst) + 2.5) { ok = true; out = worst; }
+    // Pas de plafond d'effectif : le staff garde le jeune s'il vaut nettement mieux que le plus faible du poste
+    ok = !worst || yv >= worst.ovr + 1.8;
     if (ok) {
       if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
       t.players.push(y);
@@ -1426,8 +1426,21 @@
     intense: { label: 'Intense', mult: 1.6, rec: -12 }
   };
   // Expérience de match : la progression de la semaine dépend des minutes jouées à la dernière journée
+  // Réserve : les joueurs en tribune (ni sur la feuille de match, ni blessés) jouent avec la réserve le même jour,
+  // sans match simulé : 20 à 60 minutes tirées au hasard, qui comptent pour 60 % dans l'expérience de match
+  const RESERVE = { min: 20, max: 60, xp: 0.6 };
+  function reserveRound(st, ids) {
+    for (const t of st.teams) {
+      if (ids && !ids.has(t.id)) continue;
+      const out = new Set(t.out || []);
+      for (const p of t.players) {
+        p.lastRes = out.has(p.id) && !hurt(p) ? ri(RESERVE.min, RESERVE.max) : 0;
+        if (p.lastRes) { p.resApps = (p.resApps || 0) + 1; p.resMins = (p.resMins || 0) + p.lastRes; }
+      }
+    }
+  }
   function matchXP(p) {
-    const m = p.lastMins === undefined ? 20 : p.lastMins;
+    const m = (p.lastMins === undefined ? 20 : p.lastMins) + (p.lastRes || 0) * RESERVE.xp;
     let f = m < 20 ? 0.7 + 0.3 * (m / 20) : Math.min(1.3, 1 + 0.3 * (m - 20) / 25);
     if (p.age < 23) f = 1 + (f - 1) * 2;
     return Math.round(f * 100) / 100;
@@ -1504,7 +1517,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, squadMax, clubOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
