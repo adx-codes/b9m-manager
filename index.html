@@ -458,6 +458,30 @@ td.tr5 .v { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
 .inj.frag { color: var(--warn); }
 .injline { margin: 4px 0 0; font-size: 0.9rem; }
 .injrow { display: flex; gap: 8px; align-items: baseline; padding-block: 4px; }
+/* Feuille de match */
+.mgrid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start; }
+.mright { display: grid; gap: 20px; min-width: 0; }
+.mbelow { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.mrow { display: grid; grid-template-columns: 42px minmax(0, 1fr) 84px 40px 26px auto; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size: 0.9rem; cursor: grab; }
+.mrow.mb { grid-template-columns: 42px minmax(0, 1fr) 84px 40px; }
+.mrow.mres { opacity: 0.72; }
+.mname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mbar { display: inline-block; width: 36px; height: 5px; border-radius: 3px; background: var(--sunk); overflow: hidden; vertical-align: middle; }
+.mbar > span { display: block; height: 100%; }
+.mseg button { padding: 3px 9px; font-size: 0.78rem; }
+.mgrp { margin-bottom: 4px; }
+.mghead { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; padding: 8px 0 4px; cursor: pointer; color: inherit; text-align: left; font: inherit; }
+.mghead .label { margin: 0; }
+.chev { color: var(--muted); width: 10px; }
+.msum { margin-left: auto; font-size: 0.8rem; }
+.mgrp.fold { border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); padding-bottom: 4px; }
+.court.mbig { aspect-ratio: 16 / 9; }
+.slot.mslot { width: 140px; cursor: grab; }
+.mbench { display: grid; gap: 2px; }
+.malert { font-size: 0.85rem; margin: 6px 0 0; }
+.dropzone.mdz { margin: -10px; }
+.tgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 32px; align-items: start; }
+.tgrid > :first-child { grid-column: 1 / -1; }
 .reslist { display: flex; flex-wrap: wrap; gap: 6px; }
 table.cft td { vertical-align: middle; }
 .injbox { margin-top: 14px; display: grid; gap: 2px; }
@@ -3116,7 +3140,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const app = document.getElementById('app');
     applyTheme();
     if (!G) { app.innerHTML = renderHome() + deviceModal(); return; }
-    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, tactique: renderTactics, championnat: renderLeague };
+    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, feuille: renderFeuille, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
     app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
@@ -3167,7 +3191,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
     const pos = G.results.length ? `${ord(rank())} de la ${LEAGUE}` : 'Avant la 1re journée';
-    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['infirmerie', 'Infirmerie'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
+    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['infirmerie', 'Infirmerie'], ['feuille', 'Feuille de match'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
       <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
@@ -3286,7 +3310,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? `${esc(H.fansOf(t).name)} te portent : +${pctTxt(H.homeShot(t))} de réussite au tir. ${esc(opp.name)} perd plus de ballons et prend plus d'exclusions${H.awayCut(opp) ? `, un peu moins grâce à ses supporters en déplacement (−${Math.round(H.awayCut(opp) * 100)} %)` : ''}.` : `Chez ${esc(H.fansOf(opp).name)}, l'adversaire tire mieux (+${pctTxt(H.homeShot(opp))}) et l'arbitre siffle plus sévèrement ta défense : évite la défense agressive. ${H.awayCut(t) ? `Tes supporters en déplacement réduisent ce handicap de ${Math.round(H.awayCut(t) * 100)} %.` : 'Tes supporters ne se déplacent pas : tu pars avec tout le handicap.'}`}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
-            <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
+            <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="feuille">Feuille de match</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
           </div>
         </section>
         <section class="panel"><h3>L'adversaire</h3>
@@ -3622,6 +3646,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (!nf || nf.rest || G.trainPending) return;
     for (const t of G.teams) if (t.id !== G.userId) H.aiPrepare(t);
     H.ensureSheet(me());
+    G.lastSheet = { lineup: { ...me().lineup }, out: (me().out || []).slice() };
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
     U.prevSc = null;
     U.side = nf.h === G.userId ? 0 : 1;
@@ -4199,7 +4224,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       { key: 'salle', tab: G.trainPending && !(U.view === 'post' && U.post) ? 'entrainement' : 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan' },
       { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes' },
       { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
-      { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Composer les 7' },
+      { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Régler le système' },
       { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
       { key: 'infirmerie', tab: 'infirmerie', label: 'Infirmerie', sub: (() => { const n = t.players.filter(H.hurt).length; return n ? `${n} blessé${n > 1 ? 's' : ''} en soins` : 'Tout le monde est valide'; })(), c: 'var(--iso-med)', at: [3.85, 10.25, 26], cta: 'Voir les soins' },
       { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', sub: H.fansOf(t).name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters' },
@@ -4515,17 +4540,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     <rect x="85" y="0" width="30" height="3.5" fill="#fff"/>
     <line x1="0" y1="149.5" x2="200" y2="149.5" stroke="#fff" stroke-opacity="0.6" stroke-width="1"/>
   </svg>`;
-  function slotHtml(t, pos) {
-    const cur = t.players.find((p) => p.id === t.lineup[pos]);
-    const opts = t.players.filter((p) => (pos === 'GB' ? p.pos === 'GB' : p.pos !== 'GB') && !H.hurt(p))
-      .sort((x, y) => (y.pos === pos) - (x.pos === pos) || ovrAt(y, pos) - ovrAt(x, pos));
-    return `<div class="slot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"><span class="label">${H.POS_LABEL[pos]}</span>
-      <select id="slot-${pos}" data-pos="${pos}" aria-label="${H.POS_LABEL[pos]}">${opts.map((p) => `<option value="${p.id}" ${p.id === cur.id ? 'selected' : ''}>${esc(short(p.name))} · ${sfmt(H.stars(ovrAt(p, pos), sref()))}${p.pos !== pos ? ' (' + p.pos + (H.SECONDARY[p.pos].includes(pos) ? ', poste 2' : '') + ')' : ''}</option>`).join('')}</select>
-      <span class="ovr">${cur.hand === 'G' ? 'Gaucher' : 'Droitier'} · fat. ${cur.fatigue} · forme ${cur.form > 0 ? '+' : ''}${cur.form}${(pos === 'ArD' || pos === 'AiD') && cur.hand === 'D' ? ' · <b style="color:var(--bad)">mauvais côté</b>' : ''}</span></div>`;
-  }
-  function dragChip(p, click, ghost) {
-    return `<button class="chip dragchip${ghost ? ' ghostchip' : ''}" draggable="true" data-drag="${p.id}" ${click ? `data-act="tribune" data-id="${p.id}"` : ''}><span class="grip" aria-hidden="true">⋮⋮</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${esc(short(p.name))} ${vstars(p.ovr, { sm: true })}</button>`;
-  }
   // Glisser-déposer de la composition : banc ⇄ tribune, et vers un poste du terrain
   function setLineup(t, pos, pid) {
     const p = t.players.find((x) => x.id === pid);
@@ -4545,6 +4559,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const starters = new Set(Object.values(t.lineup));
     const inOut = t.out.includes(pid);
     if (zone === 'slot') { if (!setLineup(t, pos, pid)) return; }
+    else if ((zone === 'bench' || zone === 'tribune') && starters.has(pid)) setStatus(t, pid, zone === 'bench' ? 'B' : 'R');
     else if (zone === 'tribune' && !inOut && !starters.has(pid)) {
       let back = targetId && t.out.includes(targetId) ? targetId : null;
       if (!back) back = t.out.slice().sort((a, b) => (P(b).pos === p.pos) - (P(a).pos === p.pos) || P(b).ovr - P(a).ovr)[0];
@@ -4589,21 +4604,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderTactics() {
     H.ensureSheet(me());
     const t = me(), tac = t.tactic, r = tac.rules, fi = fitInfo(t);
-    const hurtP = t.players.filter(H.hurt), fitN = t.players.length - hurtP.length;
     const sel = (rule, field, opts, cur, fmt) => `<select class="rsel" data-rule="${rule}" data-field="${field}" aria-label="${rule} ${field}">${opts.map((o) => `<option value="${o}" ${String(o) === String(cur) ? 'selected' : ''}>${fmt ? fmt(o) : o}</option>`).join('')}</select>`;
-    const starters = new Set(Object.values(t.lineup));
-    const bench = t.players.filter((p) => !starters.has(p.id) && !H.hurt(p)).sort((x, y) => H.POS.indexOf(x.pos) - H.POS.indexOf(y.pos));
-    return `<div class="grid2">
-      <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:12px"><h3 style="margin:0">Composition</h3><button class="btn" data-act="auto">Composition auto</button></div>
-        <div class="court">${COURT}${H.POS.map((p) => slotHtml(t, p)).join('')}</div>
-        <p class="legend">Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.</p>
-        <p class="legend" style="margin:6px 0 0">Glisse un joueur du banc ou de la tribune sur un poste du terrain pour le titulariser.${fitN > 14 ? ` Feuille de match : 14 joueurs sur ${fitN}. Glisse-dépose entre le banc et la tribune (sur un joueur pour les échanger), ou clique sur un joueur pour le faire passer de l'un à l'autre.` : ''}</p>
-        <div class="dropzone" data-drop="bench"><span class="label">Banc · ${bench.filter((p) => !(t.out || []).includes(p.id)).length}</span><div class="row" style="gap:6px">${bench.filter((p) => !(t.out || []).includes(p.id)).map((p) => dragChip(p, fitN > 14, false)).join('')}</div></div>
-        ${fitN > 14 ? `<div class="dropzone trib" data-drop="tribune"><span class="label" title="Les joueurs en tribune jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux (moins de minutes chacun quand ils sont nombreux), qui comptent un peu pour leur progression. Moins de 7 : séance d'entraînement au hasard à la place.">En tribune · réserve · ${(t.out || []).length}</span><div class="row" style="gap:6px">${(t.out || []).map((id) => t.players.find((p) => p.id === id)).filter(Boolean).map((p) => dragChip(p, true, true)).join('')}</div></div>` : ''}
-        ${hurtP.length ? `<div class="dropzone infz"><span class="label">À l'infirmerie · ${hurtP.length}</span><div class="row" style="gap:6px">${hurtP.map((p) => `<span class="chip"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}</span>`).join('')}<button class="btn" data-act="tab" data-id="infirmerie">Voir l'infirmerie</button></div></div>` : ''}
-      </section>
-      <section class="panel"><h3>Système de jeu</h3><div style="display:grid;gap:20px">
-        ${adviceHtml(t, 'tactique')}
+    return `
+      <section class="panel"><h3>Système de jeu</h3><div class="tgrid">
+        <div>${adviceHtml(t, 'tactique')}</div>
         <div class="tsec"><span class="tsech">Attaque</span>
           <div class="opt"><span class="label">Rythme</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="att" data-id="${x}" aria-pressed="${tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div><p>${ATT_TXT[tac.att][1]}.</p></div>
           <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="jeu" data-id="${k}" aria-pressed="${tac.jeu === k}">${l}</button>`).join('')}</div>
@@ -4626,7 +4630,104 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         </div>
         <div class="opt"><span class="label">Consignes · 2 maximum</span><div class="row" style="gap:8px">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="cons" data-id="${k}" aria-pressed="${tac.cons.includes(k)}">${l}</button>`).join('')}</div>
           <p>Une troisième consigne remplace la plus ancienne.</p></div>
-      </div></section></div>`;
+      </div></section>`;
+  }
+
+  // ---------- Feuille de match : le groupe (titulaire, banc, réserve), les 7 de départ, le banc, la réserve, l'infirmerie ----------
+  const FOLD_KEY = 'hbm-fold';
+  function folded() { if (!U.fold) { try { U.fold = JSON.parse(localStorage.getItem(FOLD_KEY) || '[]'); } catch (e) { U.fold = []; } } return U.fold; }
+  const GROUP_LABEL = { GB: 'Gardiens', AiG: 'Ailiers gauches', ArG: 'Arrières gauches', DC: 'Demi-centres', Piv: 'Pivots', ArD: 'Arrières droits', AiD: 'Ailiers droits' };
+  const statusOf = (t, p) => H.hurt(p) ? 'I' : Object.values(t.lineup).includes(p.id) ? 'T' : (t.out || []).includes(p.id) ? 'R' : 'B';
+  const fatCol = (f) => f < 28 ? 'var(--good)' : f < 55 ? 'var(--warn)' : 'var(--bad)';
+  const fbar = (f) => `<span class="mbar" title="Fatigue ${f}/100"><span style="width:${Math.min(100, f)}%;background:${fatCol(f)}"></span></span>`;
+  const formTag = (f) => f > 0 ? `<span style="color:var(--good)">+${f}</span>` : f < 0 ? `<span style="color:var(--bad)">${f}</span>` : '<span class="muted">=</span>';
+  // Étiquettes après un nom : J (centre) ; drapeau et croix en plus quand le nom n'est pas un lien (plink les met déjà)
+  const ptags = (p, full) => (p.cf ? ' <span class="yt" title="Joueur du centre de formation">J</span>' : '') + (full ? (H.flagOf(p) ? ` <span class="flag">${H.flagOf(p)}</span>` : '') + injTag(p) : '');
+  const rowTip = (p) => `${p.name} · ${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'} · fatigue ${p.fatigue} · forme ${p.form > 0 ? '+' : ''}${p.form} · robustesse : ${robTxt(p.a.robustesse ?? 12)} · expérience ×${H.matchXP(p).toFixed(1).replace('.', ',')}`;
+  function renderFeuille() {
+    H.ensureSheet(me());
+    const t = me(), fold = folded(), nf = nextFixture();
+    const fit = t.players.filter((p) => !H.hurt(p)), hurtP = t.players.filter(H.hurt);
+    const flt = U.sheetFilter || 'tous', can = fit.length > 14;
+    const show = fit.filter((p) => flt === 'tous' || (flt === 'centre' ? p.cf : !p.cf));
+    const st = (p) => statusOf(t, p);
+    const bench = fit.filter((p) => st(p) === 'B').sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos) || b.ovr - a.ovr);
+    const res = fit.filter((p) => st(p) === 'R').sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos) || b.ovr - a.ovr);
+    const row = (p) => { const s = st(p);
+      return `<div class="mrow${s === 'R' ? ' mres' : ''}" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}<span class="mform num">${formTag(p.form)}</span>
+        <span class="seg sm mseg">${['T', 'B', 'R'].map((k) => `<button data-act="pst" data-id="${p.id}|${k}" aria-pressed="${s === k}" title="${{ T: 'Titulaire', B: 'Banc', R: 'Réserve' }[k]}"${k === 'R' && !can && s !== 'R' ? ' disabled' : ''}>${k}</button>`).join('')}</span></div>`; };
+    const groups = H.POS.map((pos) => {
+      const ps = show.filter((p) => p.pos === pos).sort((a, b) => 'TBR'.indexOf(st(a)) - 'TBR'.indexOf(st(b)) || b.ovr - a.ovr);
+      if (!ps.length) return '';
+      const sum = ['T', 'B', 'R'].map((k) => { const n = ps.filter((p) => st(p) === k).length; return n ? `${k} ${n}` : ''; }).filter(Boolean).join(' · ');
+      const f = fold.includes(pos);
+      return `<div class="mgrp${f ? ' fold' : ''}"><button class="mghead" data-act="fold" data-id="${pos}" aria-expanded="${!f}"><span class="chev">${f ? '▸' : '▾'}</span><span class="label">${GROUP_LABEL[pos]} · ${ps.length}</span><span class="muted msum">${sum}</span></button>${f ? '' : ps.map(row).join('')}</div>`;
+    }).join('');
+    const slot = (pos) => { const p = t.players.find((x) => x.id === t.lineup[pos]);
+      return `<div class="slot mslot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"${p ? ` draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"` : ''}><span class="label">${H.POS_LABEL[pos]}</span>${p ? `<b>${esc(short(p.name))}${ptags(p, true)}</b><span class="row" style="gap:6px">${vstars(ovrAt(p, pos), { sm: true })}${fbar(p.fatigue)}${p.pos !== pos ? `<span class="muted" style="font-size:0.72rem">${p.pos}</span>` : ''}${(pos === 'ArD' || pos === 'AiD') && p.hand === 'D' ? '<span style="color:var(--bad);font-size:0.72rem" title="Droitier côté droit : moins efficace au tir">main</span>' : ''}</span>` : '<span class="muted">—</span>'}</div>`; };
+    const gkBench = bench.some((p) => p.pos === 'GB');
+    const noCover = H.POS.filter((pos) => pos !== 'GB' && !bench.some((p) => p.pos === pos));
+    const benchRow = (p) => `<div class="mrow mb" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
+    return `<div class="row" style="justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0">Feuille de match${nf && !nf.rest ? ` · journée ${G.round + 1}` : ''}</h2>${nf && !nf.rest ? `<span class="muted">${nf.h === t.id ? 'contre' : 'à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}</span>` : ''}</div>
+      <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip">Titulaires <b>${Object.keys(t.lineup).length}/7</b></span><span class="chip">Banc <b>${bench.length}/7</b></span><span class="chip">Réserve <b>${res.length}</b></span><span class="chip">Infirmerie <b>${hurtP.length}</b></span>
+        ${G.lastSheet ? '<button class="btn" data-act="sheetback" title="Les 7 de départ et la feuille de match du dernier match">Reprendre la dernière feuille</button>' : ''}<button class="btn" data-act="rotate" title="Les titulaires au-delà de 55 de fatigue passent sur le banc, remplacés par le joueur le plus frais du poste">Faire tourner</button><button class="btn primary" data-act="auto">Composition auto</button></div></div>
+      <div class="mgrid">
+        <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Groupe · ${fit.length}</h3><span class="seg sm mseg">${[['tous', 'Tous'], ['pros', 'Pros'], ['centre', 'Centre']].map(([k, l]) => `<button data-act="sflt" data-id="${k}" aria-pressed="${flt === k}">${l}</button>`).join('')}</span></div>
+          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve. Glisse une ligne sur le terrain pour la titulariser. Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
+        <div class="mright">
+          <section class="panel"><h3>Les 7 de départ</h3><div class="court mbig">${COURT}${H.POS.map(slot).join('')}</div><p class="legend">${LINEUP_LEGEND}</p></section>
+          <div class="mbelow"><div style="display:grid;gap:20px;align-content:start">
+            <section class="panel"><div class="dropzone mdz" data-drop="bench"><h3>Banc · ${bench.length}/7</h3><div class="mbench">${bench.map(benchRow).join('') || '<span class="muted">Personne sur le banc.</span>'}</div>
+              <p class="malert" style="color:var(--${gkBench ? 'good' : 'warn'})">${gkBench ? '✓ Gardien remplaçant' : '⚠ Pas de gardien remplaçant'}</p>${noCover.length ? `<p class="malert" style="color:var(--warn)" title="Un joueur d'un poste voisin dépannera">⚠ Pas de doublure : ${noCover.map((pos) => H.POS_LABEL[pos].toLowerCase()).join(', ')}</p>` : ''}</div></section>
+            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3><div class="row" style="gap:6px">${res.map((p) => `<span class="chip dragchip" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}</span>`).join('')}</div><p class="legend">Ils jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p></div></section>` : ''}</div>
+            <section class="panel"><h3>Infirmerie · ${hurtP.length}</h3>${hurtP.length ? hurtP.map((p) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}<span class="muted">${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}</span></div>`).join('') : '<p class="muted" style="margin:0">Tout le monde est valide.</p>'}<p class="legend">Les blessés ne peuvent pas aller sur la feuille de match.</p></section>
+          </div></div></div>`;
+  }
+  const LINEUP_LEGEND = `Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.`;
+  // Changer le statut d'un joueur en gardant 14 joueurs sur la feuille (7 titulaires, 7 sur le banc)
+  function setStatus(t, pid, to) {
+    const P = (id) => t.players.find((x) => x.id === id), p = P(pid);
+    if (!p || H.hurt(p)) return;
+    t.out = t.out || [];
+    const cur = statusOf(t, p);
+    if (cur === to) return;
+    const score = (q, pos) => ovrAt(q, pos || q.pos) - q.fatigue * 0.04;
+    const benchOf = () => t.players.filter((q) => statusOf(t, q) === 'B');
+    const resOf = () => t.players.filter((q) => statusOf(t, q) === 'R');
+    const pickBest = (list, pos) => list.filter((q) => (pos === 'GB') === (q.pos === 'GB')).sort((a, b) => (b.pos === pos) - (a.pos === pos) || score(b, pos) - score(a, pos))[0];
+    // Un joueur quitte le banc : on fait monter le meilleur de la réserve à son poste ; il y entre : on y renvoie le moins bon
+    const pullFromRes = (pos) => { const q = pickBest(resOf(), pos) || resOf().sort((a, b) => score(b) - score(a))[0]; if (q) t.out = t.out.filter((x) => x !== q.id); };
+    const pushToRes = (pos, keep) => { const b = benchOf().filter((q) => !keep.includes(q.id)); const gk = b.filter((q) => q.pos === 'GB').length;
+      const q = b.filter((x) => x.pos !== 'GB' || gk > 1).sort((a, c) => (c.pos === pos) - (a.pos === pos) || score(a) - score(c))[0]; if (q) t.out.push(q.id); };
+    if (cur === 'T') {
+      const slot = Object.keys(t.lineup).find((k) => t.lineup[k] === pid);
+      const rep = pickBest(benchOf(), slot) || pickBest(resOf(), slot);
+      if (!rep) return;
+      const fromRes = t.out.includes(rep.id);
+      t.out = t.out.filter((x) => x !== rep.id);
+      t.lineup[slot] = rep.id;
+      if (to === 'R') { t.out.push(pid); if (!fromRes) pullFromRes(p.pos); } else if (fromRes) { /* il va sur le banc, le remplaçant venait de la réserve : rien à compenser */ }
+    } else if (to === 'T') {
+      const slot = p.pos;
+      const prev = t.lineup[slot];
+      const fromRes = cur === 'R';
+      t.out = t.out.filter((x) => x !== pid);
+      t.lineup[slot] = pid;
+      if (fromRes) pushToRes(slot, [prev]);
+    } else if (to === 'B') { t.out = t.out.filter((x) => x !== pid); pushToRes(p.pos, [pid]); }
+    else if (to === 'R') { t.out.push(pid); pullFromRes(p.pos); }
+    H.ensureSheet(t);
+  }
+  // Faire tourner : un titulaire au-delà de 55 de fatigue cède sa place au joueur le plus frais de son poste
+  function rotateTired(t) {
+    let n = 0;
+    for (const pos of H.POS) {
+      const p = t.players.find((x) => x.id === t.lineup[pos]);
+      if (!p || p.fatigue <= 55) continue;
+      const alt = t.players.filter((q) => q.pos === pos && q.id !== p.id && !H.hurt(q) && q.fatigue < 55 && !Object.values(t.lineup).includes(q.id)).sort((a, b) => a.fatigue - b.fatigue || b.ovr - a.ovr)[0];
+      if (alt) { setStatus(t, alt.id, 'T'); n++; }
+    }
+    return n;
   }
 
   // ---------- Championnat ----------
@@ -4717,9 +4818,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'mcons': toggleCons(ms.tac, id); liveUpdate([]); return;
       case 'att': t.tactic.att = id; save(); render(); return;
       case 'cons': toggleCons(t.tactic, id); save(); render(); return;
-      case 'auto': H.autoLineup(t); H.ensureSheet(t); save(); render(); return;
+      case 'auto': H.autoLineup(t); t.out = []; H.ensureSheet(t); save(); render(); return;
       case 'yrel': U.yRelease = id; render(); return;
       case 'ycmp': U.yCmp = !U.yCmp; render(); return;
+      case 'pst': { const [pid, k] = id.split('|'); setStatus(me(), pid, k); save(); render(); return; }
+      case 'fold': { const f = folded(); U.fold = f.includes(id) ? f.filter((x) => x !== id) : f.concat(id); try { localStorage.setItem(FOLD_KEY, JSON.stringify(U.fold)); } catch (e) { /* stockage indisponible */ } render(); return; }
+      case 'sflt': U.sheetFilter = id; render(); return;
+      case 'rotate': { const n = rotateTired(me()); save(); render(); notify(`<span><b>Faire tourner</b><br>${n ? `${n} titulaire${n > 1 ? 's' : ''} fatigué${n > 1 ? 's' : ''} mis au repos.` : 'Aucun titulaire au-delà de 55 de fatigue avec un remplaçant frais à son poste.'}</span>`, false); return; }
+      case 'sheetback': { const t = me(), L = G.lastSheet; if (!L) return; for (const pos of H.POS) { const p = t.players.find((x) => x.id === L.lineup[pos]); if (p && !H.hurt(p)) t.lineup[pos] = p.id; } t.out = L.out.filter((id) => t.players.some((p) => p.id === id && !H.hurt(p))); H.ensureSheet(t); save(); render(); return; }
       case 'relask': U.relAsk = U.relAsk === id ? null : id; render(); return;
       case 'relyes': { const t = me(), p = t.players.find((x) => x.id === id); if (!p || !p.cf) return; const mv = H.releasePlayer(G, t, p); U.relAsk = null; save(); render();
         if (mv) notify(`<span class="nbadge" style="background:var(--iso-youth)">J</span><span><b>${esc(mv.name)} quitte le centre</b><br>${mv.to ? `Il signe à ${esc(T(mv.to).name)}.` : 'Il reste sans club pour l\'instant.'}</span>`, false); return; }
