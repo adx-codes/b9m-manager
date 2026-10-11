@@ -360,7 +360,7 @@ Un joueur peut se blesser en match ou pendant la semaine d'entraînement. Mesur�
 | Sérieuse | 11 % | 5 à 8 matchs | Déchirure musculaire, fracture de la main |
 | Grave | 2 % | 10 à 16 matchs | Rupture du ligament croisé |
 
-- **Robustesse :** attribut propre à chaque joueur, gardiens compris (1 à 20, moyenne 12, un peu plus basse après 30 ans). Elle ne compte pas dans le niveau et ne s'entraîne pas. Le risque double tous les 5 points sous 12 et se divise par deux tous les 5 points au-dessus : mesuré, 0,63 blessure par joueur et par saison pour une robustesse de 8 ou moins, 0,29 entre les deux, 0,14 à 16 ou plus. Colonne Rob. dans l'effectif (groupe Physique), dans la fiche joueur, la fiche du jeune du centre et sa comparaison avec l'effectif ; mots au survol (très fragile à très solide).
+- **Robustesse :** attribut propre à chaque joueur, gardiens compris (1 à 20, moyenne 12, un peu plus basse après 30 ans). Elle ne compte pas dans le niveau et ne s'entraîne pas. Prévu avec les saisons multiples : elle décroîtra avec l'âge, saison après saison, à partir de sa valeur de base. Le risque double tous les 5 points sous 12 et se divise par deux tous les 5 points au-dessus : mesuré, 0,63 blessure par joueur et par saison pour une robustesse de 8 ou moins, 0,29 entre les deux, 0,14 à 16 ou plus. Colonne Rob. dans l'effectif (groupe Physique), dans la fiche joueur, la fiche du jeune du centre et sa comparaison avec l'effectif ; mots au survol (très fragile à très solide).
 - **Ce qui augmente le risque :** la fatigue (au-delà de 40, nettement), l'intensité du match, l'homme à homme et la défense agressive ; à l'entraînement, l'intensité Intense (×1,8 ; Légère ×0,5). Les gardiens se blessent moins. Bonus Soins : 15 % de blessures en moins et une absence parfois raccourcie d'un match ; malus : l'inverse.
 - **En match :** le joueur sort aussitôt, remplacé par le meilleur du banc à son poste (sinon à un poste voisin). Une notification courte l'annonce, rien dans le fil du match. Le résumé d'après-match liste les blessés et leur remplaçant dans le 7 de départ.
 - **Entre les matchs :** un blessé ne va pas sur la feuille de match ; s'il était titulaire, le staff le remplace dans le 7 de départ. Petite croix rouge à côté de son nom partout, détail au survol. Une semaine de repos compte comme un match manqué.
@@ -500,7 +500,7 @@ Point de vigilance : le meilleur buteur tourne autour de 9 buts par match, un pe
 **Après le MVP, par ordre de priorité :**
 
 1. Comprendre ses matchs : homme du match, rapport qui explique le résultat, objectifs de la direction.
-2. Saisons multiples : vieillissement, retraites, nouveaux potentiels, historique des fiches joueurs sur plusieurs saisons.
+2. Saisons multiples : vieillissement, retraites, nouveaux potentiels, historique des fiches joueurs sur plusieurs saisons. Robustesse qui évolue avec l'âge : garder la robustesse de base de chaque joueur et la faire décroître au fil des saisons (passage de saison, via `migrate()`).
 3. Mercato et contrats, ouverts depuis le siège du club (et la chasse aux légendes des clubs adverses).
 4. Suspensions (les blessures sont en place, voir Blessures).
 5. Coupe et compétitions européennes.

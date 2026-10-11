@@ -37,3 +37,7 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 - Jeux de mots bienvenus là où ils tombent bien (noms, petites légendes, messages), sans en faire trop : un clin d'œil de temps en temps, jamais dans les infos utiles au jeu. Le championnat s'appelle la SparLigue (clin d'œil à la Lidl Starligue).
 - Jeu pensé pour PC et tablette, pas pour mobile : on peut utiliser la largeur (conteneur à 1 440 px).
 - Ne jamais afficher la note sur 20 ni le potentiel chiffré : tout passe par les étoiles (`stars`, `potRange` dans engine.js ; `pstars`, `vstars` dans ui.js).
+
+## Chantiers notés pour plus tard
+
+- Robustesse et âge : avec les saisons multiples, faire décroître la robustesse de chaque joueur saison après saison, à partir de sa robustesse de base (à mémoriser par joueur, via `migrate()`). Aujourd'hui elle est tirée une fois à la création, un peu plus basse après 30 ans, et ne bouge plus.
