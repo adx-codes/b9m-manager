@@ -314,8 +314,11 @@
     if (r.cf) { p.cf = true; p.youth = true; }
     return p;
   }
+  // Niveau de départ des joueurs selon la réputation du club (en étoiles)
+  // Écarts resserrés pour la saison réelle (effectifs plus fournis) : un 4 étoiles prend 76–79 % des points contre un 2 étoiles
+  const REP_LEVEL = { 5: 13.9, 4: 13.2, 3: 12.8, 2: 12.4, 1: 11.9 };
   function makeTeam(club) {
-    const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[club.rep];
+    const base = REP_LEVEL[club.rep];
     const players = [], yo = club.academy ? (club.academy - 3) * 0.5 : 0;
     const roster = (DATA && DATA.rosters && DATA.rosters[club.id] || []).filter(r => r && r.name && POS.includes(r.pos));
     for (const pos of POS) {
@@ -1561,7 +1564,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
