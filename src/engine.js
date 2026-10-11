@@ -614,10 +614,11 @@
   const INJ_LABEL = { leger: 'Légère', moyen: 'Moyenne', serieux: 'Sérieuse', grave: 'Grave' };
   function hurt(p) { return !!(p && p.inj && p.inj.n > 0); }
   function gone(s, id) { return s.red.has(id) || s.hurt.has(id); }
-  // Un joueur peut se blesser si l'équipe garde un gardien valide et au moins 8 joueurs de champ valides
+  // Garde-fou : l'équipe garde toujours un gardien valide et au moins 10 joueurs de champ valides
+  const MIN_FIELD = 10;
   function canHurt(t, p, extra) {
     const fit = t.players.filter(x => !hurt(x) && !(extra && extra.has(x.id)));
-    return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > 8;
+    return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > MIN_FIELD;
   }
   function injMods(t) { return hasMod(t, 'soins+') ? 0.85 : hasMod(t, 'soins-') ? 1.15 : 1; }
   function rollInjury(st, t, p, ctx) {
@@ -657,9 +658,18 @@
     return out;
   }
   // Retour anticipé : disponible tout de suite, mais fragile pendant quelques semaines (rechute plus longue)
-  function canRushBack(p) { return hurt(p) && p.inj.sev !== 'grave' && !/^Rechute/.test(p.inj.type); }
+  // Raison d'un refus (null si possible) : blessure grave, rechute, ou effectif trop juste
+  // (sans lui et sans les autres joueurs fragiles, il faut encore 10 joueurs de champ valides)
+  function rushBlock(t, p) {
+    if (!hurt(p)) return 'valide';
+    if (p.inj.sev === 'grave') return 'grave';
+    if (/^Rechute/.test(p.inj.type)) return 'rechute';
+    if (p.pos !== 'GB' && t.players.filter(x => x.pos !== 'GB' && x.id !== p.id && !hurt(x) && !(x.frag > 0)).length < MIN_FIELD) return 'effectif';
+    return null;
+  }
+  function canRushBack(t, p) { return !rushBlock(t, p); }
   function rushBack(t, p) {
-    if (!canRushBack(p)) return false;
+    if (!canRushBack(t, p)) return false;
     p.frag = p.inj.n + 2;
     p.inj = null;
     ensureSheet(t);
@@ -1465,7 +1475,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

@@ -1392,10 +1392,11 @@ html.locked #gate { display: grid; }
   const INJ_LABEL = { leger: 'Légère', moyen: 'Moyenne', serieux: 'Sérieuse', grave: 'Grave' };
   function hurt(p) { return !!(p && p.inj && p.inj.n > 0); }
   function gone(s, id) { return s.red.has(id) || s.hurt.has(id); }
-  // Un joueur peut se blesser si l'équipe garde un gardien valide et au moins 8 joueurs de champ valides
+  // Garde-fou : l'équipe garde toujours un gardien valide et au moins 10 joueurs de champ valides
+  const MIN_FIELD = 10;
   function canHurt(t, p, extra) {
     const fit = t.players.filter(x => !hurt(x) && !(extra && extra.has(x.id)));
-    return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > 8;
+    return p.pos === 'GB' ? fit.filter(x => x.pos === 'GB').length >= 2 : fit.filter(x => x.pos !== 'GB').length > MIN_FIELD;
   }
   function injMods(t) { return hasMod(t, 'soins+') ? 0.85 : hasMod(t, 'soins-') ? 1.15 : 1; }
   function rollInjury(st, t, p, ctx) {
@@ -1435,9 +1436,18 @@ html.locked #gate { display: grid; }
     return out;
   }
   // Retour anticipé : disponible tout de suite, mais fragile pendant quelques semaines (rechute plus longue)
-  function canRushBack(p) { return hurt(p) && p.inj.sev !== 'grave' && !/^Rechute/.test(p.inj.type); }
+  // Raison d'un refus (null si possible) : blessure grave, rechute, ou effectif trop juste
+  // (sans lui et sans les autres joueurs fragiles, il faut encore 10 joueurs de champ valides)
+  function rushBlock(t, p) {
+    if (!hurt(p)) return 'valide';
+    if (p.inj.sev === 'grave') return 'grave';
+    if (/^Rechute/.test(p.inj.type)) return 'rechute';
+    if (p.pos !== 'GB' && t.players.filter(x => x.pos !== 'GB' && x.id !== p.id && !hurt(x) && !(x.frag > 0)).length < MIN_FIELD) return 'effectif';
+    return null;
+  }
+  function canRushBack(t, p) { return !rushBlock(t, p); }
   function rushBack(t, p) {
-    if (!canRushBack(p)) return false;
+    if (!canRushBack(t, p)) return false;
     p.frag = p.inj.n + 2;
     p.inj = null;
     ensureSheet(t);
@@ -2243,7 +2253,7 @@ html.locked #gate { display: grid; }
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;
@@ -3877,14 +3887,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const frag = t.players.filter((p) => !H.hurt(p) && p.frag > 0);
     const log = (G.injLog || []).filter((x) => x.team === t.id).slice().reverse();
     const card = (p) => {
-      const i = p.inj, ok = H.canRushBack(p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
+      const i = p.inj, ok = H.canRushBack(t, p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
       return `<div class="injcard"><div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="spacer" style="flex:1"></span><span class="tag sev ${i.sev}">${H.INJ_LABEL[i.sev]}</span></div>
         <p style="margin:6px 0 0">${esc(i.type)} <span class="muted">· ${i.ctx === 'train' ? "à l'entraînement" : 'en match'}, journée ${i.round}</span></p>
         <div class="row" style="gap:10px;margin-top:6px"><span class="injprog" title="${done} match${done > 1 ? 's' : ''} manqué${done > 1 ? 's' : ''} sur ${i.n0}"><span style="width:${(done / i.n0) * 100}%"></span></span><span>${absTxt(i.n)} · retour prévu à la journée ${G.round + i.n + 1}</span></div>
         ${ok ? (ask ? `<div class="opt injask"><p style="margin:0">Il rejoue dès le prochain match, mais reste fragile pendant ${i.n + 2} semaines : environ une chance sur quatre de rechute, plus longue que la blessure de départ.</p>
             <div class="row" style="margin-top:8px"><button class="btn primary" data-act="rushyes" data-id="${p.id}">Oui, il revient</button><button class="btn" data-act="rush" data-id="${p.id}">Annuler</button></div></div>`
           : `<div class="row" style="margin-top:8px"><button class="btn" data-act="rush" data-id="${p.id}">Le faire revenir plus tôt</button></div>`)
-          : `<p class="legend" style="margin:8px 0 0">${i.sev === 'grave' ? 'Blessure grave : le staff médical refuse tout retour anticipé.' : 'Rechute : le staff médical le garde jusqu\'au bout.'}</p>`}</div>`;
+          : `<p class="legend" style="margin:8px 0 0">${{ grave: 'Blessure grave : le staff médical refuse tout retour anticipé.', rechute: 'Rechute : le staff médical le garde jusqu\'au bout.', effectif: `Pas de retour anticipé pour l'instant : en cas de rechute, il te resterait moins de ${H.MIN_FIELD} joueurs de champ valides (les joueurs déjà revenus plus tôt comptent comme fragiles).` }[H.rushBlock(t, p)]}</p>`}</div>`;
     };
     return `<div class="grid2">
       <section class="panel"><h3>En soins</h3><div style="display:grid;gap:12px">

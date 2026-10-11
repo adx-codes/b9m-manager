@@ -363,8 +363,8 @@ Un joueur peut se blesser en match ou pendant la semaine d'entraînement. Mesur�
 - **Ce qui augmente le risque :** la fatigue (au-delà de 40, nettement), l'intensité du match, l'homme à homme et la défense agressive ; à l'entraînement, l'intensité Intense (×1,8 ; Légère ×0,5). Les gardiens se blessent moins. Bonus Soins : 15 % de blessures en moins et une absence parfois raccourcie d'un match ; malus : l'inverse.
 - **En match :** le joueur sort aussitôt, remplacé par le meilleur du banc à son poste (sinon à un poste voisin). Une notification courte l'annonce, rien dans le fil du match. Le résumé d'après-match liste les blessés et leur remplaçant dans le 7 de départ.
 - **Entre les matchs :** un blessé ne va pas sur la feuille de match ; s'il était titulaire, le staff le remplace dans le 7 de départ. Petite croix rouge à côté de son nom partout, détail au survol. Une semaine de repos compte comme un match manqué.
-- **Garde-fous :** une équipe garde toujours un gardien valide et au moins 8 joueurs de champ valides.
-- **Retour anticipé (infirmerie) :** sauf blessure grave ou rechute, le joueur rejoue dès le prochain match, mais reste fragile pendant ses semaines d'absence restantes plus deux (croix orange) : risque de blessure ×9 en match, ×5 à l'entraînement, soit environ une rechute sur quatre. Une rechute est plus longue (×1,5 plus un match) et interdit un nouveau retour anticipé.
+- **Garde-fous :** une équipe garde toujours un gardien valide et au moins 10 joueurs de champ valides (sur 12 à 14) : pas d'hécatombe possible.
+- **Retour anticipé (infirmerie) :** sauf blessure grave, rechute, ou effectif trop juste (sans lui et sans les joueurs déjà fragiles, il doit rester 10 joueurs de champ valides), le joueur rejoue dès le prochain match, mais reste fragile pendant ses semaines d'absence restantes plus deux (croix orange) : risque de blessure ×9 en match, ×5 à l'entraînement, soit environ une rechute sur quatre. Une rechute est plus longue (×1,5 plus un match) et interdit un nouveau retour anticipé.
 - **Clubs IA :** même risque, compositions qui écartent les blessés, jamais de retour anticipé.
 
 ## Centre de formation

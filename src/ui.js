@@ -1624,14 +1624,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const frag = t.players.filter((p) => !H.hurt(p) && p.frag > 0);
     const log = (G.injLog || []).filter((x) => x.team === t.id).slice().reverse();
     const card = (p) => {
-      const i = p.inj, ok = H.canRushBack(p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
+      const i = p.inj, ok = H.canRushBack(t, p), ask = U.rushAsk === p.id, done = Math.max(0, i.n0 - i.n);
       return `<div class="injcard"><div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p)}<span class="spacer" style="flex:1"></span><span class="tag sev ${i.sev}">${H.INJ_LABEL[i.sev]}</span></div>
         <p style="margin:6px 0 0">${esc(i.type)} <span class="muted">· ${i.ctx === 'train' ? "à l'entraînement" : 'en match'}, journée ${i.round}</span></p>
         <div class="row" style="gap:10px;margin-top:6px"><span class="injprog" title="${done} match${done > 1 ? 's' : ''} manqué${done > 1 ? 's' : ''} sur ${i.n0}"><span style="width:${(done / i.n0) * 100}%"></span></span><span>${absTxt(i.n)} · retour prévu à la journée ${G.round + i.n + 1}</span></div>
         ${ok ? (ask ? `<div class="opt injask"><p style="margin:0">Il rejoue dès le prochain match, mais reste fragile pendant ${i.n + 2} semaines : environ une chance sur quatre de rechute, plus longue que la blessure de départ.</p>
             <div class="row" style="margin-top:8px"><button class="btn primary" data-act="rushyes" data-id="${p.id}">Oui, il revient</button><button class="btn" data-act="rush" data-id="${p.id}">Annuler</button></div></div>`
           : `<div class="row" style="margin-top:8px"><button class="btn" data-act="rush" data-id="${p.id}">Le faire revenir plus tôt</button></div>`)
-          : `<p class="legend" style="margin:8px 0 0">${i.sev === 'grave' ? 'Blessure grave : le staff médical refuse tout retour anticipé.' : 'Rechute : le staff médical le garde jusqu\'au bout.'}</p>`}</div>`;
+          : `<p class="legend" style="margin:8px 0 0">${{ grave: 'Blessure grave : le staff médical refuse tout retour anticipé.', rechute: 'Rechute : le staff médical le garde jusqu\'au bout.', effectif: `Pas de retour anticipé pour l'instant : en cas de rechute, il te resterait moins de ${H.MIN_FIELD} joueurs de champ valides (les joueurs déjà revenus plus tôt comptent comme fragiles).` }[H.rushBlock(t, p)]}</p>`}</div>`;
     };
     return `<div class="grid2">
       <section class="panel"><h3>En soins</h3><div style="display:grid;gap:12px">
