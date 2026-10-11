@@ -3,7 +3,7 @@
   const H = window.HB;
   const KEY = 'hbm-save-v1';
   let G = null;
-  const U = { tab: 'ville', view: 'pre', m: null, side: 0, timer: null, speed: 1, paused: false, tPanel: false, post: null, sort: { k: 'pos', dir: 1 }, confirmReset: false, newClub: 'REN', ctlSig: '' };
+  const U = { tab: 'ville', view: 'pre', m: null, side: 0, timer: null, speed: 1, paused: false, tPanel: false, post: null, sort: { k: 'pos', dir: 1 }, confirmReset: false, newClub: H.CLUBS.some((c) => c.id === 'CES') ? 'CES' : H.CLUBS[0].id, ctlSig: '' };
 
   // ---------- Utilitaires ----------
   function save() { try { localStorage.setItem(KEY, JSON.stringify(G)); } catch (e) { /* stockage indisponible */ } }
@@ -223,7 +223,7 @@
   const hsl = (h, s, l) => `hsl(${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%)`;
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   function clubTheme(t) {
-    const base = H.CLUBS.find((c) => c.id === t.id) || t;
+    const base = H.clubOf(t).color ? H.clubOf(t) : t;
     const [h, s0, l0] = hexToHsl(t.color);
     const [h2, s2] = hexToHsl(base.color2 || '#c8a24a');
     // Couleurs du club volontairement atténuées : la base reste sobre, le contraste n'est qu'une touche
@@ -305,7 +305,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function renderHome() {
     return `<section class="hero"><span class="label">Prototype · ${LEAGUE} 2026-2027</span><h1>B9M<br><span>Manager</span></h1>
-      <p>Prends en main un club fictif, choisis tes 7, ton système défensif et tes consignes, puis vis la ${LEAGUE}, un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
+      <p>Prends en main un club de la saison ${H.DATA ? H.DATA.season : ""}, choisis tes 7, ton système défensif et tes consignes, puis vis la ${LEAGUE}, un championnat de 16 clubs en aller-retour (30 journées) simulé possession par possession.</p>
       <p class="devnote">À jouer sur ordinateur ou tablette (de préférence en paysage) : l'interface n'est pas faite pour les téléphones.</p></section>
       <ol class="steps" aria-label="Étapes"><li aria-current="${U.homeStep !== 2 ? 'step' : 'false'}"><b>1</b> Ton club</li><li aria-current="${U.homeStep === 2 ? 'step' : 'false'}"><b>2</b> Bonus et malus</li><li><b>3</b> Coup d'envoi</li></ol>
       ${U.homeStep === 2 ? modsPicker() : `<section class="panel"><h3>Choisis ton club</h3><div class="clubs">${H.CLUBS.slice().sort((a, b) => b.rep - a.rep || a.name.localeCompare(b.name, 'fr')).map((c) => `<button class="club" data-act="pick" data-id="${c.id}" aria-pressed="${U.newClub === c.id}" title="${esc(`${c.fans.name} · domicile ${c.fans.h}/5 · déplacement ${c.fans.a}/5 · centre de formation ${c.academy}/5`)}">${badge(c)}<span><span class="n">${esc(c.name)}</span><br><span class="c">${esc(c.city)} · ${stars(c.rep)}</span></span></button>`).join('')}</div>
@@ -1069,7 +1069,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (U.yBatch) return youthBatch();
     const y = G.youth.p, t = me();
     const nb = (G.leagueYouth || []).filter((l) => l.round === G.youth.round).length + 1;
-    const full = t.players.length >= 16;
+    const full = t.players.length >= H.squadMax(t);
     const same = t.players.filter((p) => p.pos === y.pos).sort((a, b) => H.stars(a.ovr, sref()) - H.stars(b.ovr, sref()) || b.age - a.age);
     const attrs = (y.pos === 'GB' ? H.GKA : H.FIELD.concat(H.TRAITS)).concat([H.ROBUST]);
     const keys = Object.keys(H.WEIGHTS[y.pos]);
@@ -1083,9 +1083,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <p class="legend" style="margin:10px 0">Attributs tirés au hasard. Le potentiel est une estimation du staff : la fourchette se resserre à mesure qu'il grandit. Tant qu'il est sous son potentiel, il progresse bien plus vite à l'entraînement ; une fois le potentiel atteint, presque plus.</p>
       <div class="yattrs">${attrs.map(([k, l]) => `<div style="--i:${keys.includes(k) ? attrs.length + keys.indexOf(k) : attrs.findIndex((a) => a[0] === k)}" class="yattr ${['excentricite', 'collectif'].includes(k) ? 'tr' + Math.min(5, Math.ceil(y.a[k] / 4)) : heat(y.a[k])}${keys.includes(k) ? ' key' : ''}"><span>${esc(l)}</span><b class="num">${y.a[k]}</b></div>`).join('')}</div>
       ${U.yCmp ? youthCompare(y, t, rel) : ''}
-      ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/16) : choisis qui part pour lui faire de la place</span>
+      ${full ? `<div class="opt" style="margin-top:14px"><span class="label">Effectif complet (${t.players.length}/${H.squadMax(t)}) : choisis qui part pour lui faire de la place</span>
         <div class="row" style="gap:8px">${same.map((p) => `<button class="chip" data-act="yrel" data-id="${p.id}" aria-pressed="${rel === p.id}">${esc(short(p.name))} ${vstars(p.ovr, { sm: true })} ${p.age} ans</button>`).join('')}</div></div>`
-        : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/16. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
+        : `<p class="muted" style="margin:14px 0 0">Effectif : ${t.players.length}/${H.squadMax(t)}. Il rejoint le groupe sans que personne ne parte ; la feuille de match reste à 14.</p>`}
       <div class="row" style="margin-top:16px"><button class="btn primary" data-act="yaccept" ${full && !rel ? 'disabled' : ''}>${full ? (rel ? `Le recruter, ${esc(short(relName))} quitte le club` : 'Choisis un joueur à libérer') : 'Le recruter'}</button>
         <button class="btn" data-act="yrefuse">Le laisser partir</button>${modal ? '<button class="btn" data-act="ylater">Décider plus tard</button>' : ''}<span class="spacer" style="flex:1"></span><button class="btn" data-act="ycmp" aria-pressed="${!!U.yCmp}" title="Ses attributs face à ceux de tes joueurs au même poste">${U.yCmp ? 'Masquer la comparaison' : 'Comparer avec l\'effectif'}</button><button class="btn" data-act="ybatch" title="Tous les jeunes sortis des centres de la ligue à cette journée">Voir toute la promo (${nb})</button></div>
       <p class="legend" style="margin:8px 0 0">Sans réponse avant le prochain match, il signera ailleurs.</p></div>`;
@@ -1097,11 +1097,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return `<div class="grid2">
       <section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Centre de formation</h3><span class="trait"><span class="muted">Niveau du centre</span>${pips(H.academyOf(t), fanTips(t).f, 'Centre de formation')}</span></div>
         ${G.youth ? youthCard(false) : `<p style="margin:0">${nr ? `Prochain jeune proposé après la <b>journée ${nr}</b>, dans ${left} match${left > 1 ? 's' : ''}.` : 'Plus de jeune à proposer cette saison.'}</p>
-          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à 16 joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
+          <p class="muted">Un jeune sort du centre toutes les 5 journées, à un poste tiré au hasard. Ton effectif peut monter à ${H.squadMax(t)} joueurs ; au-delà, il faut libérer un joueur du même poste. La feuille de match reste limitée à 14.</p>`}
       </section>
       <div style="display:grid;gap:20px;min-width:0">
         <section class="panel"><h3>Jeunes dans l'effectif</h3>${youths.length ? youths.map((p) => `<div class="prog"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${esc(p.name)} · ${p.age} ans</span><span class="pitems"><span class="muted">Niveau</span> ${lstars(p, { sm: true })} <span class="muted" style="margin-left:8px">Potentiel</span> ${pot(p, { sm: true })}</span></div>`).join('') : '<p class="muted" style="margin:0">Aucun jeune du centre pour l\'instant.</p>'}
-          <p class="legend">Effectif : ${t.players.length}/16 joueurs.</p></section>
+          <p class="legend">Effectif : ${t.players.length}/${H.squadMax(t)} joueurs.</p></section>
         <section class="panel"><h3>Historique</h3>${G.youthLog.length ? `<div class="scroll"><table><tbody>${G.youthLog.map((l) => `<tr><td class="r">J${l.round}</td><td><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${esc(l.name)}</td><td class="nw">${(() => { const q = { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot }; const r = H.potRange(q, sref()); return `${vstars(q.ovr, { sm: true })}</td><td class="nw">${potbar(r, { sm: true })}`; })()}</td><td>${esc(l.decision)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted" style="margin:0">Aucun jeune proposé pour l\'instant.</p>'}</section>
       </div></div>${leagueYouthPanel()}`;
   }
@@ -1616,7 +1616,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div style="display:grid;gap:12px;margin-top:14px">
           <div class="opt"><span class="label">Ferveur à domicile</span><div class="row" style="gap:10px">${pips(f.h, tip.h, 'Ferveur à domicile')}<span>+${pctTxt(H.homeShot(t))} de réussite au tir à domicile.</span></div></div>
           <div class="opt"><span class="label">Supporters en déplacement</span><div class="row" style="gap:10px">${pips(f.a, tip.a, 'Supporters en déplacement')}<span>${H.awayCut(t) ? `Handicap du visiteur réduit de ${Math.round(H.awayCut(t) * 100)} % (pertes de balle, exclusions, fatigue du trajet).` : 'Personne ne fait le déplacement : tu subis tout le handicap du visiteur.'}</span></div></div>
-          <div class="opt"><span class="label">À la buvette</span><p style="margin:0">Spécialité de la maison : ${esc(BUVETTE[t.id] || 'merguez-frites')}.</p></div>
+          <div class="opt"><span class="label">À la buvette</span><p style="margin:0">Spécialité de la maison : ${esc(BUVETTE[t.id] || H.clubOf(t).buvette || 'merguez-frites')}.</p></div>
         </div>
         <p class="legend">Les supporters sont propres au club, les mêmes à chaque partie.</p></section>
       <section class="panel"><h3>Les tribunes de la ${LEAGUE}</h3><div class="scroll"><table><thead><tr><th>Club</th><th>Supporters</th><th title="Ferveur à domicile">Dom.</th><th title="Supporters en déplacement">Ext.</th></tr></thead><tbody>
@@ -1874,7 +1874,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         if (!G.youth) return;
         const tm = me(), y = G.youth.p;
         let decision = 'Recruté';
-        if (tm.players.length >= 16) {
+        if (tm.players.length >= H.squadMax(tm)) {
           const out = tm.players.find((p) => p.id === U.yRelease);
           if (!out) return;
           tm.players = tm.players.filter((p) => p.id !== out.id);
@@ -1912,7 +1912,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'next': U.view = 'pre'; U.post = null; U.tab = G.ended ? 'match' : 'ville'; render(); window.scrollTo(0, 0); return;
       case 'reset': U.confirmReset = true; render(); return;
       case 'resetNo': U.confirmReset = false; render(); return;
-      case 'resetYes': clearTimeout(U.timer); U.draft = null; U.homeStep = 1; clearSave(); U.newClub = G ? G.userId : 'REN'; G = null; U.m = null; U.view = 'pre'; U.post = null; U.confirmReset = false; render(); window.scrollTo(0, 0); return;
+      case 'resetYes': clearTimeout(U.timer); U.draft = null; U.homeStep = 1; clearSave(); U.newClub = G && H.CLUBS.some((c) => c.id === G.userId) ? G.userId : U.newClub; G = null; U.m = null; U.view = 'pre'; U.post = null; U.confirmReset = false; render(); window.scrollTo(0, 0); return;
       case 'replay': { const club = G.userId; const mods = (me().mods || []).slice(); G = H.newGame(club, undefined, mods); me().tactic.rules = H.defaultRules(); U.view = 'pre'; U.post = null; U.tab = 'ville'; save(); render(); window.scrollTo(0, 0); return; }
     }
   });

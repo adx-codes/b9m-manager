@@ -106,7 +106,8 @@
   const POT_LABEL = [[5, 'Peut devenir un joueur clé'], [4, 'Peut devenir un titulaire solide'], [3, 'Peut devenir titulaire'], [2, 'Peut devenir un joueur de rotation'], [0, 'Avenir limité']];
   const starLabel = (s) => STAR_LABEL.find(([m]) => s >= m)[1];
   const potLabel = (s) => POT_LABEL.find(([m]) => s >= m)[1];
-  const CLUBS = [
+  // Clubs fictifs d'origine : gardés pour les parties commencées avant la saison réelle
+  const LEGACY_CLUBS = [
     { id: 'PAR', name: 'Lutèce Handball', city: 'Paris', rep: 5, color: '#1d3f8f', color2: '#c8a24a', fans: { h: 3, a: 2, name: "Les Râleurs du Périph" }, academy: 4 },
     { id: 'MTP', name: 'Montpellier Comédie HB', city: 'Montpellier', rep: 5, color: '#0f6e8c', color2: '#e39a5b', fans: { h: 4, a: 3, name: "La Claque" }, academy: 5 },
     { id: 'LYO', name: 'Lyon Confluence HB', city: 'Lyon', rep: 4, color: '#a4161a', color2: '#d9b45a', fans: { h: 3, a: 2, name: "Les Bouchons Lyonnais" }, academy: 3 },
@@ -124,6 +125,9 @@
     { id: 'DIJ', name: 'Dijon Moutarde HB', city: 'Dijon', rep: 2, color: '#8d8a1c', color2: '#7a2e3a', fans: { h: 2, a: 2, name: "Les Moutardes au Nez" }, academy: 2 },
     { id: 'CLE', name: 'Clermont Volcans HB', city: 'Clermont-Ferrand', rep: 3, color: '#8b3a2b', color2: '#e0a34a', fans: { h: 3, a: 2, name: "Les Bibendums" }, academy: 2 }
   ];
+  // Saison réelle (src/starligue.js) : clubs du championnat et effectifs ; sans elle, les clubs fictifs
+  const DATA = typeof HBDATA !== 'undefined' ? HBDATA : (typeof module !== 'undefined' && module.exports ? (() => { try { return require('./starligue.js'); } catch (e) { return null; } })() : root.HBDATA || null);
+  const CLUBS = DATA && DATA.clubs && DATA.clubs.length ? DATA.clubs : LEGACY_CLUBS;
   // Noms : un clin d'œil aux régions des clubs, quelques joueurs venus d'ailleurs
   const FIRST = ['Lucas', 'Hugo', 'Théo', 'Nathan', 'Louis', 'Enzo', 'Mathis', 'Tom', 'Noah', 'Jules', 'Maxime', 'Antoine', 'Romain', 'Dylan', 'Yanis', 'Baptiste', 'Valentin', 'Ludovic', 'Benoît', 'Sami', 'Adrien', 'Kevin', 'Rémi', 'Jérémy', 'Quentin', 'Bastien', 'Thibault', 'Aymeric', 'Pierre', 'Mehdi', 'Ibrahima', 'Florian', 'Arthur', 'Samuel', 'Elias', 'Raphaël', 'Karim', 'Moussa', 'Nicolas', 'Julien'];
   const LAST = ['Martin', 'Bernard', 'Dubois', 'Leroy', 'Moreau', 'Lefèvre', 'Garnier', 'Chevalier', 'Roussel', 'Perrin', 'Morel', 'Fournier', 'Girard', 'Bonnet', 'Lambert', 'Fontaine', 'Rousseau', 'Vincent', 'Blanc', 'Guérin', 'Boyer', 'Gauthier', 'Robin', 'Clément', 'Mbaye', 'Diallo', 'Traoré', 'Benali', 'Haddad', 'Marchand', 'Picard', 'Barbier', 'Arnaud', 'Renaud', 'Brun'];
@@ -152,12 +156,17 @@
   };
   function makeName(teamId) {
     if (rnd() < 0.12) { const code = pick(Object.keys(FOREIGN)), f = FOREIGN[code]; return { name: pick(f.first) + ' ' + pick(f.last), nat: code }; }
-    const reg = REGION_NAMES[CLUB_REGION[teamId]];
+    const reg = REGION_NAMES[CLUB_REGION[teamId] || (CLUBS.find(c => c.id === teamId) || {}).region];
     const first = reg && rnd() < 0.5 ? pick(reg.first) : pick(FIRST);
     const last = reg && rnd() < 0.7 ? pick(reg.last) : pick(LAST);
     return { name: first + ' ' + last };
   }
-  const flagOf = (p) => (p && p.nat && FOREIGN[p.nat]) ? FOREIGN[p.nat].flag : '';
+  // Drapeau d'un joueur étranger : pays connus des noms générés, sinon tiré du code pays (deux lettres)
+  const flagOf = (p) => {
+    if (!p || !p.nat || p.nat === 'FR') return '';
+    if (FOREIGN[p.nat]) return FOREIGN[p.nat].flag;
+    return /^[A-Z]{2}$/.test(p.nat) ? String.fromCodePoint(...[...p.nat].map(c => 0x1f1e6 + c.charCodeAt(0) - 65)) : '';
+  };
   const TACTIC_DEFS = ['6-0', '5-1', '4-2'];
   const JEU = { collectif: 'Collectif', equilibre: 'Équilibré', individuel: 'Individuel' };
   const DSTYLE = { zone: 'Défense collective', homme: 'Homme à homme' };
@@ -182,7 +191,9 @@
   };
   const hasMod = (t, key) => !!(t && t.mods && t.mods.includes(key));
   // Caractéristiques fixes de chaque club (les mêmes à chaque partie) : supporters et centre de formation, de 1 à 5
-  const clubOf = (t) => CLUBS.find(c => c.id === (t && t.id)) || {};
+  const clubOf = (t) => CLUBS.find(c => c.id === (t && t.id)) || LEGACY_CLUBS.find(c => c.id === (t && t.id)) || {};
+  // Taille maximale de l'effectif : 16, ou l'effectif réel de départ s'il est plus grand
+  const squadMax = (t) => Math.max(16, (t && t.cap) || 0);
   const fansOf = (t) => clubOf(t).fans || { h: 3, a: 2, name: 'Les Supporters' };
   const academyOf = (t) => clubOf(t).academy || 3;
   // Décalage de niveau et de potentiel des jeunes : −1 (centre à 1) à +1 (centre à 5)
@@ -254,9 +265,9 @@
   let pid = 0;
   // Niveau selon l'âge : les très jeunes un peu en dessous (mais avec du potentiel), les plus de 31 ans un peu au-dessus
   const AGE_LEVEL = (age) => age <= 20 ? -1.5 : age <= 23 ? -0.8 : age <= 27 ? 0.15 : age <= 31 ? 0.5 : 0.7;
-  function makePlayer(pos, level, teamId, youthOff) {
+  function makePlayer(pos, level, teamId, youthOff, age0) {
     const a = {};
-    const age = ri(18, 35);
+    const age = age0 || ri(18, 35);
     level += AGE_LEVEL(age) + (youthOff && age < 23 ? youthOff : 0);
     const keys = Object.keys(WEIGHTS[pos]);
     const r = (m) => clamp(Math.round(m + gauss() * 1.8), 1, 20);
@@ -292,18 +303,32 @@
     p.ovr0 = p.ovr;
     return p;
   }
+  // Joueur réel : nom, poste, latéralité, âge et nationalité de l'effectif ; attributs tirés selon le niveau du club
+  function realPlayer(r, level, clubId, yo) {
+    const age = r.born && DATA && DATA.year ? clamp(DATA.year - r.born, 16, 42) : 0;
+    const p = makePlayer(r.pos, level, clubId, yo, age);
+    p.name = r.name;
+    if (r.nat && r.nat !== 'FR') p.nat = r.nat; else delete p.nat;
+    if (r.hand === 'G' || r.hand === 'D') p.hand = r.hand;
+    p.real = true;
+    return p;
+  }
   function makeTeam(club) {
     const base = { 5: 14.5, 4: 13.6, 3: 12.7, 2: 11.8, 1: 11 }[club.rep];
     const players = [], yo = club.academy ? (club.academy - 3) * 0.5 : 0;
+    const roster = (DATA && DATA.rosters && DATA.rosters[club.id] || []).filter(r => r && r.name && POS.includes(r.pos));
     for (const pos of POS) {
-      players.push(makePlayer(pos, base + 1, club.id, yo));
-      players.push(makePlayer(pos, base - 0.8, club.id, yo));
+      const real = roster.filter(r => r.pos === pos);
+      // Effectif réel : le premier listé à chaque poste en titulaire, les autres en rotation (à affiner plus tard)
+      real.forEach((r, k) => players.push(realPlayer(r, k === 0 ? base + 1 : base - 0.8, club.id, yo)));
+      // Poste vide dans l'effectif réel (ou club sans effectif) : joueurs générés pour en avoir deux
+      for (let k = real.length; k < (roster.length ? 1 : 2); k++) players.push(makePlayer(pos, k === 0 ? base + 1 : base - 0.8, club.id, yo));
     }
     // Pas d'homonymes dans un même effectif
     const seen = new Set();
     for (const p of players) { let k = 0; while (seen.has(p.name) && k++ < 20) Object.assign(p, makeName(club.id)); seen.add(p.name); }
     const t = {
-      ...club, players,
+      ...club, players, cap: players.length,
       tactic: { att: rnd() < 0.5 ? 'place' : 'rapide', dstyle: rnd() < 0.6 ? 'zone' : 'homme', jeu: 'equilibre', cons: [], rules: defaultRules() },
       lineup: {}, cohesion: Math.round(45 + rnd() * 15), lastXI: null
     };
@@ -393,7 +418,7 @@
       if (!t.out) t.out = [];
     }
     // Noms de clubs : toujours ceux de CLUBS (renommages repris dans les parties en cours)
-    for (const t of st.teams) { const c = CLUBS.find(x => x.id === t.id); if (c) t.name = c.name; }
+    for (const t of st.teams) { const c = clubOf(t); if (c.name) t.name = c.name; }
     // Entraînement de la semaine lancé à la main après chaque journée
     if (st.trainPending === undefined) st.trainPending = false;
     // Blessures : journal de la saison (les joueurs sans champ « inj » sont valides)
@@ -450,7 +475,7 @@
     const proj = (p) => p.age >= 26 ? p.ovr : Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
     const yv = y.pot - 1 + (rnd() - 0.5) * 2;
     let out = null, ok = false;
-    if (t.players.length < 16) ok = !worst || yv >= worst.ovr + 1.8;
+    if (t.players.length < squadMax(t)) ok = !worst || yv >= worst.ovr + 1.8;
     else if (worst && yv > proj(worst) + 2.5) { ok = true; out = worst; }
     if (ok) {
       if (out) { t.players = t.players.filter(p => p.id !== out.id); t.out = (t.out || []).filter(id => id !== out.id); }
@@ -1483,7 +1508,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    TRAIN, INTENSITY, train, TRAITS, ROBUST, LEGACY_CLUBS, DATA, squadMax, clubOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

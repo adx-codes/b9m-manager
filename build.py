@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Assemble src/ (shell.html + engine.js + ui.js) into index.html, the playable single-file game."""
+"""Assemble src/ (shell.html + starligue.js + engine.js + ui.js) into index.html, the playable single-file game."""
 from pathlib import Path
 
 root = Path(__file__).parent
 shell = (root / "src/shell.html").read_text(encoding="utf-8")
 engine = (root / "src/engine.js").read_text(encoding="utf-8")
 ui = (root / "src/ui.js").read_text(encoding="utf-8")
-body = shell.replace("/*ENGINE*/", engine).replace("/*UI*/", ui)
+data = (root / "src/starligue.js").read_text(encoding="utf-8")
+body = shell.replace("/*DATA*/", data).replace("/*ENGINE*/", engine).replace("/*UI*/", ui)
 cut = body.index("</style>") + len("</style>")
 html = (
     '<!doctype html>\n<html lang="fr" data-theme="dark">\n<head>\n<meta charset="utf-8">\n'
