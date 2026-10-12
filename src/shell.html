@@ -678,7 +678,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .slot.dropover { outline: 2px solid var(--accent); }
 .isdragging .slot select { pointer-events: none; }
 .dragchip { cursor: grab; }
-.dragchip.dragging { opacity: 0.4; }
+.dragchip.dragging, .mrow.dragging, .slot.dragging { opacity: 0.4; }
+.mrow[draggable="true"] { margin-inline: -6px; padding-inline: 6px; border-radius: 6px; transition: background-color 120ms; }
+.mrow[draggable="true"]:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.mrow.dragging { background: var(--accent-soft); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
+.mrow button, .mslot button { cursor: pointer; }
+.dragghost { position: fixed; top: -200px; left: 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 8px; background: var(--surface); color: var(--fg); border: 1.5px solid var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,0.3); font-size: 0.88rem; white-space: nowrap; pointer-events: none; z-index: 1000; }
 .dragchip .grip { color: var(--muted); font-size: 0.7rem; letter-spacing: -2px; margin-right: -2px; }
 .bstyles { display: grid; gap: 6px; margin: 4px 0 6px; }
 .bsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }

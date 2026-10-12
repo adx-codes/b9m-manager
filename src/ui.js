@@ -2085,6 +2085,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     e.dataTransfer.setData('text/plain', c.dataset.drag);
     e.dataTransfer.effectAllowed = 'move';
     U.dragId = c.dataset.drag;
+    // Fantôme compact (poste + nom) accroché au curseur, plutôt que la ligne entière décalée
+    const p = G && me() && me().players.find((x) => x.id === c.dataset.drag);
+    if (p && e.dataTransfer.setDragImage) {
+      const g = document.createElement('div');
+      g.className = 'dragghost';
+      g.innerHTML = `<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><b>${esc(short(p.name))}</b>`;
+      document.body.appendChild(g);
+      e.dataTransfer.setDragImage(g, 14, g.offsetHeight / 2);
+      setTimeout(() => g.remove(), 0);
+    }
     c.classList.add('dragging');
     document.body.classList.add('isdragging');
   });

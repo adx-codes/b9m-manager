@@ -684,7 +684,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .slot.dropover { outline: 2px solid var(--accent); }
 .isdragging .slot select { pointer-events: none; }
 .dragchip { cursor: grab; }
-.dragchip.dragging { opacity: 0.4; }
+.dragchip.dragging, .mrow.dragging, .slot.dragging { opacity: 0.4; }
+.mrow[draggable="true"] { margin-inline: -6px; padding-inline: 6px; border-radius: 6px; transition: background-color 120ms; }
+.mrow[draggable="true"]:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.mrow.dragging { background: var(--accent-soft); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; }
+.mrow button, .mslot button { cursor: pointer; }
+.dragghost { position: fixed; top: -200px; left: 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 8px; background: var(--surface); color: var(--fg); border: 1.5px solid var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,0.3); font-size: 0.88rem; white-space: nowrap; pointer-events: none; z-index: 1000; }
 .dragchip .grip { color: var(--muted); font-size: 0.7rem; letter-spacing: -2px; margin-right: -2px; }
 .bstyles { display: grid; gap: 6px; margin: 4px 0 6px; }
 .bsrow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
@@ -4953,6 +4958,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     e.dataTransfer.setData('text/plain', c.dataset.drag);
     e.dataTransfer.effectAllowed = 'move';
     U.dragId = c.dataset.drag;
+    // Fantôme compact (poste + nom) accroché au curseur, plutôt que la ligne entière décalée
+    const p = G && me() && me().players.find((x) => x.id === c.dataset.drag);
+    if (p && e.dataTransfer.setDragImage) {
+      const g = document.createElement('div');
+      g.className = 'dragghost';
+      g.innerHTML = `<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><b>${esc(short(p.name))}</b>`;
+      document.body.appendChild(g);
+      e.dataTransfer.setDragImage(g, 14, g.offsetHeight / 2);
+      setTimeout(() => g.remove(), 0);
+    }
     c.classList.add('dragging');
     document.body.classList.add('isdragging');
   });
