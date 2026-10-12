@@ -292,7 +292,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (nm && oscroll) nm.scrollTop = oscroll;
     const np = document.querySelector('#preov .modal');
     if (np && pscroll) np.scrollTop = pscroll;
-    const ib = document.querySelector('#inboxov .ibmsgs');
+    const ib = document.querySelector('#inboxov .wamsgs');
     if (ib) ib.scrollTop = ib.scrollHeight;
     U.ctlSig = ctlSig();
     tutoSync();
@@ -2055,6 +2055,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'inbox': { const cs = inboxContacts(), k = cs.find((c) => unread(c)) || (cs.includes(U.inboxC) ? U.inboxC : cs[0]); if (k) openConv(k); else U.inboxC = null; U.inbox = true; render(); const c = document.querySelector('#inboxov [data-act=inboxclose]'); if (c) c.focus({ preventScroll: true }); return; }
       case 'inboxclose': U.inbox = false; render(); { const o = document.querySelector('[data-act=inbox]'); if (o) o.focus({ preventScroll: true }); } return;
       case 'ibc': openConv(id); render(); return;
+      case 'ibflt': U.ibFilter = id; render(); return;
       case 'fsign': signFree(id); return;
       case 'yopen': if (G.youth) { U.inbox = false; U.youthModal = true; U.yStage = null; U.yAnim = false; render(); } return;
       case 'tutook': tutoDone(false); return;
@@ -2275,7 +2276,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function phoneBtn() {
     const n = unread();
-    return `<button class="phonebtn" data-act="inbox" aria-label="Messages${n ? ` : ${n} non lu${n > 1 ? 's' : ''}` : ''}" title="Messages"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${n ? `<span class="pbadge">${n}</span>` : ''}</button>`;
+    return `<button class="phonebtn" data-act="inbox" aria-label="Messages${n ? ` : ${n} non lu${n > 1 ? 's' : ''}` : ''}" title="Messages">${WA_LOGO(30)}${n ? `<span class="pbadge">${n}</span>` : ''}</button>`;
   }
   // Ce qui intéresse l'agent : un profil surprise, un bon niveau ou un gros potentiel pour ton club, ou un poste où tu es court
   function freeWorth(p) {
@@ -2322,7 +2323,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function freeAction(p) {
     if (p.free.no) return `<span class="muted" title="${esc((REFUS[p.free.no] || REFUS.small)(p.name))}">A refusé</span>`;
     if (!H.freeRoom(me(), p)) return `<span class="muted">${p.age < H.CF.maxAge ? 'Centre plein' : 'Effectif complet'}</span>`;
-    return `<button class="btn sm primary" data-act="fsign" data-id="${p.id}">Faire signer</button>`;
+    return `<button class="btn sm primary fsignbtn" data-act="fsign" data-id="${p.id}">Faire signer</button>`;
   }
   // Ouvre une conversation : ses messages passent en lus, le repère « Nouveau » se place avant le premier non lu
   function openConv(k) {
@@ -2340,29 +2341,40 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const state = p.free ? freeAction(p) : f.t.id === t.id ? '<span class="muted">Signé chez toi</span>' : `<span class="muted">Signé à ${esc(f.t.name)}</span>`;
     return `<div class="fcard"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="fname">${plink(p)}<br><span class="muted">${p.age} ans${p.free ? ` · ex-${esc(T(p.free.from) ? T(p.free.from).name : '')}` : ''}</span></span><span class="fst">${lstars(p, { sm: true })}${pot(p, { sm: true })}</span>${state}</div>`;
   }
+  // Messagerie façon appli de messagerie verte (« HandsApp ») : discussions à gauche, conversation à droite
+  const WA_LOGO = (sz) => `<svg viewBox="0 0 24 24" width="${sz}" height="${sz}" aria-hidden="true"><path d="M12 2.2a9.8 9.8 0 0 0-8.5 14.7L2.2 21.8l5-1.3A9.8 9.8 0 1 0 12 2.2z" fill="#25d366"/><path d="M12 3.9a8.1 8.1 0 0 0-7 12.2l.2.4-.8 2.9 3-.8.4.2A8.1 8.1 0 1 0 12 3.9z" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M8 10.2h8M8 13.6h5.4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  const waTime = (m) => `${String(8 + (m.id * 7) % 14).padStart(2, '0')}:${String((m.id * 37) % 60).padStart(2, '0')}`;
+  const WA_TICKS = '<svg class="waticks" viewBox="0 0 16 11" width="16" height="11" aria-label="Lu"><path d="M11.1.6 4.9 7.7 2.3 5.2l-.9.9 3.5 3.4L12 1.4z" fill="currentColor"/><path d="m15.1.6-6.2 7.1-.8-.8-.9.9 1.7 1.7L16 1.4z" fill="currentColor"/></svg>';
   function inboxModal() {
     if (!U.inbox || !G) return '';
-    const cs = inboxContacts();
-    const av = (k) => `<span class="avatar" style="background:${CONTACTS[k].c}" aria-hidden="true">${CONTACTS[k].ini}</span>`;
+    const flt = U.ibFilter || 'all';
+    const cs = inboxContacts().filter((k) => flt === 'all' || unread(k) || k === U.inboxC);
+    const av = (k) => `<span class="waav" style="background:${CONTACTS[k].c}" aria-hidden="true">${CONTACTS[k].ini}</span>`;
     const list = cs.map((k) => {
       const ms = G.inbox.filter((m) => m.c === k), last = ms[ms.length - 1], n = k === U.inboxC ? 0 : unread(k);
-      return `<button class="ibrow${n ? ' new' : ''}" data-act="ibc" data-id="${k}" aria-current="${k === U.inboxC}">${av(k)}<span class="ibtxt"><span class="ibname"><b>${esc(CONTACTS[k].name)}</b><span class="muted">J${last.r}</span></span><span class="ibprev">${last.me ? 'Toi : ' : ''}${esc(last.t.length > 70 ? last.t.slice(0, 68) + '…' : last.t)}</span></span>${n ? `<span class="ibdot" aria-label="${n} nouveau${n > 1 ? 'x' : ''}">${n}</span>` : ''}</button>`;
+      return `<button class="warow${n ? ' new' : ''}" data-act="ibc" data-id="${k}" aria-current="${k === U.inboxC}">${av(k)}<span class="watxt"><span class="waname"><b>${esc(CONTACTS[k].name)}</b><span class="wadate">J${last.r}</span></span><span class="waprev">${last.me ? WA_TICKS : ''}<span>${esc(last.t)}</span>${n ? `<span class="wabadge" aria-label="${n} non lu${n > 1 ? 's' : ''}">${n}</span>` : ''}</span></span></button>`;
     }).join('');
-    let conv = '<p class="muted ibempty">Pas encore de message. Ton agent, ton kiné et la directrice du centre t\'écriront au fil de la saison.</p>';
+    let conv = `<div class="waintro">${WA_LOGO(72)}<b>HandsApp</b><p>Ton agent, ton kiné et la directrice du centre t'écrivent ici au fil de la saison.</p><span class="wasecure">🔒 Messages du club, entre le staff et toi</span></div>`;
     if (U.inboxC && CONTACTS[U.inboxC]) {
       const k = U.inboxC, ms = G.inbox.filter((m) => m.c === k);
       let lastR = null;
       const rows = ms.map((m) => {
         let h = '';
-        if (m.r !== lastR) { lastR = m.r; h += `<div class="ibday">${m.r ? `Après la journée ${m.r}` : 'Avant la saison'}</div>`; }
-        if (m.id === U.ibNew) h += '<div class="ibday ibnew">Nouveau</div>';
-        const extra = (m.pl ? `<div class="fcards">${m.pl.map(freeCard).join('')}</div>` : '') + (m.y && G.youth && G.youth.p.id === m.y ? '<div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="yopen">Voir le jeune</button></div>' : '');
-        return h + `<div class="bubble${m.me ? ' me' : ''}">${esc(m.t)}${extra}</div>`;
+        if (m.r !== lastR) { lastR = m.r; h += `<div class="waday"><span>${m.r ? `Après la journée ${m.r}` : 'Avant la saison'}</span></div>`; }
+        if (m.id === U.ibNew) h += '<div class="waday wanew"><span>Non lus</span></div>';
+        const cards = m.pl ? `<div class="wacards">${m.pl.map(freeCard).join('')}</div>` : '';
+        const acts = m.y && G.youth && G.youth.p.id === m.y ? '<div class="waacts"><button data-act="yopen">Voir le jeune</button></div>' : '';
+        return h + `<div class="wamsg${m.me ? ' me' : ''}"><div class="wabub">${esc(m.t)}${cards}<span class="wameta">${waTime(m)}${m.me ? WA_TICKS : ''}</span></div>${acts}</div>`;
       }).join('');
-      conv = `<div class="ibconvhead">${av(k)}<span><b>${esc(CONTACTS[k].name)}</b><br><span class="muted">${esc(CONTACTS[k].role)}</span></span></div><div class="ibmsgs">${rows}</div>`;
+      conv = `<div class="wachead">${av(k)}<span class="watxt"><b>${esc(CONTACTS[k].name)}</b><span class="wasub">${esc(CONTACTS[k].role)}</span></span><button class="waicon" data-act="inboxclose" aria-label="Fermer" title="Fermer">✕</button></div>
+        <div class="wamsgs">${rows}</div>
+        <div class="wacompose" title="On répond avec les boutons des messages"><span class="waicon" aria-hidden="true">☺</span><span class="waicon" aria-hidden="true">+</span><span class="wainput">Écrire un message</span></div>`;
     }
-    return `<div class="overlay" id="inboxov" role="dialog" aria-modal="true" aria-labelledby="inboxt"><div class="modal inbox"><div class="ibhead"><h2 id="inboxt">Messages</h2><button class="btn" data-act="inboxclose" aria-label="Fermer">✕</button></div>
-      <div class="ibgrid"><nav class="iblist" aria-label="Conversations">${list || '<p class="muted" style="margin:8px">Aucune conversation.</p>'}</nav><section class="ibconv">${conv}</section></div></div></div>`;
+    return `<div class="overlay" id="inboxov" role="dialog" aria-modal="true" aria-label="Messages"><div class="modal wa">
+      <aside class="waside"><div class="wahead"><span class="wabrand">HandsApp</span>${U.inboxC ? '' : '<button class="waicon" data-act="inboxclose" aria-label="Fermer" title="Fermer">✕</button>'}</div>
+        <div class="wachips">${[['all', 'Toutes'], ['unread', 'Non lues']].map(([k, l]) => `<button data-act="ibflt" data-id="${k}" aria-pressed="${flt === k}">${l}</button>`).join('')}</div>
+        <nav class="walist" aria-label="Discussions">${list || `<p class="waempty">${flt === 'unread' ? 'Aucun message non lu.' : 'Aucune discussion pour l\'instant.'}</p>`}</nav></aside>
+      <section class="wamain">${conv}</section></div></div>`;
   }
 
   // ---------- Siège : les joueurs libres ----------

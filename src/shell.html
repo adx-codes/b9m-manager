@@ -697,41 +697,77 @@ nav.tabs .tutobtn:hover { color: var(--fg); border-color: var(--muted); }
 .homebtn { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; flex: none; }
 .homebtn:hover { border-color: var(--accent); color: var(--accent); }
 .homebtn[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-/* Messagerie : bouton du téléphone, conversations par contact */
-.phonebtn { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; flex: none; }
-.phonebtn:hover { border-color: var(--accent); color: var(--accent); }
-.pbadge { position: absolute; top: -6px; right: -6px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: var(--bad); color: #fff; font-size: 0.72rem; font-weight: 700; display: grid; place-items: center; }
-.modal.inbox { max-width: 980px; padding: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); height: min(680px, calc(100% - 32px)); overflow: hidden; }
-.ibhead { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); }
-.ibhead h2 { margin: 0; }
-.ibgrid { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: 0; }
-.iblist { border-right: 1px solid var(--line); overflow-y: auto; }
-.ibrow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--fg); text-align: left; cursor: pointer; }
-.ibrow:hover { background: var(--sunk); }
-.ibrow[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
-.ibtxt { display: grid; gap: 2px; min-width: 0; flex: 1; }
-.ibname { display: flex; justify-content: space-between; gap: 8px; font-size: 0.92rem; }
-.ibname .muted { font-size: 0.78rem; }
-.ibprev { font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ibrow.new .ibprev { color: var(--fg); font-weight: 600; }
-.ibdot { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--good); color: #fff; font-size: 0.74rem; font-weight: 700; display: grid; place-items: center; }
-.avatar { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 800 0.78rem var(--f-display); letter-spacing: 0.04em; }
-.ibconv { display: grid; grid-template-rows: auto minmax(0, 1fr); min-height: 0; background: var(--sunk); }
-.ibconvhead { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--surface); font-size: 0.92rem; }
-.ibmsgs { overflow-y: auto; padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 8px; }
-.ibempty { padding: 24px; margin: 0; }
-.ibday { align-self: center; font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; }
-.ibday.ibnew { color: var(--good); font-weight: 700; }
-.bubble { align-self: flex-start; max-width: 82%; padding: 9px 12px; border-radius: 4px 12px 12px 12px; background: var(--surface); border: 1px solid var(--line); font-size: 0.9rem; line-height: 1.45; }
-.bubble.me { align-self: flex-end; border-radius: 12px 4px 12px 12px; background: var(--accent-soft); }
-.fcards { display: grid; gap: 6px; margin-top: 8px; }
-.fcard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 0.86rem; }
-.fcard.gone { grid-template-columns: 1fr; }
-.fcard .fname .muted { font-size: 0.78rem; }
-.fcard .fst { display: grid; gap: 2px; }
+/* Messagerie « HandsApp » : bouton bulle verte, fenêtre aux codes d'une appli de messagerie (discussions, bulles, coches) */
+.phonebtn { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; margin-right: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; flex: none; padding: 0; }
+.phonebtn:hover { border-color: #25d366; }
+.pbadge { position: absolute; top: -6px; right: -6px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: #e53935; color: #fff; font-size: 0.72rem; font-weight: 700; display: grid; place-items: center; }
+.modal.wa {
+  --wa-bg: #ffffff; --wa-head: #f0f2f5; --wa-hover: #f5f6f6; --wa-sel: #f0f2f5; --wa-line: #e9edef; --wa-fg: #111b21; --wa-dim: #667781;
+  --wa-green: #008069; --wa-badge: #25d366; --wa-in: #ffffff; --wa-out: #d9fdd3; --wa-wall: #efeae2; --wa-pill: #ffffff; --wa-tick: #53bdeb; --wa-chip: #e7fce3; --wa-chipfg: #008069; --wa-card: rgba(11,20,26,0.05);
+  --wa-doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%23000000' stroke-opacity='0.06' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='30' cy='30' r='13'/%3E%3Cpath d='M17 30h26M30 17c-6 8-6 18 0 26M30 17c6 8 6 18 0 26'/%3E%3Cpath d='M110 22h22l-4 9h-14zM121 31v6M112 40h18'/%3E%3Cpath d='M28 112l12-6 12 6v18H28z M40 106v24'/%3E%3Cpath d='M118 108a10 10 0 1 1-1 19l-9 5 3-8a10 10 0 0 1 7-16z'/%3E%3Cpath d='M74 72l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z'/%3E%3C/svg%3E");
+  max-width: 1040px; height: min(700px, calc(100% - 32px)); padding: 0; display: grid; grid-template-columns: 340px minmax(0, 1fr); overflow: hidden; border-radius: 8px; border: 0; background: var(--wa-bg); color: var(--wa-fg); font-family: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .modal.wa { --wa-bg: #111b21; --wa-head: #202c33; --wa-hover: #202c33; --wa-sel: #2a3942; --wa-line: #222d34; --wa-fg: #e9edef; --wa-dim: #8696a0; --wa-green: #00a884; --wa-badge: #00a884; --wa-in: #202c33; --wa-out: #005c4b; --wa-wall: #0b141a; --wa-pill: #182229; --wa-chip: #0a332c; --wa-chipfg: #00a884; --wa-card: rgba(0,0,0,0.22); --wa-doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%23ffffff' stroke-opacity='0.035' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='30' cy='30' r='13'/%3E%3Cpath d='M17 30h26M30 17c-6 8-6 18 0 26M30 17c6 8 6 18 0 26'/%3E%3Cpath d='M110 22h22l-4 9h-14zM121 31v6M112 40h18'/%3E%3Cpath d='M28 112l12-6 12 6v18H28z M40 106v24'/%3E%3Cpath d='M118 108a10 10 0 1 1-1 19l-9 5 3-8a10 10 0 0 1 7-16z'/%3E%3Cpath d='M74 72l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z'/%3E%3C/svg%3E"); } }
+:root[data-theme="dark"] .modal.wa { --wa-bg: #111b21; --wa-head: #202c33; --wa-hover: #202c33; --wa-sel: #2a3942; --wa-line: #222d34; --wa-fg: #e9edef; --wa-dim: #8696a0; --wa-green: #00a884; --wa-badge: #00a884; --wa-in: #202c33; --wa-out: #005c4b; --wa-wall: #0b141a; --wa-pill: #182229; --wa-chip: #0a332c; --wa-chipfg: #00a884; --wa-card: rgba(0,0,0,0.22); --wa-doodle: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='%23ffffff' stroke-opacity='0.035' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='30' cy='30' r='13'/%3E%3Cpath d='M17 30h26M30 17c-6 8-6 18 0 26M30 17c6 8 6 18 0 26'/%3E%3Cpath d='M110 22h22l-4 9h-14zM121 31v6M112 40h18'/%3E%3Cpath d='M28 112l12-6 12 6v18H28z M40 106v24'/%3E%3Cpath d='M118 108a10 10 0 1 1-1 19l-9 5 3-8a10 10 0 0 1 7-16z'/%3E%3Cpath d='M74 72l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z'/%3E%3C/svg%3E"); }
+.wa button { font-family: inherit; }
+.waside { display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; border-right: 1px solid var(--wa-line); }
+.wahead { display: flex; align-items: center; justify-content: space-between; height: 59px; padding: 0 16px; }
+.wabrand { color: var(--wa-green); font-weight: 700; font-size: 1.4rem; letter-spacing: -0.01em; }
+.waicon { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: var(--wa-dim); font-size: 1.05rem; cursor: pointer; }
+.waicon:hover { background: var(--wa-hover); }
+.wachips { display: flex; gap: 8px; padding: 4px 16px 10px; }
+.wachips button { border: 0; border-radius: 999px; padding: 6px 12px; background: var(--wa-head); color: var(--wa-dim); font-size: 0.86rem; cursor: pointer; }
+.wachips button[aria-pressed="true"] { background: var(--wa-chip); color: var(--wa-chipfg); }
+.walist { overflow-y: auto; }
+.waempty { margin: 24px 16px; color: var(--wa-dim); font-size: 0.9rem; text-align: center; }
+.warow { display: flex; align-items: center; gap: 13px; width: 100%; height: 72px; padding: 0 0 0 13px; border: 0; background: none; color: var(--wa-fg); text-align: left; cursor: pointer; }
+.warow:hover { background: var(--wa-hover); }
+.warow[aria-current="true"] { background: var(--wa-sel); }
+.waav { flex: none; width: 49px; height: 49px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 0.9rem; }
+.wachead .waav { width: 40px; height: 40px; font-size: 0.8rem; }
+.watxt { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px; min-width: 0; flex: 1; }
+.warow .watxt { align-self: stretch; align-content: center; padding-right: 15px; border-bottom: 1px solid var(--wa-line); }
+.waname { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 1.02rem; }
+.waname b { font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wadate { flex: none; font-size: 0.75rem; color: var(--wa-dim); }
+.warow.new .wadate { color: var(--wa-badge); }
+.waprev { display: flex; align-items: center; gap: 4px; font-size: 0.875rem; color: var(--wa-dim); }
+.waprev > span:not(.wabadge) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wabadge { flex: none; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--wa-badge); color: #111b21; font-size: 0.75rem; font-weight: 600; display: grid; place-items: center; }
+.waticks { flex: none; color: var(--wa-tick); }
+.wamain { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; background: var(--wa-wall) var(--wa-doodle); }
+.wachead { display: flex; align-items: center; gap: 13px; height: 59px; padding: 0 12px 0 16px; background: var(--wa-head); }
+.wachead b { font-weight: 400; font-size: 1rem; }
+.wasub { font-size: 0.8rem; color: var(--wa-dim); }
+.wamsgs { overflow-y: auto; padding: 12px 7% 16px; display: flex; flex-direction: column; gap: 2px; }
+.waday { align-self: center; margin: 10px 0 8px; }
+.waday span { display: block; padding: 5px 12px; border-radius: 7.5px; background: var(--wa-pill); color: var(--wa-dim); font-size: 0.78rem; text-transform: uppercase; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); }
+.waday.wanew span { color: var(--wa-fg); background: var(--wa-chip); }
+.wamsg { align-self: flex-start; max-width: 72%; margin-bottom: 6px; display: grid; gap: 2px; }
+.wamsg.me { align-self: flex-end; }
+.wabub { position: relative; padding: 6px 7px 8px 9px; border-radius: 0 7.5px 7.5px 7.5px; background: var(--wa-in); color: var(--wa-fg); font-size: 0.92rem; line-height: 1.4; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); }
+.wabub::before { content: ""; position: absolute; top: 0; left: -8px; border-top: 0 solid transparent; border-right: 8px solid var(--wa-in); border-bottom: 13px solid transparent; }
+.wamsg.me .wabub { border-radius: 7.5px 0 7.5px 7.5px; background: var(--wa-out); }
+.wamsg.me .wabub::before { left: auto; right: -8px; border-right: 0; border-left: 8px solid var(--wa-out); }
+.wameta { float: right; display: inline-flex; align-items: center; gap: 3px; margin: 8px 0 -5px 10px; font-size: 0.69rem; color: var(--wa-dim); }
+.waacts { display: grid; }
+.waacts button { padding: 9px; border: 0; border-radius: 7.5px; background: var(--wa-in); color: var(--wa-green); font-weight: 500; font-size: 0.92rem; cursor: pointer; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); }
+.waacts button:hover { filter: brightness(1.08); }
+.wacards { display: grid; gap: 4px; margin-top: 6px; }
+.wa .fcard { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-left: 4px solid var(--wa-green); border-radius: 6px; background: var(--wa-card); font-size: 0.86rem; }
+.wa .fcard.gone { grid-template-columns: 1fr; }
+.wa .fcard .muted { color: var(--wa-dim); font-size: 0.78rem; }
+.wa .fcard .fst { display: grid; gap: 2px; }
+.wa .fcard .plink { color: var(--wa-fg); }
+.wa .fsignbtn { background: none; border: 0; color: var(--wa-green); font-weight: 600; padding: 4px 2px; }
+.wacompose { display: flex; align-items: center; gap: 4px; min-height: 62px; padding: 5px 16px; background: var(--wa-head); cursor: default; }
+.wainput { flex: 1; margin-left: 6px; padding: 10px 12px; border-radius: 8px; background: var(--wa-bg); color: var(--wa-dim); font-size: 0.92rem; }
+.waintro { align-self: center; justify-self: center; grid-row: 1 / -1; display: grid; justify-items: center; gap: 12px; max-width: 420px; padding: 24px; text-align: center; color: var(--wa-dim); }
+.waintro b { color: var(--wa-fg); font-size: 1.9rem; font-weight: 300; }
+.waintro p { margin: 0; }
+.wasecure { margin-top: 18px; font-size: 0.8rem; }
+@media (max-width: 900px) { .modal.wa { grid-template-columns: 1fr; grid-template-rows: 200px minmax(0, 1fr); } .waside { border-right: 0; border-bottom: 1px solid var(--wa-line); } }
 .freegrid { display: grid; gap: 20px; }
 .freegrid td.fwhy { white-space: normal; font-size: 0.86rem; min-width: 150px; }
-@media (max-width: 900px) { .ibgrid { grid-template-columns: 1fr; } .iblist { max-height: 180px; border-right: 0; border-bottom: 1px solid var(--line); } }
 .dropzone { margin-top: 10px; padding: 10px; border: 1.5px dashed transparent; border-radius: 10px; transition: border-color 120ms, background-color 120ms; }
 .dropzone .label { display: block; margin-bottom: 6px; }
 .isdragging .dropzone, .isdragging .slot { border-color: var(--line); }
