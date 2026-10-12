@@ -4,8 +4,8 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 
 ## Où est quoi
 
-- `src/engine.js` : moteur (clubs, génération des joueurs, match possession par possession, coach IA, saison, entraînement, centre de formation, migration des sauvegardes). Exporté en `window.HB` et en `module.exports` (testable avec Node).
-- `src/ui.js` : interface (ville isométrique « Cité du hand », effectif, tactique, match en direct, fiche joueur, thème aux couleurs du club, notifications).
+- `src/engine.js` : moteur (clubs, génération des joueurs, match possession par possession, coach IA, saison, entraînement, centre de formation, joueurs libres, migration des sauvegardes). Exporté en `window.HB` et en `module.exports` (testable avec Node).
+- `src/ui.js` : interface (ville isométrique « Cité du hand », effectif, tactique, match en direct, fiche joueur, joueurs libres, messagerie, tuto de l'adjoint, thème aux couleurs du club, notifications).
 - `src/starligue.js` : saison réelle (clubs de la Starligue 2026-2027 et effectifs relevés sur lnh.fr), exportée en `window.HBDATA` ; les anciens clubs fictifs restent dans `engine.js` (`LEGACY_CLUBS`) pour les sauvegardes existantes.
 - `src/shell.html` : gabarit HTML et CSS (tokens de couleur, mode clair et sombre). Contient les marqueurs `/*DATA*/`, `/*ENGINE*/` et `/*UI*/`.
 - `build.py` : assemble `src/` en `index.html` (le fichier publié sur GitHub Pages) ; il force le mode sombre (`data-theme="dark"` sur `<html>`).

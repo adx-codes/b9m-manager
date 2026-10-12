@@ -407,6 +407,10 @@
     if (st.youth === undefined) st.youth = null;
     // Tuto de l'adjoint : coupé pour les parties déjà commencées
     if (!st.tuto) st.tuto = { on: false, seen: [] };
+    // Joueurs libres, signatures et messagerie
+    if (!st.free) st.free = [];
+    if (!st.signs) st.signs = [];
+    if (!st.inbox) st.inbox = [];
     if (st.youth && st.youth.p.a.robustesse === undefined) st.youth.p.a.robustesse = robustOf(st.youth.p.age);
     for (const t of st.teams) {
       for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
@@ -482,13 +486,17 @@
   const canJoinCF = (p) => !!p && !p.cf && p.age < CF.maxAge;
   const cfOf = (t) => t.players.filter(p => p.cf);
   function joinCF(p) { if (!canJoinCF(p)) return false; p.cf = true; return true; }
-  // Joueur libéré (définitif) : il quitte le club ; un club IA peut le récupérer s'il l'intéresse
-  function releasePlayer(st, t, p) {
-    if (!t.players.includes(p)) return null;
+  function detach(t, p) {
     t.players = t.players.filter(x => x.id !== p.id);
     t.out = (t.out || []).filter(id => id !== p.id);
     if (Object.values(t.lineup).includes(p.id)) fixLineup(t);
     ensureSheet(t);
+  }
+  // Joueur libéré (définitif) : il quitte le club ; un club IA peut le récupérer s'il l'intéresse,
+  // sinon il rejoint la liste des joueurs libres
+  function releasePlayer(st, t, p) {
+    if (!t.players.includes(p)) return null;
+    detach(t, p);
     let to = null;
     const cands = st.teams.filter(o => o.id !== t.id && o.id !== st.userId && (p.age >= CF.maxAge || cfOf(o).length < CF.aiMax))
       .map(o => ({ o, gap: (p.pot ?? p.ovr) - starRef(o) })).sort((a, b) => b.gap - a.gap).slice(0, 3);
@@ -501,9 +509,88 @@
         ensureSheet(to);
       }
     }
+    if (!to) addFree(st, p, t.id, null);
     const mv = { round: st.round, id: p.id, name: p.name, pos: p.pos, age: p.age, from: t.id, to: to ? to.id : null };
     (st.moves = st.moves || []).push(mv);
     return mv;
+  }
+
+  // ---------- Joueurs libres ----------
+  // Un joueur libéré que personne ne reprend tout de suite reste libre jusqu'à 6 semaines : chaque semaine,
+  // un club IA peut le signer. Toi aussi, dans la limite de l'effectif (20 pros, 12 au centre), s'il accepte.
+  // De temps en temps (environ 4 fois par saison), un club IA se sépare d'un profil plus intéressant ;
+  // une fois sur trois, c'est un jeune à fort potentiel.
+  const FREE = { weeks: 6, surprise: 0.14, gem: 0.35, pride: -0.3, proMax: 20, cfMax: 12 };
+  const FREE_WHY = ['en froid avec son entraîneur', 'veut plus de temps de jeu', "contrat rompu d'un commun accord", "pas dans les plans du staff", 'le club allège sa masse salariale'];
+  const freeLevel = (p) => Math.max(p.ovr, (p.pot ?? p.ovr) - 1);
+  function addFree(st, p, from, why) {
+    delete p.matchStyle; delete p.lastRes; delete p.resFocus;
+    p.cf = false; p.form = 0; p.fatigue = 0; p.inj = null; p.frag = 0;
+    p.free = { since: st.round, from, flex: Math.round(rnd() * 16) / 10, why: why || null };
+    (st.free = st.free || []).push(p);
+  }
+  // Club IA intéressé : parmi les trois pour qui le joueur est le plus utile (niveau au-dessus de leur moyenne)
+  function freeSuitor(st, p) {
+    const cands = st.teams.filter(o => o.id !== st.userId && o.id !== p.free.from && (p.age >= CF.maxAge || cfOf(o).length < CF.aiMax))
+      .map(o => ({ o, gap: freeLevel(p) - starRef(o) })).sort((a, b) => b.gap - a.gap).slice(0, 3);
+    return cands.length ? cands[Math.floor(rnd() * cands.length)] : null;
+  }
+  // Semaine des joueurs libres (après la journée et les centres de formation) :
+  // signatures des clubs IA, départs hors de la ligue, libération surprise.
+  // Renvoie { fresh: nouveaux joueurs libres, gone: [{ p, to }] } pour la messagerie.
+  function freeRound(st) {
+    st.free = st.free || [];
+    const gone = [];
+    for (const p of st.free.slice()) {
+      if (p.free.since >= st.round) continue;
+      const c = freeSuitor(st, p);
+      let to = null;
+      if (c && rnd() < clamp(0.1 + (c.gap + 1.5) * 0.08, 0.04, 0.5)) to = c.o;
+      else if (st.round - p.free.since < FREE.weeks) continue;
+      st.free = st.free.filter(x => x !== p);
+      if (to) { delete p.free; p.cf = p.age < CF.maxAge; to.players.push(p); ensureSheet(to); }
+      gone.push({ p, to: to ? to.id : null });
+    }
+    if (st.round < st.sched.length - 1 && rnd() < FREE.surprise) {
+      const t = pick(st.teams.filter(o => o.id !== st.userId));
+      const xi = new Set(Object.values(t.lineup));
+      const ok = t.players.filter(p => !xi.has(p.id) && !hurt(p) && t.players.filter(x => x.pos === p.pos).length >= 3);
+      const gems = ok.filter(p => p.age < CF.maxAge).sort((a, b) => (b.pot ?? b.ovr) - (a.pot ?? a.ovr)).slice(0, 2);
+      const pros = ok.filter(p => p.age >= CF.maxAge).sort((a, b) => b.ovr - a.ovr).slice(0, 4);
+      const pool = (rnd() < FREE.gem || !pros.length) && gems.length ? gems : pros;
+      if (pool.length) {
+        const p = pick(pool);
+        detach(t, p);
+        (st.moves = st.moves || []).push({ round: st.round, id: p.id, name: p.name, pos: p.pos, age: p.age, from: t.id, to: null });
+        addFree(st, p, t.id, pick(FREE_WHY));
+        if (t.lineup) autoLineup(t);
+        ensureSheet(t);
+      }
+    }
+    return { fresh: st.free.filter(p => p.free.since === st.round), gone };
+  }
+  // Pourquoi un joueur libre refuse ton club : 'back' (tu l'as libéré), 'small' (club trop modeste pour lui),
+  // 'time' (deux joueurs nettement meilleurs à son poste), null s'il accepte. Fixé par joueur : pas de nouveau tirage.
+  function freeRefusal(st, t, p) {
+    if (p.free.from === t.id) return 'back';
+    if (freeLevel(p) - starRef(t) > FREE.pride + p.free.flex) return 'small';
+    if (p.age >= CF.maxAge && t.players.filter(x => x.pos === p.pos && !x.cf && x.ovr > p.ovr + 1).length >= 2) return 'time';
+    return null;
+  }
+  const freeRoom = (t, p) => p.age < CF.maxAge ? cfOf(t).length < FREE.cfMax : t.players.filter(x => !x.cf).length < FREE.proMax;
+  function signFree(st, t, p) {
+    if (!(st.free || []).includes(p)) return { ok: false, why: 'gone' };
+    if (!freeRoom(t, p)) return { ok: false, why: 'full' };
+    const why = p.free.no || freeRefusal(st, t, p);
+    if (why) { p.free.no = why; return { ok: false, why }; }
+    st.free = st.free.filter(x => x !== p);
+    const from = p.free.from;
+    delete p.free;
+    p.cf = p.age < CF.maxAge;
+    t.players.push(p);
+    ensureSheet(t);
+    (st.signs = st.signs || []).push({ round: st.round, id: p.id, name: p.name, pos: p.pos, age: p.age, from });
+    return { ok: true, cf: p.cf };
   }
   // Centre de formation des clubs IA : même rythme que le joueur (après J5, J10…). Le jeune rejoint le centre ;
   // au-delà de 12 jeunes, le staff libère le moins prometteur (qu'un autre club peut récupérer).
@@ -638,7 +725,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], moves: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false, tuto: { on: false, seen: [] } };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], moves: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false, tuto: { on: false, seen: [] }, free: [], signs: [], inbox: [] };
   }
 
   // ---------- Moteur de match ----------
@@ -1569,7 +1656,7 @@
   const API = {
     setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
-    TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, inReserve, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
+    FREE, freeRound, signFree, freeRefusal, freeRoom, freeLevel, TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, inReserve, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.HB = API;

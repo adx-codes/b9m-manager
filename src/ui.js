@@ -112,8 +112,11 @@
   function findPlayer(id) {
     for (const t of G.teams) { const p = t.players.find((x) => x.id === id); if (p) return { p, t }; }
     if (G.youth && G.youth.p.id === id) return { p: G.youth.p, t: me() };
+    const f = (G.free || []).find((x) => x.id === id);
+    if (f) return { p: f, t: FREE_T };
     return null;
   }
+  const FREE_T = { id: 'LIB', name: 'Joueur libre', color: '#6f747a' };
   function matchNote(p, h) {
     const [, , min, g, sh, sv, fa, to, ex] = h;
     return H.noteOf(p.pos, min, g, sh, sv, fa, to, ex);
@@ -279,16 +282,18 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const app = document.getElementById('app');
     applyTheme();
     if (!G) { app.innerHTML = renderHome() + deviceModal(); return; }
-    const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, feuille: renderFeuille, tactique: renderTactics, championnat: renderLeague };
+    const views = { libres: renderFree, clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, feuille: renderFeuille, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
     const pm = document.querySelector('#preov .modal'), pscroll = pm && Number(pm.dataset.step) === U.preStep ? pm.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + preModal() + (U.bsModal && (U.tab === 'tactique' || U.preStep === 2) && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + preModal() + inboxModal() + (U.bsModal && (U.tab === 'tactique' || U.preStep === 2) && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
     if (U.youthModal && G.youth) { if (U.yStage !== 'alert') U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
     const np = document.querySelector('#preov .modal');
     if (np && pscroll) np.scrollTop = pscroll;
+    const ib = document.querySelector('#inboxov .ibmsgs');
+    if (ib) ib.scrollTop = ib.scrollHeight;
     U.ctlSig = ctlSig();
     tutoSync();
   }
@@ -335,9 +340,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       : nf ? `<button class="btn primary nextbtn" data-act="gonext">${nf.rest ? 'Journée de repos →' : 'Préparer le match →'}</button>`
       : `<button class="btn nextbtn" data-act="gonext">Voir le bilan →</button>`;
     const pos = G.results.length ? `${ord(rank())} de la ${LEAGUE}` : 'Avant la 1re journée';
-    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['infirmerie', 'Infirmerie'], ['feuille', 'Feuille de match'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
+    const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['libres', 'Joueurs libres'], ['infirmerie', 'Infirmerie'], ['feuille', 'Feuille de match'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-    return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
+    return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span>${live ? '' : phoneBtn()}<div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
       <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}${tutoScreen().length ? '<button class="tutobtn" data-act="tutohelp" aria-label="Conseils de l\'adjoint pour cet écran" title="Conseils de l\'adjoint">?</button>' : ''}</nav></header>`;
   }
 
@@ -746,14 +751,17 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (G.round >= G.sched.length) G.ended = true;
     // Ton entraînement attend le clic « Lancer l'entraînement » (sauf après la dernière journée)
     if (G.ended) runTraining(); else G.trainPending = true;
-    if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); G.youth = null; }
+    if (G.youth) { G.youthLog.unshift({ round: G.youth.round, name: G.youth.p.name, pos: G.youth.p.pos, ovr: G.youth.p.ovr, pot: G.youth.p.pot, age: G.youth.p.age, id: G.youth.p.id, decision: 'Parti sans réponse' }); msg('centre', `${G.youth.p.name} n'a pas eu de réponse : il est parti signer ailleurs.`); G.youth = null; }
     H.youthRound(G);
+    const fr = H.freeRound(G);
     if (G.round % 5 === 0 && G.round < G.sched.length) { G.youth = { p: H.makeYouth(me(), G), round: G.round }; U.youthModal = true; U.yRelease = null; U.yStage = 'alert'; U.yAnim = false; U.yBatch = false; }
+    roundMessages(fr);
   }
   function runTraining() {
     G.lastTraining = { round: G.round, focus: G.training.focus, intensity: G.training.intensity, log: H.train(me(), G.training.focus, G.training.intensity) };
     G.lastTraining.inj = G.ended ? [] : H.trainInjuries(G, me(), G.training.intensity);
     G.lastTraining.fixed = G.lastTraining.inj.length ? lineupFix() : [];
+    if (G.lastTraining.inj.length) msg('kine', `Mauvaise semaine à l'entraînement. ${G.lastTraining.inj.map(injTxt).join(' ')}`);
     G.trainPending = false;
   }
   // Titulaires blessés remplacés dans le 7 de départ : [{ pos, from, to }] pour l'affichage
@@ -1434,11 +1442,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
       { key: 'infirmerie', tab: 'infirmerie', label: 'Infirmerie', sub: (() => { const n = t.players.filter(H.hurt).length; return n ? `${n} blessé${n > 1 ? 's' : ''} en soins` : 'Tout le monde est valide'; })(), c: 'var(--iso-med)', at: [3.85, 10.25, 26], cta: 'Voir les soins' },
       { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', sub: H.fansOf(t).name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters' },
+      { key: 'siege', tab: 'libres', label: 'Siège · Joueurs libres', sub: (() => { const n = (G.free || []).length; return n ? `${n} joueur${n > 1 ? 's' : ''} libre${n > 1 ? 's' : ''}` : 'Personne sur le marché'; })(), c: 'var(--iso-hq)', at: [1.8, 1.8, 64], cta: 'Voir les joueurs libres' },
       { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement' }
     ];
   }
   const GHOSTS = [
-    { key: 'siege', label: 'Siège du club', sub: 'Mercato et finances · bientôt', at: [1.8, 1.8, 64] },
     { key: 'boutique', label: 'Boutique du club', sub: 'Supporters et recettes · bientôt', at: [8, 11.4, 18] }
   ];
   // Détails décoratifs de la ville (clins d'œil, purement visuels)
@@ -1599,10 +1607,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     }
     // Bâtiments grisés à venir
     const gh = Object.fromEntries(GHOSTS.map((g) => [g.key, g]));
-    const si = { x: 1, y: 1, w: 1.6, d: 1.6, h: 62, c: G1 };
+    const si = { x: 1, y: 1, w: 1.6, d: 1.6, h: 62, c: 'var(--iso-hq)' };
     shade(si);
-    add(1.8, 1.8, gwrap(gh.siege, isoBox(si) + parapet(si) + winL(si, 7, 3, WIN, 0.4) + winR(si, 7, 3, WIN, 0.35) + door(1.6, 2.0, 2.6, 8) + unit(1.2, 1.2, 62) + unit(2.0, 1.9, 62, 0.8)
-      + isoBox({ x: 1.5, y: 1.5, w: 0.6, d: 0.6, h: 6, z: 62, c: G1 })));
+    add(1.8, 1.8, bwrap(pl.siege, isoBox(si) + parapet(si) + winL(si, 7, 3, WIN, 0.4) + winR(si, 7, 3, WIN, 0.35) + door(1.6, 2.0, 2.6, 8) + unit(1.2, 1.2, 62) + unit(2.0, 1.9, 62, 0.8)
+      + isoBox({ x: 1.5, y: 1.5, w: 0.6, d: 0.6, h: 6, z: 62, c: 'var(--iso-hq)' })));
     const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: 'var(--iso-med)' };
     shade(inf);
     add(3.85, 10.25, bwrap(pl.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
@@ -1978,6 +1986,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     if (e.target.id === 'preov') return;
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
+    if (e.target.id === 'inboxov') { U.inbox = false; render(); return; }
     const yr = document.querySelector('.modal.yreveal');
     if (yr && e.target.closest('.overlay')) { const done = yr.getAnimations({ subtree: true }).every((a) => a.playState === 'finished'); yr.classList.remove('yreveal'); if (!done && !e.target.closest('[data-act]')) return; }
     // Menu des clubs : se ferme au clic ailleurs, mémorise son état d'ouverture
@@ -2003,6 +2012,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === 'equilibre') delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
+      case 'inbox': { const cs = inboxContacts(), k = cs.find((c) => unread(c)) || (cs.includes(U.inboxC) ? U.inboxC : cs[0]); if (k) openConv(k); else U.inboxC = null; U.inbox = true; render(); const c = document.querySelector('#inboxov [data-act=inboxclose]'); if (c) c.focus({ preventScroll: true }); return; }
+      case 'inboxclose': U.inbox = false; render(); { const o = document.querySelector('[data-act=inbox]'); if (o) o.focus({ preventScroll: true }); } return;
+      case 'ibc': openConv(id); render(); return;
+      case 'fsign': signFree(id); return;
+      case 'yopen': if (G.youth) { U.inbox = false; U.youthModal = true; U.yStage = null; U.yAnim = false; render(); } return;
       case 'tutook': tutoDone(false); return;
       case 'tutooff': tutoDone(true); return;
       case 'tutohelp': U.tutoAsk = 0; U.tutoAt = tutoScreen().join(); tutoSync(); { const b = document.querySelector('#tuto [data-act=tutook]'); if (b) b.focus({ preventScroll: true }); } return;
@@ -2100,6 +2114,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
     if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
     if (e.key === 'Escape' && U.modsModal) { U.modsModal = false; render(); return; }
+    if (e.key === 'Escape' && U.inbox) { U.inbox = false; render(); return; }
     if (e.key === 'Escape' && U.preStep) { cancelPre(); return; }
     if (document.getElementById('psheet')) return;
     if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
@@ -2196,6 +2211,133 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     dropPlayer(id, z.dataset.drop, tgt && tgt.dataset.drag !== id ? tgt.dataset.drag : null, z.dataset.pos);
   });
 
+  // ---------- Messagerie : le téléphone du coach ----------
+  // Une conversation par contact, la plus récente en haut ; point et compteur sur celles qui ont du nouveau.
+  const CONTACTS = {
+    agent: { name: 'Max Commission', role: 'Agent de joueurs', ini: 'MC', c: 'var(--iso-office)' },
+    kine: { name: 'Paulo Strap', role: 'Kiné du club', ini: 'PS', c: 'var(--iso-med)' },
+    centre: { name: 'Josiane Relève', role: 'Directrice du centre de formation', ini: 'JR', c: 'var(--iso-youth)' }
+  };
+  // Message : texte brut (échappé à l'affichage), pl = joueurs libres présentés, y = jeune du centre, me = envoyé par toi
+  function msg(c, t, extra) {
+    G.inbox = G.inbox || [];
+    const id = G.inbox.length ? G.inbox[G.inbox.length - 1].id + 1 : 1;
+    G.inbox.push(Object.assign({ id, c, r: G.round, t, read: false }, extra || {}));
+    if (G.inbox.length > 250) G.inbox.splice(0, G.inbox.length - 250);
+  }
+  const injTxt = (x) => `${x.name} : ${x.type.toLowerCase()}, ${x.n > 1 ? `absent ${x.n} matchs` : 'absent un match'}.`;
+  const unread = (c) => (G.inbox || []).filter((m) => (!c || m.c === c) && !m.read).length;
+  function inboxContacts() {
+    const last = {};
+    for (const m of G.inbox || []) last[m.c] = m.id;
+    return Object.keys(last).filter((c) => CONTACTS[c]).sort((a, b) => last[b] - last[a]);
+  }
+  function phoneBtn() {
+    const n = unread();
+    return `<button class="phonebtn" data-act="inbox" aria-label="Messages${n ? ` : ${n} non lu${n > 1 ? 's' : ''}` : ''}" title="Messages"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10.5 18.5h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${n ? `<span class="pbadge">${n}</span>` : ''}</button>`;
+  }
+  // Ce qui intéresse l'agent : un profil surprise, un bon niveau ou un gros potentiel pour ton club, ou un poste où tu es court
+  function freeWorth(p) {
+    const t = me(), ref = sref();
+    if (p.free.why) return 3;
+    const fit = t.players.filter((x) => x.pos === p.pos && !H.hurt(x)).length;
+    return H.stars(p.ovr, ref) >= 3 ? 2 : H.potRange(p, ref).hi >= 4 ? 1.5 : fit < 2 ? 1 : 0;
+  }
+  const told = (id) => (G.inbox || []).some((m) => m.pl && m.pl.includes(id));
+  function roundMessages(fr) {
+    const L = G.lastInj;
+    if (L && (L.inj.length || L.back.length)) {
+      const back = L.back.map((b) => b.name);
+      msg('kine', `${L.inj.length ? `Point infirmerie après la journée ${G.round}. ${L.inj.map(injTxt).join(' ')}` : ''}${back.length ? `${L.inj.length ? ' ' : ''}${back.length > 1 ? `${back.slice(0, -1).join(', ')} et ${back[back.length - 1]} sont` : `${back[0]} est`} de retour, ${back.length > 1 ? 'aptes' : 'apte'} pour la suite.` : ''}`);
+    }
+    const late = fr.gone.filter((g) => told(g.p.id));
+    if (late.length) msg('agent', late.map((g) => g.to ? `Trop tard pour ${g.p.name} : il s'engage avec ${T(g.to).name}.` : `${g.p.name} n'a rien trouvé en ${LEAGUE} : il part tenter sa chance à l'étranger.`).join(' '));
+    const hot = fr.fresh.filter((p) => p.free.why);
+    for (const p of hot) msg('agent', `Info de première main : ${T(p.free.from).name} se sépare de ${p.name} (${p.free.why}). Il est libre dès maintenant, et il ne le restera pas longtemps.`, { pl: [p.id] });
+    const more = fr.fresh.filter((p) => !p.free.why && freeWorth(p) > 0).sort((a, b) => freeWorth(b) - freeWorth(a) || H.freeLevel(b) - H.freeLevel(a)).slice(0, 3);
+    if (more.length) msg('agent', more.length > 1 ? 'Des joueurs viennent de se libérer, ça peut t\'intéresser :' : 'Un joueur vient de se libérer, il peut t\'intéresser :', { pl: more.map((p) => p.id) });
+    if (G.youth) msg('centre', `Un jeune sort du centre après la journée ${G.round} : ${G.youth.p.name}, ${G.youth.p.pos}, ${G.youth.p.age} ans. Il attend ta réponse avant le prochain match.`, { y: G.youth.p.id });
+  }
+  const REFUS = {
+    back: (n) => `${n} ne veut pas entendre parler d'un retour : c'est toi qui l'as libéré.`,
+    small: (n) => `${n} vise plus haut que ton club pour l'instant. C'est non, et il ne changera pas d'avis.`,
+    time: (n) => `${n} a regardé ton effectif : avec deux joueurs devant lui à son poste, il préfère un club où il jouera.`,
+    gone: (n) => `Trop tard, ${n} n'est plus libre.`
+  };
+  function signFree(id) {
+    const p = (G.free || []).find((x) => x.id === id), t = me();
+    if (!p) return;
+    const r = H.signFree(G, t, p);
+    let txt;
+    if (r.ok) txt = `C'est signé ! ${p.name} rejoint ${r.cf ? 'ton centre de formation' : 'ton effectif'}. Bienvenue à ${t.city}.`;
+    else if (r.why === 'full') txt = p.age < H.CF.maxAge ? `Ton centre est plein (${H.FREE.cfMax} jeunes) : libère un jeune avant de signer ${p.name}.` : `Ton effectif pro est complet (${H.FREE.proMax} joueurs) : impossible de signer ${p.name} pour l'instant.`;
+    else txt = (REFUS[r.why] || REFUS.small)(p.name);
+    msg('agent', `On tente ${p.name} ?`, { me: true, read: true });
+    msg('agent', txt, { read: U.inbox && U.inboxC === 'agent' });
+    save();
+    render();
+    if (!(U.inbox && U.inboxC === 'agent')) notify(`<span class="nbadge" style="background:${CONTACTS.agent.c}">${CONTACTS.agent.ini}</span><span><b>${esc(CONTACTS.agent.name)}</b><br>${esc(txt)}</span>`, false);
+  }
+  function freeAction(p) {
+    if (p.free.no) return `<span class="muted" title="${esc((REFUS[p.free.no] || REFUS.small)(p.name))}">A refusé</span>`;
+    if (!H.freeRoom(me(), p)) return `<span class="muted">${p.age < H.CF.maxAge ? 'Centre plein' : 'Effectif complet'}</span>`;
+    return `<button class="btn sm primary" data-act="fsign" data-id="${p.id}">Faire signer</button>`;
+  }
+  // Ouvre une conversation : ses messages passent en lus, le repère « Nouveau » se place avant le premier non lu
+  function openConv(k) {
+    U.inboxC = k;
+    const first = (G.inbox || []).find((m) => m.c === k && !m.read && !m.me);
+    U.ibNew = first ? first.id : null;
+    for (const m of G.inbox || []) if (m.c === k) m.read = true;
+    save();
+  }
+  // Carte d'un joueur présenté par l'agent : état à jour (libre, signé chez toi, parti ailleurs)
+  function freeCard(id) {
+    const f = findPlayer(id);
+    if (!f) return '<div class="fcard gone"><span class="muted">Joueur parti hors de la ligue.</span></div>';
+    const p = f.p, t = me();
+    const state = p.free ? freeAction(p) : f.t.id === t.id ? '<span class="muted">Signé chez toi</span>' : `<span class="muted">Signé à ${esc(f.t.name)}</span>`;
+    return `<div class="fcard"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="fname">${plink(p)}<br><span class="muted">${p.age} ans${p.free ? ` · ex-${esc(T(p.free.from) ? T(p.free.from).name : '')}` : ''}</span></span><span class="fst">${lstars(p, { sm: true })}${pot(p, { sm: true })}</span>${state}</div>`;
+  }
+  function inboxModal() {
+    if (!U.inbox || !G) return '';
+    const cs = inboxContacts();
+    const av = (k) => `<span class="avatar" style="background:${CONTACTS[k].c}" aria-hidden="true">${CONTACTS[k].ini}</span>`;
+    const list = cs.map((k) => {
+      const ms = G.inbox.filter((m) => m.c === k), last = ms[ms.length - 1], n = k === U.inboxC ? 0 : unread(k);
+      return `<button class="ibrow${n ? ' new' : ''}" data-act="ibc" data-id="${k}" aria-current="${k === U.inboxC}">${av(k)}<span class="ibtxt"><span class="ibname"><b>${esc(CONTACTS[k].name)}</b><span class="muted">J${last.r}</span></span><span class="ibprev">${last.me ? 'Toi : ' : ''}${esc(last.t.length > 70 ? last.t.slice(0, 68) + '…' : last.t)}</span></span>${n ? `<span class="ibdot" aria-label="${n} nouveau${n > 1 ? 'x' : ''}">${n}</span>` : ''}</button>`;
+    }).join('');
+    let conv = '<p class="muted ibempty">Pas encore de message. Ton agent, ton kiné et la directrice du centre t\'écriront au fil de la saison.</p>';
+    if (U.inboxC && CONTACTS[U.inboxC]) {
+      const k = U.inboxC, ms = G.inbox.filter((m) => m.c === k);
+      let lastR = null;
+      const rows = ms.map((m) => {
+        let h = '';
+        if (m.r !== lastR) { lastR = m.r; h += `<div class="ibday">${m.r ? `Après la journée ${m.r}` : 'Avant la saison'}</div>`; }
+        if (m.id === U.ibNew) h += '<div class="ibday ibnew">Nouveau</div>';
+        const extra = (m.pl ? `<div class="fcards">${m.pl.map(freeCard).join('')}</div>` : '') + (m.y && G.youth && G.youth.p.id === m.y ? '<div class="row" style="margin-top:8px"><button class="btn sm primary" data-act="yopen">Voir le jeune</button></div>' : '');
+        return h + `<div class="bubble${m.me ? ' me' : ''}">${esc(m.t)}${extra}</div>`;
+      }).join('');
+      conv = `<div class="ibconvhead">${av(k)}<span><b>${esc(CONTACTS[k].name)}</b><br><span class="muted">${esc(CONTACTS[k].role)}</span></span></div><div class="ibmsgs">${rows}</div>`;
+    }
+    return `<div class="overlay" id="inboxov" role="dialog" aria-modal="true" aria-labelledby="inboxt"><div class="modal inbox"><div class="ibhead"><h2 id="inboxt">Messages</h2><button class="btn" data-act="inboxclose" aria-label="Fermer">✕</button></div>
+      <div class="ibgrid"><nav class="iblist" aria-label="Conversations">${list || '<p class="muted" style="margin:8px">Aucune conversation.</p>'}</nav><section class="ibconv">${conv}</section></div></div></div>`;
+  }
+
+  // ---------- Siège : les joueurs libres ----------
+  function renderFree() {
+    const t = me(), free = (G.free || []).slice().sort((a, b) => !!b.free.why - !!a.free.why || H.freeLevel(b) - H.freeLevel(a));
+    const pros = t.players.filter((p) => !p.cf).length, cf = H.cfOf(t).length;
+    const rows = free.map((p) => `<tr><td class="nw"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span> ${plink(p)}</td><td class="r">${p.age}</td><td class="nw">${lstars(p, { sm: true })}</td><td class="nw">${pot(p, { sm: true })}</td>
+      <td class="nw"><span title="${esc(T(p.free.from).name)}">${badge(T(p.free.from), true)}</span></td><td class="fwhy">${p.free.why ? esc(p.free.why[0].toUpperCase() + p.free.why.slice(1)) : '<span class="muted">Libéré du centre</span>'}</td>
+      <td class="r muted">J${p.free.since}</td><td class="r">${freeAction(p)}</td></tr>`).join('');
+    const signs = (G.signs || []).slice().reverse();
+    return `<div class="freegrid"><section class="panel"><div class="row" style="justify-content:space-between;gap:8px;margin-bottom:10px"><h3 style="margin:0">Joueurs libres · ${free.length}</h3><span class="row" style="gap:6px"><span class="chip">Pros <b>${pros}/${H.FREE.proMax}</b></span><span class="chip">Centre <b>${cf}/${H.FREE.cfMax}</b></span></span></div>
+      ${free.length ? `<div class="scroll"><table class="ly"><thead><tr><th>Joueur</th><th class="r">Âge</th><th>Niveau</th><th>Potentiel</th><th>Ex-club</th><th>Raison</th><th class="r" title="Libre depuis la journée">Depuis</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted" style="margin:0">Personne sur le marché pour l\'instant. Les centres de formation libèrent des jeunes toutes les 5 journées, et un club se sépare parfois d\'un joueur en cours de saison.</p>'}
+      <p class="legend" style="margin:10px 0 0">Un joueur reste libre au plus ${H.FREE.weeks} semaines, et chaque semaine un autre club peut le signer avant toi. Les moins de 23 ans rejoignent ton centre de formation, les autres l'effectif pro. Un joueur peut refuser si ton club est trop modeste pour lui ou s'il ne voit pas de temps de jeu : sa réponse est définitive.</p></section>
+      <section class="panel"><h3>Arrivées</h3>${signs.length ? signs.map((s) => `<div class="row" style="gap:8px;padding-block:3px"><span class="muted num">J${s.round}</span><span class="pos${s.pos === 'GB' ? ' gb' : ''}">${s.pos}</span>${(() => { const f = findPlayer(s.id); return f ? plink(f.p) : esc(s.name); })()}<span class="muted">ex-${esc(T(s.from) ? T(s.from).name : s.from)}</span></div>`).join('') : '<p class="muted" style="margin:0">Pas encore de recrue cette saison. Ton agent te signale les joueurs intéressants dans tes messages.</p>'}</section></div>`;
+  }
+
   // ---------- Tuto : l'adjoint accompagne la première journée ----------
   // Un conseil par écran, la première fois qu'on y arrive. Le « ? » de la barre d'onglets le rouvre à tout moment.
   const TUTO = {
@@ -2225,7 +2367,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     return [];
   }
   function tutoCur() {
-    if (!G || !G.tuto || (U.youthModal && G.youth) || U.modsModal || U.bsModal || document.getElementById('psheet')) return null;
+    if (!G || !G.tuto || (U.youthModal && G.youth) || U.modsModal || U.inbox || U.bsModal || document.getElementById('psheet')) return null;
     const keys = tutoScreen();
     if (U.tutoAsk !== undefined && U.tutoAsk !== null) {
       if (U.tutoAsk < keys.length && U.tutoAt === keys.join()) return keys[U.tutoAsk];
