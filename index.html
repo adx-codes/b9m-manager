@@ -595,6 +595,12 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .plink { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 2px; }
 .plink:hover, .plink:focus-visible { text-decoration-color: currentColor; color: var(--accent); }
 .modal.sheet { max-width: 1240px; position: relative; }
+.modal.pre { max-width: 1400px; padding-bottom: 0; }
+.prehead { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.prehead .steps.prestep { margin: 4px 0 0; flex: 1; justify-content: center; }
+.prefoot { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; margin: 16px -22px 0; padding: 12px 22px; background: var(--surface); border-top: 1px solid var(--line); }
+.prekeep { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
+.prekeep input { width: 16px; height: 16px; accent-color: var(--accent); }
 .shead { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-right: 58px; }
 .shead h2 { font-family: var(--f-display); font-size: 2rem; margin: 6px 0 8px; line-height: 1; }
 .sovr { display: grid; gap: 2px; text-align: right; }
@@ -3156,10 +3162,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const views = { clubhouse: renderClubhouse, ville: renderCity, match: renderMatch, effectif: renderSquad, entrainement: renderTraining, formation: renderFormation, infirmerie: renderInfirmerie, feuille: renderFeuille, tactique: renderTactics, championnat: renderLeague };
     if (!views[U.tab]) U.tab = 'ville';
     const om = document.querySelector('#bsov .modal'), oscroll = om ? om.scrollTop : 0;
-    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + (U.bsModal && U.tab === 'tactique' && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
+    const pm = document.querySelector('#preov .modal'), pscroll = pm && Number(pm.dataset.step) === U.preStep ? pm.scrollTop : 0;
+    app.innerHTML = renderTop() + '<main>' + views[U.tab]() + '</main>' + renderFooter() + (U.youthModal && G.youth ? `<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="ytitle"><div class="modal ymodal${U.yStage === 'alert' ? ' yalert' : ''}${U.yAnim && !U.yBatch ? ' yreveal' : ''}${H.potRange(G.youth.p, sref()).lo >= 4 ? ' gem' : ''}${U.yBatch || U.yCmp ? ' wide' : ''}" data-club="${esc(me().name.toUpperCase())}" style="--club:${me().color}">${U.yStage === 'alert' ? `<div class="yback"><span class="yback-k">Centre de formation · ${esc(me().name)}</span><b class="yback-t">Un nouveau talent à ${esc(me().city)} !</b><span class="yback-s">Un jeune sort du centre après la journée ${G.youth.round}.</span><button class="btn primary big" data-act="yflip">Découvrir le joueur</button></div><div inert>${youthCard(true)}</div>` : youthCard(true)}</div></div>` : '') + (U.modsModal ? `<div class="overlay" id="modsov" role="dialog" aria-modal="true" aria-labelledby="modstitle"><div class="modal" style="max-width:560px">${modsHtml()}</div></div>` : '') + preModal() + (U.bsModal && (U.tab === 'tactique' || U.preStep === 2) && !(U.youthModal && G.youth) ? `<div class="overlay" id="bsov" role="dialog" aria-modal="true" aria-labelledby="bstitle"><div class="modal">${backStyleHtml(me())}</div></div>` : '') + deviceModal();
     if (U.youthModal && G.youth) { if (U.yStage !== 'alert') U.yAnim = false; const f = document.querySelector('.modal button'); if (f) f.focus({ preventScroll: true }); }
     const nm = document.querySelector('#bsov .modal');
     if (nm && oscroll) nm.scrollTop = oscroll;
+    const np = document.querySelector('#preov .modal');
+    if (np && pscroll) np.scrollTop = pscroll;
     U.ctlSig = ctlSig();
   }
 
@@ -3603,6 +3612,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     G.results.push(rd);
     // Réserve : les jeunes du centre hors de la feuille de match prennent des minutes avec la réserve
     H.reserveRound(G, playing);
+    if (r && G.pre) { restoreSheet(me(), G.pre); G.pre = null; }
     for (const p of me().players) delete p.matchStyle;
     G.round++;
     // Infirmerie : une semaine de soins pour les blessés d'avant, puis les blessés du jour
@@ -3654,6 +3664,54 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     render();
     window.scrollTo(0, 0);
   }
+  // Avant le match : feuille de match puis tactique, réglées pour ce match seulement.
+  // G.pre garde la feuille, la tactique et les styles de match habituels pour les remettre ensuite.
+  function openPre() {
+    const nf = nextFixture();
+    if (!nf || nf.rest || G.trainPending) return;
+    const t = me();
+    H.ensureSheet(t);
+    if (!G.pre) G.pre = { tac: JSON.parse(JSON.stringify(t.tactic)), lineup: { ...t.lineup }, out: (t.out || []).slice(), ms: Object.fromEntries(t.players.filter((p) => p.matchStyle).map((p) => [p.id, p.matchStyle])), keep: false };
+    U.preStep = 1;
+    save();
+    render();
+    const b = document.querySelector('#preov [data-act=prenext]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  function restoreSheet(t, s) {
+    for (const pos of H.POS) if (t.players.some((p) => p.id === s.lineup[pos])) t.lineup[pos] = s.lineup[pos];
+    t.out = s.out.filter((id) => t.players.some((p) => p.id === id));
+  }
+  // Annuler (ou partie rechargée avant la fin du match) : tout redevient comme avant
+  function dropPre() {
+    const t = me(), s = G.pre;
+    if (!s) return;
+    if (s.tac) t.tactic = s.tac;
+    restoreSheet(t, s);
+    H.ensureSheet(t);
+    if (s.ms) for (const p of t.players) { if (s.ms[p.id]) p.matchStyle = s.ms[p.id]; else delete p.matchStyle; }
+    G.pre = null;
+  }
+  function cancelPre() {
+    dropPre();
+    U.preStep = null; U.bsModal = false;
+    save();
+    render();
+    const b = document.querySelector('[data-act=kickoff]');
+    if (b) b.focus({ preventScroll: true });
+  }
+  function preModal() {
+    const nf = nextFixture();
+    if (!U.preStep || !G.pre || !nf || nf.rest) return '';
+    const t = me(), s = U.preStep, home = nf.h === t.id, opp = T(home ? nf.a : nf.h);
+    const steps = `<ol class="steps prestep" aria-label="Étapes"><li aria-current="${s === 1 ? 'step' : 'false'}"><b>1</b> Feuille de match</li><li aria-current="${s === 2 ? 'step' : 'false'}"><b>2</b> Tactique</li><li><b>3</b> Coup d'envoi</li></ol>`;
+    const head = `<div class="prehead"><div><span class="label">Journée ${G.round + 1} · ${home ? 'contre' : 'à'} ${esc(opp.name)}</span><h2 id="pretitle" style="margin:2px 0 0">${s === 1 ? 'Feuille de match' : 'Tactique du match'}</h2></div>${steps}<button class="btn" data-act="precancel" aria-label="Annuler">✕</button></div>`;
+    const keep = `<div><label class="prekeep"><input type="checkbox" data-prekeep${G.pre.keep ? ' checked' : ''}> Garder cette feuille pour les prochains matchs</label><span class="muted" style="display:block;font-size:0.85rem">Sinon, tes changements ne valent que pour ce match.</span></div>`;
+    const body = s === 1 ? renderFeuille(keep) : `<p class="muted" style="margin:0 0 12px">Ces réglages ne valent que pour ce match : ta tactique habituelle (onglet Tactique) revient au match suivant.</p>${renderTactics()}`;
+    const foot = s === 1 ? '<button class="btn" data-act="precancel">Annuler</button><button class="btn primary big" data-act="prenext">Suivant : la tactique →</button>'
+      : '<button class="btn" data-act="preback">← Feuille de match</button><button class="btn primary big" data-act="prego">Coup d\'envoi</button>';
+    return `<div class="overlay" id="preov" role="dialog" aria-modal="true" aria-labelledby="pretitle"><div class="modal pre" data-step="${s}">${head}${body}<div class="prefoot">${foot}</div></div></div>`;
+  }
   function startMatch() {
     const nf = nextFixture();
     if (!nf || nf.rest || G.trainPending) return;
@@ -3661,6 +3719,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     H.ensureSheet(me());
     G.lastSheet = { lineup: { ...me().lineup }, out: (me().out || []).slice() };
     U.m = new H.Match(T(nf.h), T(nf.a), { user: G.userId });
+    if (G.pre) { me().tactic = G.pre.tac; G.pre = G.pre.keep ? null : { lineup: G.pre.lineup, out: G.pre.out }; }
+    U.preStep = null; U.bsModal = false;
+    save();
     U.prevSc = null;
     U.side = nf.h === G.userId ? 0 : 1;
     U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false; U.injSeen = 0;
@@ -4608,18 +4669,20 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function backStyleSummary(t) {
     const st = H.BACK_POS.map((pos) => ({ pos, p: t.players.find((x) => x.id === t.lineup[pos]) })).filter((x) => x.p);
     const custom = t.players.filter((p) => H.BACK_POS.includes(p.pos) && p.style).length;
+    const forMatch = U.preStep === 2 ? t.players.filter((p) => H.BACK_POS.includes(p.pos) && p.matchStyle && p.matchStyle !== (p.style || 'equilibre')).length : 0;
     return `<div class="opt"><span class="label">Jeu des arrières</span>
       <div class="row" style="gap:6px">${st.map((x) => `<span class="chip"><span class="pos">${x.pos}</span>${esc(short(x.p.name))} · <b>${H.BACK_STYLES[H.backStyle(x.p)]}</b></span>`).join('')}</div>
-      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Équilibré pour tous'}</span></div></div>`;
+      <div class="row" style="margin-top:4px"><button class="btn" data-act="bsopen">Régler le jeu des arrières</button><span class="muted" style="font-size:0.85rem">${forMatch ? `${forMatch} changement${forMatch > 1 ? 's' : ''} pour ce match` : custom ? `${custom} réglage${custom > 1 ? 's' : ''} personnalisé${custom > 1 ? 's' : ''}` : 'Équilibré pour tous'}</span></div></div>`;
   }
   function backStyleHtml(t) {
+    const pre = U.preStep === 2;
     const backs = t.players.filter((p) => H.BACK_POS.includes(p.pos)).sort((a, b) => H.BACK_POS.indexOf(a.pos) - H.BACK_POS.indexOf(b.pos) || b.ovr - a.ovr);
     const starters = new Set(Object.values(t.lineup));
     return `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px"><h2 id="bstitle" style="margin:0">Jeu des arrières</h2><button class="btn" data-act="bsclose" aria-label="Fermer">✕</button></div>
-      <p class="muted" style="margin:6px 0 10px">Choisis comment chaque arrière attaque. Le réglage suit le joueur, même s'il change de poste.</p>
+      <p class="muted" style="margin:6px 0 10px">${pre ? 'Choisis comment chaque arrière attaque pendant ce match. Au match suivant, chacun reprend son réglage habituel (onglet Tactique).' : 'Choisis comment chaque arrière attaque. Le réglage suit le joueur, même s\'il change de poste.'}</p>
       <div class="bstyles">${backs.map((p) => { const cur = H.backStyle(p);
         return `<div class="bsrow"><span class="bsname"><span class="pos">${p.pos}</span> ${plink(p, short(p.name))}${starters.has(p.id) ? ' <span class="tit" title="Titulaire">T</span>' : ''}<span class="bsnotes muted num" title="Tir de loin · tir à 6 m · duel">9 m ${p.a.tirLoin} · 6 m ${p.a.tirPres} · duel ${p.a.duel}</span></span>
-          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="pstyle" data-id="${p.id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</span></div>`; }).join('')}</div>
+          <span class="seg sm">${Object.entries(H.BACK_STYLES).map(([k, l]) => `<button data-act="${pre ? 'mstyle' : 'pstyle'}" data-id="${p.id}|${pre && k === (p.style || 'equilibre') ? '' : k}" aria-pressed="${cur === k}"${pre && k === (p.style || 'equilibre') ? ' title="Son réglage habituel"' : ''}>${l}</button>`).join('')}</span></div>`; }).join('')}</div>
       <p>De loin : il arme à 9 m (le moins efficace, peu de pertes ; à éviter face à de bons contreurs). Au contact : il perce à 6 m et provoque des 7 m et des exclusions, mais risque le passage en force face à de bons duellistes, et se fatigue un peu plus. Par défaut, tout le monde joue Équilibré. À toi de lire ses notes : un arrière dans son registre naturel gagne +3 % de réussite, à contre-emploi il en perd 2,5.</p>
       <div class="row" style="margin-top:12px"><button class="btn primary" data-act="bsclose">Valider</button><button class="btn" data-act="bsreset">Tout remettre en Équilibré</button></div>`;
   }
@@ -4671,7 +4734,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   const rowTip = (p) => `${p.name} · ${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'} · fatigue ${p.fatigue} · forme ${p.form > 0 ? '+' : ''}${p.form} · robustesse : ${robTxt(p.a.robustesse ?? 12)} · expérience ×${H.matchXP(p).toFixed(1).replace('.', ',')}`;
   // Poignée de glisser-déposer : seule elle se saisit, la ligne reste cliquable normalement
   const GRIP = (id) => `<span class="mgrip" draggable="true" data-drag="${id}" title="Glisser" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/><circle cx="2" cy="7" r="1.3"/><circle cx="6" cy="7" r="1.3"/><circle cx="2" cy="12" r="1.3"/><circle cx="6" cy="12" r="1.3"/></svg></span>`;
-  function renderFeuille() {
+  function renderFeuille(head) {
     H.ensureSheet(me());
     const t = me(), fold = folded(), nf = nextFixture();
     const fit = t.players.filter((p) => !H.hurt(p)), hurtP = t.players.filter(H.hurt);
@@ -4696,7 +4759,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const gkBench = bench.some((p) => p.pos === 'GB');
     const noCover = H.POS.filter((pos) => pos !== 'GB' && !bench.some((p) => p.pos === pos));
     const benchRow = (p) => `<div class="mrow mb" data-drag="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
-    return `<div class="row" style="justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0">Feuille de match${nf && !nf.rest ? ` · journée ${G.round + 1}` : ''}</h2>${nf && !nf.rest ? `<span class="muted">${nf.h === t.id ? 'contre' : 'à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}</span>` : ''}</div>
+    return `<div class="row" style="justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap">${head || `<div><h2 style="margin:0">Feuille de match${nf && !nf.rest ? ` · journée ${G.round + 1}` : ''}</h2>${nf && !nf.rest ? `<span class="muted">${nf.h === t.id ? 'contre' : 'à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}</span>` : ''}</div>`}
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip">Titulaires <b>${Object.keys(t.lineup).length}/7</b></span><span class="chip">Banc <b>${bench.length}/7</b></span><span class="chip">Réserve <b>${res.length}</b></span>${trib.length ? `<span class="chip" title="Pros de 23 ans et plus hors de la feuille de match : en tribune, sans match">Tribune <b>${trib.length}</b></span>` : ''}<span class="chip">Infirmerie <b>${hurtP.length}</b></span>
         ${G.lastSheet ? '<button class="btn" data-act="sheetback" title="Les 7 de départ et la feuille de match du dernier match">Reprendre la dernière feuille</button>' : ''}<button class="btn" data-act="rotate" title="Les titulaires au-delà de 55 de fatigue passent sur le banc, remplacés par le joueur le plus frais du poste">Faire tourner</button><button class="btn primary" data-act="auto">Composition auto</button></div></div>
       <div class="mgrid">
@@ -4790,6 +4853,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // ---------- Événements ----------
   document.addEventListener('click', (e) => {
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
+    if (e.target.id === 'preov') return;
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
     const yr = document.querySelector('.modal.yreveal');
     if (yr && e.target.closest('.overlay')) { const done = yr.getAnimations({ subtree: true }).every((a) => a.playState === 'finished'); yr.classList.remove('yreveal'); if (!done && !e.target.closest('[data-act]')) return; }
@@ -4811,7 +4875,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'modsclose': U.modsModal = false; render(); { const o = document.querySelector('[data-act=modsopen]'); if (o) o.focus(); } return;
       case 'bsopen': U.bsModal = true; render(); { const c = document.querySelector('#bsov [data-act=bsclose]'); if (c) c.focus(); } return;
       case 'bsclose': U.bsModal = false; render(); { const o = document.querySelector('[data-act=bsopen]'); if (o) o.focus(); } return;
-      case 'bsreset': for (const p of t.players) delete p.style; save(); render(); return;
+      case 'bsreset': for (const p of t.players) { if (U.preStep) { if (H.BACK_POS.includes(p.pos) && (p.style || 'equilibre') !== 'equilibre') p.matchStyle = 'equilibre'; else delete p.matchStyle; } else delete p.style; } save(); render(); return;
       case 'colt': { const h = hiddenCols(); U.hidden = h.includes(id) ? h.filter((x) => x !== id) : h.concat(id); try { localStorage.setItem('hbm-cols', JSON.stringify(U.hidden)); } catch (e) {} render(); return; }
       case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === 'equilibre') delete pl.style; else pl.style = v; save(); render(); } return; }
@@ -4824,7 +4888,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'pickm': ensureDraft().m = id; render(); return;
       case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
       case 'tab': U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
-      case 'kickoff': startMatch(); return;
+      case 'kickoff': openPre(); return;
+      case 'prenext': U.preStep = 2; U.bsModal = false; render(); return;
+      case 'preback': U.preStep = 1; U.bsModal = false; render(); return;
+      case 'precancel': cancelPre(); return;
+      case 'prego': startMatch(); return;
       case 'rest': restRound(); return;
       case 'gonext': U.tab = 'match'; U.post = null; U.view = 'pre'; render(); window.scrollTo(0, 0); return;
       case 'pause': U.paused = !U.paused; if (!U.paused) U.subSel = null; schedule(); liveUpdate([]); return;
@@ -4906,6 +4974,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
     if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
     if (e.key === 'Escape' && U.modsModal) { U.modsModal = false; render(); return; }
+    if (e.key === 'Escape' && U.preStep) { cancelPre(); return; }
     if (document.getElementById('psheet')) return;
     if (e.key === ' ' && U.view === 'live' && U.m && U.tab === 'match' && !(e.target.closest && e.target.closest('button, select, input, [role="button"]'))) {
       e.preventDefault();
@@ -4925,6 +4994,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     else { tac.cons.push(id); if (tac.cons.length > 2) tac.cons.shift(); }
   }
   document.addEventListener('change', (e) => {
+    if (e.target.matches && e.target.matches('input[data-prekeep]')) { if (G && G.pre) { G.pre.keep = e.target.checked; save(); } return; }
     const ir = e.target.closest && e.target.closest('input[data-int]');
     if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
     const ly = e.target.closest('[data-lyteam], select[data-lyf], [data-lyref]');
@@ -5002,6 +5072,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // ---------- Démarrage ----------
   function start(data) {
     G = load();
+    if (G && G.pre) { dropPre(); save(); }
     if (G) {
       U.tab = (data && data.tab) || 'ville';
       if (G.last && G.last.round === G.round && !G.ended) U.post = null;
