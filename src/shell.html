@@ -595,6 +595,26 @@ td.ac.dnw::after { content: "▼"; position: absolute; top: 1px; right: 2px; fon
 .prefoot { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 10px; margin: 16px -22px 0; padding: 12px 22px; background: var(--surface); border-top: 1px solid var(--line); }
 .prekeep { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer; }
 .prekeep input { width: 16px; height: 16px; accent-color: var(--accent); }
+/* Tuto : la case de lancement, la bulle de l'adjoint, l'élément montré, le « ? » des onglets */
+.tutoopt { display: flex; align-items: flex-start; gap: 12px; margin-top: 18px; padding: 12px 14px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: var(--r); background: var(--accent-soft); cursor: pointer; max-width: 640px; }
+.tutoopt input { flex: none; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--accent); cursor: pointer; }
+.tutoopt > span { display: grid; gap: 2px; }
+.tutoopt .muted { font-size: 0.86rem; }
+#tuto { position: fixed; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 80; width: min(360px, calc(100% - 32px)); display: grid; gap: 8px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; box-shadow: 0 14px 34px rgba(0,0,0,0.3); font-size: 0.9rem; line-height: 1.45; }
+#tuto.live { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+#tuto p { margin: 0; color: var(--muted); }
+#tuto #tutoh { font-family: var(--f-display); font-size: 1.1rem; }
+#tuto .tutohead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+#tuto .row { justify-content: flex-end; }
+.tuto-hl { outline: 2px solid var(--accent); outline-offset: 3px; }
+nav.tabs .tutobtn { margin: 6px 0 6px auto; flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-weight: 700; font-size: 0.9rem; padding: 0; }
+nav.tabs .tutobtn:hover { color: var(--fg); border-color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) {
+  #tuto.show { animation: tutoin 200ms ease-out; }
+  .tuto-hl { animation: tutohl 1.6s ease-in-out infinite; }
+}
+@keyframes tutoin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes tutohl { 50% { outline-offset: 6px; outline-color: transparent; } }
 .shead { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; padding-right: 58px; }
 .shead h2 { font-family: var(--f-display); font-size: 2rem; margin: 6px 0 8px; line-height: 1; }
 .sovr { display: grid; gap: 2px; text-align: right; }

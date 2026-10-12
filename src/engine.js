@@ -405,6 +405,8 @@
     for (const t of st.teams) for (const p of t.players) if (LEG_OLD[p.name]) p.name = LEG_OLD[p.name];
     if (st.youth && LEG_OLD[st.youth.p.name]) st.youth.p.name = LEG_OLD[st.youth.p.name];
     if (st.youth === undefined) st.youth = null;
+    // Tuto de l'adjoint : coupé pour les parties déjà commencées
+    if (!st.tuto) st.tuto = { on: false, seen: [] };
     if (st.youth && st.youth.p.a.robustesse === undefined) st.youth.p.a.robustesse = robustOf(st.youth.p.age);
     for (const t of st.teams) {
       for (const p of t.players) if (p.pos !== 'GB' && p.a.excentricite === undefined) {
@@ -636,7 +638,7 @@
       const ordered = keyed.map(k => k.rd);
       sched = ordered.concat(ordered.map(g => g.map(([h, a]) => [a, h])));
     }
-    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], moves: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false };
+    return { v: 1, seed, userId, round: 0, teams, legends, sched, youth: null, youthLog: [], leagueYouth: [], injLog: [], moves: [], results: [], last: null, ended: false, training: { focus: 'equilibre', intensity: 'normale' }, lastTraining: null, trainPending: false, tuto: { on: false, seen: [] } };
   }
 
   // ---------- Moteur de match ----------

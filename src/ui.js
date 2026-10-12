@@ -195,10 +195,11 @@
     document.body.appendChild(o);
     const c = o.querySelector('.sclose');
     if (c) c.focus();
+    tutoSync();
   }
   function closeSheet() {
     const o = document.getElementById('psheet');
-    if (o) { o.remove(); if (U.sheetFrom && document.body.contains(U.sheetFrom)) U.sheetFrom.focus(); }
+    if (o) { o.remove(); tutoSync(); if (U.sheetFrom && document.body.contains(U.sheetFrom)) U.sheetFrom.focus(); }
   }
   const plink = (p, label) => `<button class="plink" data-act="player" data-id="${p.id}" title="Voir la fiche">${esc(label || p.name)}</button>${H.flagOf(p) ? ` <span class="flag" title="Joueur étranger">${H.flagOf(p)}</span>` : ''}${injTag(p)}`;
   // Blessures : petite croix, le détail au survol
@@ -289,6 +290,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const np = document.querySelector('#preov .modal');
     if (np && pscroll) np.scrollTop = pscroll;
     U.ctlSig = ctlSig();
+    tutoSync();
   }
 
   function modsPicker() {
@@ -304,6 +306,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       <p class="muted" style="margin:0 0 14px">Le hasard t'en propose trois de chaque : choisis un bonus et un malus. Ils durent toute la saison. Les clubs adverses reçoivent chacun un bonus et un malus au hasard. Supporters et centre de formation, eux, sont propres au club.</p>
       <div class="modgrid"><div class="modcol"><span class="label good">Ton bonus</span>${d.bonus.map((k) => card(k, '+', 'pickb', d.b)).join('')}</div>
         <div class="modcol"><span class="label bad">Ton malus</span>${d.malus.map((k) => card(k, '-', 'pickm', d.m)).join('')}</div></div>
+      <label class="tutoopt"><input type="checkbox" data-tutoopt${U.tutoOpt !== false ? ' checked' : ''}><span><b>Être accompagné par l'adjoint pendant la première journée</b><span class="muted">Un conseil court à chaque écran, le temps de prendre ses marques. Décoche si tu connais déjà le jeu.</span></span></label>
       <div class="row" style="margin-top:18px"><button class="btn primary big" data-act="start" ${ready ? '' : 'disabled'}>Lancer la saison</button><span class="muted">${ready ? `${esc(H.CLUBS.find((c) => c.id === U.newClub).name)} · ${esc(H.modInfo(d.b + '+').name)} · ${esc(H.modInfo(d.m + '-').name)}` : 'Choisis un bonus et un malus pour lancer la saison.'}</span></div></section>`;
   }
   function renderHome() {
@@ -335,7 +338,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const tabs = [['match', 'Match'], ['effectif', 'Effectif'], ['entrainement', 'Entraînement'], ['formation', 'Centre de formation'], ['infirmerie', 'Infirmerie'], ['feuille', 'Feuille de match'], ['tactique', 'Tactique'], ['championnat', 'Championnat']];
     const homeIco = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 10v10h4.5v-6h4v6h4.5V10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
     return `<header class="top"><div class="clubbar"><button class="homebtn" data-act="tab" data-id="ville" aria-label="Ville (accueil)" title="Ville (accueil)" aria-current="${U.tab === 'ville' ? 'page' : 'false'}">${homeIco}</button>${badge(t)}<div><div class="name">${esc(t.name)}${(t.mods || []).length ? ` <button class="modsbtn" data-act="modsopen" aria-label="Voir les bonus et malus du club" title="Bonus et malus du club"><span class="mp">+</span><span class="mm">−</span></button>` : ''}</div><div class="sub">Journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length} · ${pos}</div></div><span class="spacer"></span><div class="nextwrap"><div class="next">${next}</div>${btn}</div></div>
-      <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}</nav></header>`;
+      <nav class="tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" data-act="tab" data-id="${k}" aria-selected="${U.tab === k}">${l}</button>`).join('')}${tutoScreen().length ? '<button class="tutobtn" data-act="tutohelp" aria-label="Conseils de l\'adjoint pour cet écran" title="Conseils de l\'adjoint">?</button>' : ''}</nav></header>`;
   }
 
   function renderFooter() {
@@ -670,6 +673,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const c = document.getElementById('ctl');
       if (c) c.innerHTML = ctlHtml();
     }
+    tutoHl();
   }
   // Face-à-face de tes arrières et de ton pivot contre leur vis-à-vis (stat élargie en défense collective)
   function faceVal(opp, attPos, k) {
@@ -825,7 +829,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const steps = `<ol class="steps prestep" aria-label="Étapes"><li aria-current="${s === 1 ? 'step' : 'false'}"><b>1</b> Feuille de match</li><li aria-current="${s === 2 ? 'step' : 'false'}"><b>2</b> Tactique</li><li><b>3</b> Coup d'envoi</li></ol>`;
     const head = `<div class="prehead"><div><span class="label">Journée ${G.round + 1} · ${home ? 'contre' : 'à'} ${esc(opp.name)}</span><h2 id="pretitle" style="margin:2px 0 0">${s === 1 ? 'Feuille de match' : 'Tactique du match'}</h2></div>${steps}<button class="btn" data-act="precancel" aria-label="Annuler">✕</button></div>`;
     const keep = `<div><label class="prekeep"><input type="checkbox" data-prekeep${G.pre.keep ? ' checked' : ''}> Garder cette feuille pour les prochains matchs</label><span class="muted" style="display:block;font-size:0.85rem">Sinon, tes changements ne valent que pour ce match.</span></div>`;
-    const body = s === 1 ? renderFeuille(keep) : `<p class="muted" style="margin:0 0 12px">Ces réglages ne valent que pour ce match : ta tactique habituelle (onglet Tactique) revient au match suivant.</p>${renderTactics()}<section class="panel" style="margin-top:20px">${faceHtml(t, opp)}</section>`;
+    const body = s === 1 ? renderFeuille(keep) : `<p class="muted" style="margin:0 0 12px">Ces réglages ne valent que pour ce match : ta tactique habituelle (onglet Tactique) revient au match suivant.</p>${renderTactics()}<section class="panel" data-tuto="face" style="margin-top:20px">${faceHtml(t, opp)}</section>`;
     const foot = s === 1 ? '<button class="btn" data-act="precancel">Annuler</button><button class="btn primary big" data-act="prenext">Suivant : la tactique →</button>'
       : '<button class="btn" data-act="preback">← Feuille de match</button><button class="btn primary big" data-act="prego">Coup d\'envoi</button>';
     return `<div class="overlay" id="preov" role="dialog" aria-modal="true" aria-labelledby="pretitle"><div class="modal pre" data-step="${s}">${head}${body}<div class="prefoot">${foot}</div></div></div>`;
@@ -843,6 +847,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     U.prevSc = null;
     U.side = nf.h === G.userId ? 0 : 1;
     U.view = 'live'; U.paused = false; U.tPanel = false; U.speed = 1; U.htDone = false; U.injSeen = 0;
+    if (G.tuto && G.tuto.on && !G.tuto.seen.includes('live')) { U.paused = true; U.tutoHold = true; }
     render();
     schedule();
   }
@@ -1998,13 +2003,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === 'equilibre') delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
+      case 'tutook': tutoDone(false); return;
+      case 'tutooff': tutoDone(true); return;
+      case 'tutohelp': U.tutoAsk = 0; U.tutoAt = tutoScreen().join(); tutoSync(); { const b = document.querySelector('#tuto [data-act=tutook]'); if (b) b.focus({ preventScroll: true }); } return;
       case 'psclose': closeSheet(); return;
       case 'devok': U.devOk = true; try { sessionStorage.setItem('hbm-dev-ok', '1'); } catch (e) { /* ignore */ } render(); return;
       case 'step2': U.homeStep = 2; render(); window.scrollTo(0, 0); return;
       case 'step1': U.homeStep = 1; render(); window.scrollTo(0, 0); return;
       case 'pickb': ensureDraft().b = id; render(); return;
       case 'pickm': ensureDraft().m = id; render(); return;
-      case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
+      case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); G.tuto.on = U.tutoOpt !== false; U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
       case 'tab': U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
       case 'kickoff': openPre(); return;
       case 'prenext': U.preStep = 2; U.bsModal = false; render(); return;
@@ -2112,6 +2120,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     else { tac.cons.push(id); if (tac.cons.length > 2) tac.cons.shift(); }
   }
   document.addEventListener('change', (e) => {
+    if (e.target.matches && e.target.matches('input[data-tutoopt]')) { U.tutoOpt = e.target.checked; return; }
     if (e.target.matches && e.target.matches('input[data-prekeep]')) { if (G && G.pre) { G.pre.keep = e.target.checked; save(); } return; }
     const ir = e.target.closest && e.target.closest('input[data-int]');
     if (ir && U.m) { U.m.S[U.side].tac.int = Number(ir.value); U.ctlSig = null; liveUpdate([]); const n = document.querySelector('input[data-int]'); if (n) n.focus(); return; }
@@ -2186,6 +2195,90 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     document.body.classList.remove('isdragging');
     dropPlayer(id, z.dataset.drop, tgt && tgt.dataset.drag !== id ? tgt.dataset.drag : null, z.dataset.pos);
   });
+
+  // ---------- Tuto : l'adjoint accompagne la première journée ----------
+  // Un conseil par écran, la première fois qu'on y arrive. Le « ? » de la barre d'onglets le rouvre à tout moment.
+  const TUTO = {
+    ville: { h: 'Bienvenue en ville, coach', at: '.nextbtn', t: "Chaque bâtiment est un écran du club : la salle pour jouer, le vestiaire pour l'effectif, le gymnase pour l'entraînement… Pas besoin de tout visiter : le bouton en haut à droite mène toujours à l'étape suivante." },
+    mods: { h: 'Ton bonus et ton malus', at: '.modsbtn', t: "Ils jouent toute la saison. Ce bouton te les rappelle quand tu veux. Et si tu te perds, le « ? » au bout des onglets rouvre mes conseils." },
+    avantmatch: { h: "L'avant-match", at: '[data-act=kickoff]', t: "À gauche ton plan de match, au centre l'adversaire : sa forme, sa tactique, ses joueurs à surveiller. Quand tu es prêt, « Préparer le match »." },
+    feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Glisse un joueur par sa poignée (⠿) pour le changer de place. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
+    tactique: { h: 'La tactique du match', at: '[data-tuto=face]', t: "Choisis ta défense, ton attaque et ton rythme. Aucun réglage ne gagne à tous les coups : chacun a son contre. Le face-à-face, en bas, compare tes arrières à leurs défenseurs. En cas de doute, garde tout tel quel et donne le coup d'envoi." },
+    live: { h: 'Le match en direct', at: '.lbpause', ok: "Compris, coup d'envoi", t: "Le match attend que tu aies lu. Le fil raconte chaque action, la courbe sous le score montre qui domine. Changements et réglages se font en pause (barre d'espace ou bouton en bas). Tu peux aussi accélérer en ×2 ou ×4." },
+    post: { h: 'Après le match', at: 'main .btn.primary[data-id=entrainement]', t: "Les notes de tes joueurs, l'homme du match, les blessés éventuels. Ensuite, une semaine d'entraînement avant la journée suivante." },
+    entrainement: { h: "L'entraînement", at: '[data-act=dotrain]', t: "Choisis un thème et une intensité. Plus c'est dur, plus tes joueurs progressent, mais plus ils arrivent fatigués au match et plus le risque de blessure monte. Puis « Lancer la semaine »." },
+    championnat: { h: 'Le championnat', t: `Classement, résultats et calendrier de la ${LEAGUE} : 30 journées en aller-retour. Un faux pas n'est pas grave, le titre se joue sur la durée.` }
+  };
+  // Conseils de l'écran affiché, dans l'ordre
+  function tutoScreen() {
+    if (!G) return [];
+    if (U.preStep && G.pre) return [U.preStep === 1 ? 'feuille' : 'tactique'];
+    if (U.tab === 'ville') return ['ville', 'mods'];
+    if (U.tab === 'match') {
+      if (U.view === 'live' && U.m) return ['live'];
+      if (U.view === 'post' && U.post) return ['post'];
+      const nf = nextFixture();
+      return !G.ended && !G.trainPending && nf && !nf.rest ? ['avantmatch'] : [];
+    }
+    if (U.tab === 'entrainement') return ['entrainement'];
+    if (U.tab === 'championnat') return ['championnat'];
+    return [];
+  }
+  function tutoCur() {
+    if (!G || !G.tuto || (U.youthModal && G.youth) || U.modsModal || U.bsModal || document.getElementById('psheet')) return null;
+    const keys = tutoScreen();
+    if (U.tutoAsk !== undefined && U.tutoAsk !== null) {
+      if (U.tutoAsk < keys.length && U.tutoAt === keys.join()) return keys[U.tutoAsk];
+      U.tutoAsk = null;
+    }
+    if (!G.tuto.on) return null;
+    return keys.find((k) => !G.tuto.seen.includes(k)) || null;
+  }
+  function tutoHl() {
+    const k = U.tutoKey;
+    for (const el of document.querySelectorAll('.tuto-hl')) if (!k || !TUTO[k].at || !el.matches(TUTO[k].at)) el.classList.remove('tuto-hl');
+    const el = k && TUTO[k].at ? document.querySelector(TUTO[k].at) : null;
+    if (el) el.classList.add('tuto-hl');
+  }
+  function tutoSync() {
+    const k = tutoCur();
+    let el = document.getElementById('tuto');
+    if (!k) { U.tutoKey = null; if (el) el.remove(); tutoHl(); return; }
+    if (!el) { el = document.createElement('aside'); el.id = 'tuto'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-labelledby', 'tutoh'); document.body.appendChild(el); }
+    const tip = TUTO[k], ask = U.tutoAsk !== null && U.tutoAsk !== undefined;
+    const n = Object.keys(TUTO).length, i = Math.min(n, G.tuto.seen.length + (G.tuto.seen.includes(k) ? 0 : 1));
+    const sig = `${k}|${ask}|${G.tuto.on}|${!!U.tutoHold}`;
+    if (el.dataset.k !== sig) {
+      el.dataset.k = sig;
+      el.innerHTML = `<div class="tutohead"><span class="label">L'adjoint${ask || !G.tuto.on ? '' : ` · ${i}/${n}`}</span>${!ask && G.tuto.on ? '<button class="linkbtn" data-act="tutooff">Couper le tuto</button>' : ''}</div><b id="tutoh">${esc(tip.h)}</b><p>${esc(tip.t)}</p><div class="row"><button class="btn primary" data-act="tutook">${esc(tip.ok && U.tutoHold ? tip.ok : 'Compris')}</button></div>`;
+      el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    }
+    el.classList.toggle('live', U.tab === 'match' && U.view === 'live');
+    U.tutoKey = k;
+    tutoHl();
+  }
+  // Compris (off = false) ou Couper le tuto (off = true)
+  function tutoDone(off) {
+    const k = U.tutoKey;
+    if (!G || !k) return;
+    if (U.tutoAsk !== null && U.tutoAsk !== undefined) U.tutoAsk += 1;
+    else if (G.tuto.on) {
+      if (!G.tuto.seen.includes(k)) G.tuto.seen.push(k);
+      const all = Object.keys(TUTO).every((x) => G.tuto.seen.includes(x));
+      if (off || all) {
+        G.tuto.on = false;
+        notify(`<span><b>L'adjoint te laisse la main</b><br>Le « ? » au bout des onglets rouvre ses conseils.</span>`, false);
+      }
+      save();
+    }
+    if (U.tutoHold) {
+      U.tutoHold = false;
+      if (U.m && U.view === 'live' && U.paused && !U.tPanel) { U.paused = false; liveUpdate([]); schedule(); }
+    }
+    tutoSync();
+    const b = document.querySelector('#tuto [data-act=tutook]');
+    if (b) b.focus({ preventScroll: true });
+  }
 
   // ---------- Démarrage ----------
   function start(data) {
