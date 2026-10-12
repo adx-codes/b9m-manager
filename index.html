@@ -3332,7 +3332,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? `${esc(H.fansOf(t).name)} te portent : +${pctTxt(H.homeShot(t))} de réussite au tir. ${esc(opp.name)} perd plus de ballons et prend plus d'exclusions${H.awayCut(opp) ? `, un peu moins grâce à ses supporters en déplacement (−${Math.round(H.awayCut(opp) * 100)} %)` : ''}.` : `Chez ${esc(H.fansOf(opp).name)}, l'adversaire tire mieux (+${pctTxt(H.homeShot(opp))}) et l'arbitre siffle plus sévèrement ta défense : évite la défense agressive. ${H.awayCut(t) ? `Tes supporters en déplacement réduisent ce handicap de ${Math.round(H.awayCut(t) * 100)} %.` : 'Tes supporters ne se déplacent pas : tu pars avec tout le handicap.'}`}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
-            <div class="row"><button class="btn primary big" data-act="kickoff">Coup d'envoi</button><button class="btn" data-act="tab" data-id="feuille">Feuille de match</button><button class="btn" data-act="tab" data-id="tactique">Modifier la tactique</button></div>
+            <div class="row"><button class="btn primary big" data-act="kickoff">Préparer le match</button></div>
           </div>
         </section>
         <section class="panel"><h3>L'adversaire</h3>
@@ -3345,7 +3345,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="opt"><span class="label">Joueurs à surveiller</span>
               ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span>${vstars(p.ovr, { sm: true })}</div>`).join('')}
             </div>
-            ${faceHtml(t, opp)}
           </div>
         </section>
         <aside class="side">${betCard(h, a)}${tvCard(h, a)}</aside>
@@ -3707,7 +3706,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const steps = `<ol class="steps prestep" aria-label="Étapes"><li aria-current="${s === 1 ? 'step' : 'false'}"><b>1</b> Feuille de match</li><li aria-current="${s === 2 ? 'step' : 'false'}"><b>2</b> Tactique</li><li><b>3</b> Coup d'envoi</li></ol>`;
     const head = `<div class="prehead"><div><span class="label">Journée ${G.round + 1} · ${home ? 'contre' : 'à'} ${esc(opp.name)}</span><h2 id="pretitle" style="margin:2px 0 0">${s === 1 ? 'Feuille de match' : 'Tactique du match'}</h2></div>${steps}<button class="btn" data-act="precancel" aria-label="Annuler">✕</button></div>`;
     const keep = `<div><label class="prekeep"><input type="checkbox" data-prekeep${G.pre.keep ? ' checked' : ''}> Garder cette feuille pour les prochains matchs</label><span class="muted" style="display:block;font-size:0.85rem">Sinon, tes changements ne valent que pour ce match.</span></div>`;
-    const body = s === 1 ? renderFeuille(keep) : `<p class="muted" style="margin:0 0 12px">Ces réglages ne valent que pour ce match : ta tactique habituelle (onglet Tactique) revient au match suivant.</p>${renderTactics()}`;
+    const body = s === 1 ? renderFeuille(keep) : `<p class="muted" style="margin:0 0 12px">Ces réglages ne valent que pour ce match : ta tactique habituelle (onglet Tactique) revient au match suivant.</p>${renderTactics()}<section class="panel" style="margin-top:20px">${faceHtml(t, opp)}</section>`;
     const foot = s === 1 ? '<button class="btn" data-act="precancel">Annuler</button><button class="btn primary big" data-act="prenext">Suivant : la tactique →</button>'
       : '<button class="btn" data-act="preback">← Feuille de match</button><button class="btn primary big" data-act="prego">Coup d\'envoi</button>';
     return `<div class="overlay" id="preov" role="dialog" aria-modal="true" aria-labelledby="pretitle"><div class="modal pre" data-step="${s}">${head}${body}<div class="prefoot">${foot}</div></div></div>`;
