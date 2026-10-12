@@ -646,7 +646,9 @@
       for (const p of cands) {
         if (t.out.length >= need) break;
         const left = fit.filter(q => q.pos === p.pos && !t.out.includes(q.id) && q.id !== p.id).length;
-        if (left >= 1) t.out.push(p.id);
+        // Un gardien remplaçant reste sur le banc s'il y en a un de valide
+        const gkBench = p.pos === 'GB' && !fit.some(q => q.pos === 'GB' && q.id !== p.id && !starters.has(q.id) && !t.out.includes(q.id));
+        if (left >= 1 && !gkBench) t.out.push(p.id);
       }
     }
     return t.out;

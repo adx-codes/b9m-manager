@@ -747,6 +747,15 @@ nav.tabs .tutobtn:hover { color: var(--fg); border-color: var(--muted); }
 .mgrip:active { cursor: grabbing; }
 .mrow.dragging { background: var(--accent-soft); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; border-radius: 6px; }
 .mrow button, .mslot button { cursor: pointer; }
+/* Sélection par clics : joueur choisi, destinations possibles, bandeau d'aide */
+[data-pick] { cursor: pointer; }
+.mslot[data-pick=""] { cursor: default; }
+.mgrid.picking .mslot[data-pick=""] { cursor: pointer; }
+.mrow.picked, .dragchip.picked { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); border-radius: 6px; }
+.slot.picked { outline: 2px solid var(--accent); outline-offset: 2px; }
+.mgrid.picking .mslot:not(.picked) { outline: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent); outline-offset: 2px; }
+.mgrid.picking .mdz { outline: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); outline-offset: 6px; border-radius: 6px; }
+.pickhint { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 55; display: flex; align-items: center; gap: 14px; margin: 0; max-width: calc(100% - 32px); padding: 10px 12px 10px 16px; border: 1px solid var(--accent); border-radius: 999px; background: var(--surface); box-shadow: 0 10px 28px rgba(0,0,0,0.35); font-size: 0.9rem; }
 .dragghost { position: fixed; top: -200px; left: 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 8px; border-radius: 8px; background: var(--surface); color: var(--fg); border: 1.5px solid var(--accent); box-shadow: 0 6px 16px rgba(0,0,0,0.3); font-size: 0.88rem; white-space: nowrap; pointer-events: none; z-index: 1000; }
 .dragchip .grip { color: var(--muted); font-size: 0.7rem; letter-spacing: -2px; margin-right: -2px; }
 .bstyles { display: grid; gap: 6px; margin: 4px 0 6px; }

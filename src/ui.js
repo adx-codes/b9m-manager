@@ -824,7 +824,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function cancelPre() {
     dropPre();
-    U.preStep = null; U.bsModal = false;
+    U.preStep = null; U.bsModal = false; U.pick = null;
     save();
     render();
     const b = document.querySelector('[data-act=kickoff]');
@@ -1782,23 +1782,44 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (!p || H.hurt(p)) return;
     const starters = new Set(Object.values(t.lineup));
     const inOut = t.out.includes(pid);
-    if (zone === 'slot') { if (!setLineup(t, pos, pid)) return; }
+    const slotOf = (id) => Object.keys(t.lineup).find((k) => t.lineup[k] === id);
+    const tg = targetId && targetId !== pid ? P(targetId) : null;
+    if (zone === 'slot') { if (!setLineup(t, pos, pid)) return false; }
+    // Titulaire posé sur un joueur précis du banc ou de la réserve : les deux s'échangent
+    else if (starters.has(pid) && tg && !starters.has(tg.id) && (tg.pos === 'GB') === (p.pos === 'GB')) {
+      const toOut = t.out.includes(tg.id);
+      if (!setLineup(t, slotOf(pid), tg.id)) return false;
+      if (toOut) t.out.push(pid);
+    }
     else if ((zone === 'bench' || zone === 'tribune') && starters.has(pid)) setStatus(t, pid, zone === 'bench' ? 'B' : 'R');
     else if (zone === 'tribune' && !inOut && !starters.has(pid)) {
       let back = targetId && t.out.includes(targetId) ? targetId : null;
       if (!back) back = t.out.slice().sort((a, b) => (P(b).pos === p.pos) - (P(a).pos === p.pos) || P(b).ovr - P(a).ovr)[0];
-      if (!back) return;
+      if (!back) return false;
       t.out = t.out.map((x) => x === back ? pid : x);
     } else if (zone === 'bench' && inOut) {
       const bench = t.players.filter((x) => !starters.has(x.id) && !t.out.includes(x.id) && !H.hurt(x));
       let go = targetId && bench.some((x) => x.id === targetId) ? targetId : null;
       if (!go) { const g = bench.slice().sort((a, b) => (b.pos === p.pos) - (a.pos === p.pos) || a.ovr - b.ovr)[0]; go = g && g.id; }
-      if (!go) return;
+      if (!go) return false;
       t.out = t.out.map((x) => x === pid ? go : x);
-    } else return;
+    } else return false;
     H.ensureSheet(t);
     save();
     render();
+    return true;
+  }
+  // Sélection par clics (souris ou doigt) : un joueur, puis sa destination. Même logique que le glisser-déposer.
+  function pickClick(el) {
+    const id = el.dataset.pick || null, zone = el.closest('[data-drop]'), z = zone ? zone.dataset.drop : null;
+    if (!U.pick) { if (id) { U.pick = id; render(); } return; }
+    if (id === U.pick) { U.pick = null; render(); return; }
+    const t = me(), st = (x) => x && statusOf(t, t.players.find((q) => q.id === x));
+    // Ligne du groupe, ou même zone que le joueur choisi (banc sur banc, réserve sur réserve) : on change de joueur choisi
+    if (!z || (id && z !== 'slot' && st(id) === st(U.pick))) { U.pick = id; render(); return; }
+    const pid = U.pick;
+    U.pick = null;
+    if (!dropPlayer(pid, z, id, el.dataset.pos || zone.dataset.pos)) { U.pick = pid; render(); notify('<span><b>Déplacement impossible</b><br>Un gardien ne va qu\'au poste de gardien, et un joueur de champ jamais dans les buts.</span>', false); }
   }
   function modsHtml() {
     const t = me();
@@ -1886,7 +1907,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const off = fit.filter((p) => st(p) === 'R').sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos) || b.ovr - a.ovr);
     const res = off.filter(H.inReserve), trib = off.filter((p) => !H.inReserve(p));
     const row = (p) => { const s = st(p);
-      return `<div class="mrow${s === 'R' ? ' mres' : ''}" data-drag="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}<span class="mform num">${formTag(p.form)}</span>
+      return `<div class="mrow${s === 'R' ? ' mres' : ''}${U.pick === p.id ? ' picked' : ''}" data-drag="${p.id}" data-pick="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}<span class="mform num">${formTag(p.form)}</span>
         <span class="seg sm mseg">${['T', 'B', 'R'].map((k) => `<button data-act="pst" data-id="${p.id}|${k}" aria-pressed="${s === k}" title="${k === 'R' ? offTitle(p) : { T: 'Titulaire', B: 'Banc' }[k]}"${k === 'R' && !can && s !== 'R' ? ' disabled' : ''}>${k === 'R' ? offLabel(p) : k}</button>`).join('')}</span></div>`; };
     const groups = H.POS.map((pos) => {
       const ps = show.filter((p) => p.pos === pos).sort((a, b) => 'TBR'.indexOf(st(a)) - 'TBR'.indexOf(st(b)) || b.ovr - a.ovr);
@@ -1896,22 +1917,23 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<div class="mgrp${f ? ' fold' : ''}"><button class="mghead" data-act="fold" data-id="${pos}" aria-expanded="${!f}"><span class="chev">${f ? '▸' : '▾'}</span><span class="label">${GROUP_LABEL[pos]} · ${ps.length}</span><span class="muted msum">${sum}</span></button>${f ? '' : ps.map(row).join('')}</div>`;
     }).join('');
     const slot = (pos) => { const p = t.players.find((x) => x.id === t.lineup[pos]);
-      return `<div class="slot mslot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"${p ? ` draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"` : ''}><span class="label">${H.POS_LABEL[pos]}</span>${p ? `<b>${esc(short(p.name))}${ptags(p, true)}</b><span class="row" style="gap:6px">${vstars(ovrAt(p, pos), { sm: true })}${fbar(p.fatigue)}${p.pos !== pos ? `<span class="muted" style="font-size:0.72rem">${p.pos}</span>` : ''}${(pos === 'ArD' || pos === 'AiD') && p.hand === 'D' ? '<span style="color:var(--bad);font-size:0.72rem" title="Droitier côté droit : moins efficace au tir">main</span>' : ''}</span>` : '<span class="muted">—</span>'}</div>`; };
+      return `<div class="slot mslot${p && U.pick === p.id ? ' picked' : ''}" data-drop="slot" data-pos="${pos}" data-pick="${p ? p.id : ''}" style="${SLOT[pos]}"${p ? ` draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"` : ''}><span class="label">${H.POS_LABEL[pos]}</span>${p ? `<b>${esc(short(p.name))}${ptags(p, true)}</b><span class="row" style="gap:6px">${vstars(ovrAt(p, pos), { sm: true })}${fbar(p.fatigue)}${p.pos !== pos ? `<span class="muted" style="font-size:0.72rem">${p.pos}</span>` : ''}${(pos === 'ArD' || pos === 'AiD') && p.hand === 'D' ? '<span style="color:var(--bad);font-size:0.72rem" title="Droitier côté droit : moins efficace au tir">main</span>' : ''}</span>` : '<span class="muted">—</span>'}</div>`; };
     const gkBench = bench.some((p) => p.pos === 'GB');
     const noCover = H.POS.filter((pos) => pos !== 'GB' && !bench.some((p) => p.pos === pos));
-    const benchRow = (p) => `<div class="mrow mb" data-drag="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
+    const benchRow = (p) => `<div class="mrow mb${U.pick === p.id ? ' picked' : ''}" data-drag="${p.id}" data-pick="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
     return `<div class="row" style="justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap">${head || `<div><h2 style="margin:0">Feuille de match${nf && !nf.rest ? ` · journée ${G.round + 1}` : ''}</h2>${nf && !nf.rest ? `<span class="muted">${nf.h === t.id ? 'contre' : 'à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}</span>` : ''}</div>`}
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip">Titulaires <b>${Object.keys(t.lineup).length}/7</b></span><span class="chip">Banc <b>${bench.length}/7</b></span><span class="chip">Réserve <b>${res.length}</b></span>${trib.length ? `<span class="chip" title="Pros de 23 ans et plus hors de la feuille de match : en tribune, sans match">Tribune <b>${trib.length}</b></span>` : ''}<span class="chip">Infirmerie <b>${hurtP.length}</b></span>
         ${G.lastSheet ? '<button class="btn" data-act="sheetback" title="Les 7 de départ et la feuille de match du dernier match">Reprendre la dernière feuille</button>' : ''}<button class="btn" data-act="rotate" title="Les titulaires au-delà de 55 de fatigue passent sur le banc, remplacés par le joueur le plus frais du poste">Faire tourner</button><button class="btn primary" data-act="auto">Composition auto</button></div></div>
-      <div class="mgrid">
+      ${(() => { const q = U.pick && t.players.find((x) => x.id === U.pick); return q ? `<p class="pickhint"><span><b>${esc(q.name)}</b> sélectionné : clique sur un poste du terrain, un joueur du banc ou la réserve.</span><button class="btn sm" data-act="unpick">Annuler</button></p>` : ''; })()}
+      <div class="mgrid${U.pick ? ' picking' : ''}">
         <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Groupe · ${fit.length}</h3><span class="seg sm mseg">${[['tous', 'Tous'], ['pros', 'Pros'], ['centre', 'Centre']].map(([k, l]) => `<button data-act="sflt" data-id="${k}" aria-pressed="${flt === k}">${l}</button>`).join('')}</span></div>
-          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Glisse un joueur par sa poignée (⠿) sur le terrain pour le titulariser. Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
+          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Clique sur un joueur puis sur sa destination (poste du terrain, joueur du banc, réserve) pour le déplacer ou échanger les deux, ou glisse-le par sa poignée (⠿). Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
         <div class="mright">
           <section class="panel"><h3>Les 7 de départ</h3><div class="court mbig">${COURT}${H.POS.map(slot).join('')}</div><p class="legend">${LINEUP_LEGEND}</p></section>
           <div class="mbelow"><div style="display:grid;gap:20px;align-content:start">
             <section class="panel"><div class="dropzone mdz" data-drop="bench"><h3>Banc · ${bench.length}/7</h3><div class="mbench">${bench.map(benchRow).join('') || '<span class="muted">Personne sur le banc.</span>'}</div>
               <p class="malert" style="color:var(--${gkBench ? 'good' : 'warn'})">${gkBench ? '✓ Gardien remplaçant' : '⚠ Pas de gardien remplaçant'}</p>${noCover.length ? `<p class="malert" style="color:var(--warn)" title="Un joueur d'un poste voisin dépannera">⚠ Pas de doublure : ${noCover.map((pos) => H.POS_LABEL[pos].toLowerCase()).join(', ')}</p>` : ''}</div></section>
-            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const chip = (p) => `<span class="chip dragchip" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}${lstars(p, { sm: true })}</span>`;
+            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const chip = (p) => `<span class="chip dragchip${U.pick === p.id ? ' picked' : ''}" draggable="true" data-drag="${p.id}" data-pick="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}${lstars(p, { sm: true })}</span>`;
               return `<div class="row" style="gap:6px">${res.map(chip).join('') || '<span class="muted">Aucun jeune hors de la feuille.</span>'}</div><p class="legend">Les jeunes du centre et les moins de 23 ans hors de la feuille jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p>${trib.length ? `<span class="label" style="display:block;margin-top:10px">Tribune · ${trib.length}</span><div class="row" style="gap:6px">${trib.map(chip).join('')}</div><p class="legend">Un pro de 23 ans et plus ne joue pas avec la réserve : hors de la feuille, il reste en tribune, sans match.</p>` : ''}`; })()}</div></section>` : ''}</div>
             <section class="panel"><h3>Infirmerie · ${hurtP.length}</h3>${hurtP.length ? hurtP.map((p) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}<span class="muted">${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}</span></div>`).join('') : '<p class="muted" style="margin:0">Tout le monde est valide.</p>'}<p class="legend">Les blessés ne peuvent pas aller sur la feuille de match.</p></section>
           </div></div></div>`;
@@ -2002,6 +2024,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     // Menu des clubs : se ferme au clic ailleurs, mémorise son état d'ouverture
     if (U.ly) { const dd = e.target.closest('.ddrop'); if (!dd) { U.ly.open = false; const o = document.querySelector('.ddrop[open]'); if (o) o.open = false; } else if (e.target.closest('summary')) U.ly.open = !dd.open; }
     const b = e.target.closest('[data-act]');
+    // Feuille de match : clic sur un joueur (hors lien et boutons), ou sur une zone quand un joueur est choisi
+    if (G && !U.dragId) {
+      const pk = e.target.closest('[data-pick]'), dz = U.pick && e.target.closest('[data-drop]');
+      if (pk && !(b && pk.contains(b))) { pickClick(pk); return; }
+      if (dz && !b) { pickClick(dz); return; }
+      if (U.pick && !(b && b.dataset.act === 'player')) { U.pick = null; if (!b) { render(); return; } }
+    }
     if (!b || b.disabled) return;
     const act = b.dataset.act, id = b.dataset.id;
     const t = G ? me() : null;
@@ -2022,6 +2051,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'mstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v) pl.matchStyle = v; else delete pl.matchStyle; save(); render(); } return; }
       case 'pstyle': { const [pid, v] = id.split('|'); const pl = t.players.find((x) => x.id === pid); if (pl) { if (v === 'equilibre') delete pl.style; else pl.style = v; save(); render(); } return; }
       case 'player': openSheet(id); return;
+      case 'unpick': render(); return;
       case 'inbox': { const cs = inboxContacts(), k = cs.find((c) => unread(c)) || (cs.includes(U.inboxC) ? U.inboxC : cs[0]); if (k) openConv(k); else U.inboxC = null; U.inbox = true; render(); const c = document.querySelector('#inboxov [data-act=inboxclose]'); if (c) c.focus({ preventScroll: true }); return; }
       case 'inboxclose': U.inbox = false; render(); { const o = document.querySelector('[data-act=inbox]'); if (o) o.focus({ preventScroll: true }); } return;
       case 'ibc': openConv(id); render(); return;
@@ -2037,7 +2067,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'pickb': ensureDraft().b = id; render(); return;
       case 'pickm': ensureDraft().m = id; render(); return;
       case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); G.tuto.on = U.tutoOpt !== false; U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
-      case 'tab': U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
+      case 'tab': U.pick = null; U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
       case 'kickoff': openPre(); return;
       case 'prenext': U.preStep = 2; U.bsModal = false; render(); return;
       case 'preback': U.preStep = 1; U.bsModal = false; render(); return;
@@ -2122,6 +2152,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.getElementById('psheet')) { closeSheet(); return; }
+    if (e.key === 'Escape' && U.pick) { U.pick = null; render(); return; }
     if (e.key === 'Escape' && U.bsModal) { U.bsModal = false; render(); return; }
     if (e.key === 'Escape' && U.modsModal) { U.modsModal = false; render(); return; }
     if (e.key === 'Escape' && U.inbox) { U.inbox = false; render(); return; }
@@ -2354,7 +2385,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     ville: { h: 'Bienvenue en ville, coach', at: '.nextbtn', t: "Chaque bâtiment est un écran du club : la salle pour jouer, le vestiaire pour l'effectif, le gymnase pour l'entraînement… Pas besoin de tout visiter : le bouton en haut à droite mène toujours à l'étape suivante." },
     mods: { h: 'Ton bonus et ton malus', at: '.modsbtn', t: "Ils jouent toute la saison. Ce bouton te les rappelle quand tu veux. Et si tu te perds, le « ? » au bout des onglets rouvre mes conseils." },
     avantmatch: { h: "L'avant-match", at: '[data-act=kickoff]', t: "À gauche ton plan de match, au centre l'adversaire : sa forme, sa tactique, ses joueurs à surveiller. Quand tu es prêt, « Préparer le match »." },
-    feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Glisse un joueur par sa poignée (⠿) pour le changer de place. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
+    feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Clique sur un joueur puis sur sa nouvelle place pour le déplacer. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
     tactique: { h: 'La tactique du match', at: '[data-tuto=face]', t: "Choisis ta défense, ton attaque et ton rythme. Aucun réglage ne gagne à tous les coups : chacun a son contre. Le face-à-face, en bas, compare tes arrières à leurs défenseurs. En cas de doute, garde tout tel quel et donne le coup d'envoi." },
     live: { h: 'Le match en direct', at: '.lbpause', ok: "Compris, coup d'envoi", t: "Le match attend que tu aies lu. Le fil raconte chaque action, la courbe sous le score montre qui domine. Changements et réglages se font en pause (barre d'espace ou bouton en bas). Tu peux aussi accélérer en ×2 ou ×4." },
     post: { h: 'Après le match', at: 'main .btn.primary[data-id=entrainement]', t: "Les notes de tes joueurs, l'homme du match, les blessés éventuels. Ensuite, une semaine d'entraînement avant la journée suivante." },
