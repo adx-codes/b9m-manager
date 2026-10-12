@@ -4499,9 +4499,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function citySign(o, ghost) {
     const [sx, sy] = P(o.at[0], o.at[1], o.at[2]);
     const lw = o.label.length * 7.6, sw = o.sub.length * 6.2;
-    const w = Math.max(lw, sw) + 26, hh = 42, y0 = sy - 18 - (o.lift || 0) - hh, cx = sx + (o.dx || 0);
+    const w = Math.max(lw, sw) + 26, hh = 42, TOP = 98;
+    let y0 = sy - 18 - (o.lift || 0) - hh, cx = sx + (o.dx || 0), lx = sx, ly = y0 + hh;
+    // Bâtiment en haut du plan : le panneau sortirait du cadre, il se place à côté du toit
+    if (y0 < TOP) { y0 = TOP; cx = sx + w / 2 + 34; lx = cx - w / 2; ly = y0 + hh / 2; }
     const attrs = ghost ? `data-gsign="${o.key}"` : `data-psign="${o.key}"`;
-    return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs}><line x1="${sx}" y1="${sy}" x2="${sx}" y2="${y0 + hh}" stroke="${ghost ? 'var(--muted)' : o.c}" stroke-width="1.4"/><circle cx="${sx}" cy="${sy}" r="2.6" fill="${ghost ? 'var(--muted)' : o.c}"/>
+    return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs}><line x1="${sx}" y1="${sy}" x2="${lx}" y2="${ly}" stroke="${ghost ? 'var(--muted)' : o.c}" stroke-width="1.4"/><circle cx="${sx}" cy="${sy}" r="2.6" fill="${ghost ? 'var(--muted)' : o.c}"/>
       <rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="7" fill="var(--surface)" stroke="${ghost ? 'var(--line)' : o.c}" stroke-width="${ghost ? 1 : 1.6}"/>
       ${ghost ? '' : `<rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="5" height="${hh}" rx="2" fill="${o.c}"/>`}
       <text x="${cx}" y="${(y0 + 18).toFixed(1)}" text-anchor="middle" class="sl1">${esc(o.label)}</text><text x="${cx}" y="${(y0 + 33).toFixed(1)}" text-anchor="middle" class="sl2">${esc(o.sub)}</text></g>`;
