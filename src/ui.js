@@ -1794,6 +1794,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // Étiquettes après un nom : J (centre) ; drapeau et croix en plus quand le nom n'est pas un lien (plink les met déjà)
   const ptags = (p, full) => (p.cf ? ' <span class="yt" title="Joueur du centre de formation">J</span>' : '') + (full ? (H.flagOf(p) ? ` <span class="flag">${H.flagOf(p)}</span>` : '') + injTag(p) : '');
   const rowTip = (p) => `${p.name} · ${p.age} ans · ${p.hand === 'G' ? 'gaucher' : 'droitier'} · fatigue ${p.fatigue} · forme ${p.form > 0 ? '+' : ''}${p.form} · robustesse : ${robTxt(p.a.robustesse ?? 12)} · expérience ×${H.matchXP(p).toFixed(1).replace('.', ',')}`;
+  // Poignée de glisser-déposer : seule elle se saisit, la ligne reste cliquable normalement
+  const GRIP = (id) => `<span class="mgrip" draggable="true" data-drag="${id}" title="Glisser" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.3"/><circle cx="6" cy="2" r="1.3"/><circle cx="2" cy="7" r="1.3"/><circle cx="6" cy="7" r="1.3"/><circle cx="2" cy="12" r="1.3"/><circle cx="6" cy="12" r="1.3"/></svg></span>`;
   function renderFeuille() {
     H.ensureSheet(me());
     const t = me(), fold = folded(), nf = nextFixture();
@@ -1805,7 +1807,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const off = fit.filter((p) => st(p) === 'R').sort((a, b) => H.POS.indexOf(a.pos) - H.POS.indexOf(b.pos) || b.ovr - a.ovr);
     const res = off.filter(H.inReserve), trib = off.filter((p) => !H.inReserve(p));
     const row = (p) => { const s = st(p);
-      return `<div class="mrow${s === 'R' ? ' mres' : ''}" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}<span class="mform num">${formTag(p.form)}</span>
+      return `<div class="mrow${s === 'R' ? ' mres' : ''}" data-drag="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}<span class="mform num">${formTag(p.form)}</span>
         <span class="seg sm mseg">${['T', 'B', 'R'].map((k) => `<button data-act="pst" data-id="${p.id}|${k}" aria-pressed="${s === k}" title="${k === 'R' ? offTitle(p) : { T: 'Titulaire', B: 'Banc' }[k]}"${k === 'R' && !can && s !== 'R' ? ' disabled' : ''}>${k === 'R' ? offLabel(p) : k}</button>`).join('')}</span></div>`; };
     const groups = H.POS.map((pos) => {
       const ps = show.filter((p) => p.pos === pos).sort((a, b) => 'TBR'.indexOf(st(a)) - 'TBR'.indexOf(st(b)) || b.ovr - a.ovr);
@@ -1818,13 +1820,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       return `<div class="slot mslot" data-drop="slot" data-pos="${pos}" style="${SLOT[pos]}"${p ? ` draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"` : ''}><span class="label">${H.POS_LABEL[pos]}</span>${p ? `<b>${esc(short(p.name))}${ptags(p, true)}</b><span class="row" style="gap:6px">${vstars(ovrAt(p, pos), { sm: true })}${fbar(p.fatigue)}${p.pos !== pos ? `<span class="muted" style="font-size:0.72rem">${p.pos}</span>` : ''}${(pos === 'ArD' || pos === 'AiD') && p.hand === 'D' ? '<span style="color:var(--bad);font-size:0.72rem" title="Droitier côté droit : moins efficace au tir">main</span>' : ''}</span>` : '<span class="muted">—</span>'}</div>`; };
     const gkBench = bench.some((p) => p.pos === 'GB');
     const noCover = H.POS.filter((pos) => pos !== 'GB' && !bench.some((p) => p.pos === pos));
-    const benchRow = (p) => `<div class="mrow mb" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
+    const benchRow = (p) => `<div class="mrow mb" data-drag="${p.id}" title="${esc(rowTip(p))}">${GRIP(p.id)}<span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span class="mname">${plink(p, short(p.name))}${ptags(p)}</span>${lstars(p, { sm: true })}${fbar(p.fatigue)}</div>`;
     return `<div class="row" style="justify-content:space-between;margin-bottom:16px;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0">Feuille de match${nf && !nf.rest ? ` · journée ${G.round + 1}` : ''}</h2>${nf && !nf.rest ? `<span class="muted">${nf.h === t.id ? 'contre' : 'à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}</span>` : ''}</div>
       <div class="row" style="gap:8px;flex-wrap:wrap"><span class="chip">Titulaires <b>${Object.keys(t.lineup).length}/7</b></span><span class="chip">Banc <b>${bench.length}/7</b></span><span class="chip">Réserve <b>${res.length}</b></span>${trib.length ? `<span class="chip" title="Pros de 23 ans et plus hors de la feuille de match : en tribune, sans match">Tribune <b>${trib.length}</b></span>` : ''}<span class="chip">Infirmerie <b>${hurtP.length}</b></span>
         ${G.lastSheet ? '<button class="btn" data-act="sheetback" title="Les 7 de départ et la feuille de match du dernier match">Reprendre la dernière feuille</button>' : ''}<button class="btn" data-act="rotate" title="Les titulaires au-delà de 55 de fatigue passent sur le banc, remplacés par le joueur le plus frais du poste">Faire tourner</button><button class="btn primary" data-act="auto">Composition auto</button></div></div>
       <div class="mgrid">
         <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Groupe · ${fit.length}</h3><span class="seg sm mseg">${[['tous', 'Tous'], ['pros', 'Pros'], ['centre', 'Centre']].map(([k, l]) => `<button data-act="sflt" data-id="${k}" aria-pressed="${flt === k}">${l}</button>`).join('')}</span></div>
-          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Glisse une ligne sur le terrain pour la titulariser. Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
+          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Glisse un joueur par sa poignée (⠿) sur le terrain pour le titulariser. Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
         <div class="mright">
           <section class="panel"><h3>Les 7 de départ</h3><div class="court mbig">${COURT}${H.POS.map(slot).join('')}</div><p class="legend">${LINEUP_LEGEND}</p></section>
           <div class="mbelow"><div style="display:grid;gap:20px;align-content:start">
@@ -2095,7 +2097,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       e.dataTransfer.setDragImage(g, 14, g.offsetHeight / 2);
       setTimeout(() => g.remove(), 0);
     }
-    c.classList.add('dragging');
+    (c.closest('.mrow') || c).classList.add('dragging');
     document.body.classList.add('isdragging');
   });
   document.addEventListener('dragend', () => {
