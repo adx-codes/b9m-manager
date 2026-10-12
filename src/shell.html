@@ -458,7 +458,8 @@ td.tr5 .v { background: color-mix(in srgb, var(--court) 48%, var(--surface)); }
 .mbelow { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 .mrow { display: grid; grid-template-columns: 12px 42px minmax(0, 1fr) 84px 40px 26px auto; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); font-size: 0.9rem; }
 .mrow.mb { grid-template-columns: 12px 42px minmax(0, 1fr) 84px 40px; }
-.mrow.mres { opacity: 0.72; }
+/* Joueur hors de la feuille : nom et poste atténués, étoiles de niveau à pleine couleur (pas de confusion avec le potentiel) */
+.mrow.mres .pos, .mrow.mres .mname, .mrow.mres .mbar, .mrow.mres .mform { opacity: 0.72; }
 .mname { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mbar { display: inline-block; width: 36px; height: 5px; border-radius: 3px; background: var(--sunk); overflow: hidden; vertical-align: middle; }
 .mbar > span { display: block; height: 100%; }

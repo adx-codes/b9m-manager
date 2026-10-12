@@ -1413,6 +1413,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const [sx, sy] = P(x, y, z);
     return `<text transform="matrix(0.894 0.447 0 1 ${sx.toFixed(1)} ${sy.toFixed(1)})" font-size="${size}" font-weight="800" fill="${fill}" class="isotxt">${esc(txt)}</text>`;
   }
+  // Nom sur la façade de la salle (bandeau de x 7,2 à 10,2, hauteur 12 à 29) : une ligne si ça tient, sinon deux,
+  // coupées à une espace ou un trait d'union, taille réduite pour rester dans le cadre
+  function arenaName(txt) {
+    const room = 3 * 35.8 - 12, fit = (ls) => Math.min(13, room / (Math.max(...ls.map((l) => l.length)) * 0.74));
+    let lines = [txt], fs = fit(lines);
+    const cuts = [...txt.matchAll(/[ -]/g)].map((m) => m.index);
+    for (const i of cuts) { const ls = [txt.slice(0, i + (txt[i] === '-' ? 1 : 0)), txt.slice(i + 1)], f = Math.min(7, fit(ls)); if (f > fs) { lines = ls; fs = f; } }
+    const cap = fs * 0.72, gap = 2.5, z0 = 12 + (17 - lines.length * cap - (lines.length - 1) * gap) / 2;
+    return lines.map((l, k) => { const w = l.length * fs * 0.74 / 35.8; return skewText(7.2 + (3 - w) / 2, 10.4, z0 + (lines.length - 1 - k) * (cap + gap), l, fs, '#fff'); }).join('');
+  }
   function citySign(o, ghost) {
     const [sx, sy] = P(o.at[0], o.at[1], o.at[2]);
     const lw = o.label.length * 7.6, sw = o.sub.length * 6.2;
@@ -1526,7 +1536,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       + [0.5, 1.1, 1.7, 2.3].map((k) => poly([P(7.55, 7.9 + k, 47.1), P(9.85, 7.9 + k, 47.1), P(9.85, 8.15 + k, 47.1), P(7.55, 8.15 + k, 47.1)], 'var(--iso-glass)', 'fill-opacity="0.8"')).join('')
       + unit(9.6, 8.1, 47) + unit(7.5, 8.2, 47, 0.8)
       + poly([P(7.2, 10.4, 12), P(10.2, 10.4, 12), P(10.2, 10.4, 29), P(7.2, 10.4, 29)], t.color, EDGE)
-      + skewText(7.45, 10.4, 16, (t.city + ' HB').toUpperCase(), 13, '#fff')
+      + arenaName((t.city + ' HB').toUpperCase())
       + door(8.1, 9.1, 10.4, 10) + `<line x1="${P(8.6, 10.4, 0)[0]}" y1="${P(8.6, 10.4, 0)[1]}" x2="${P(8.6, 10.4, 10)[0]}" y2="${P(8.6, 10.4, 10)[1]}" stroke="var(--iso-glass)" stroke-width="0.8"/>`
       + isoBox({ x: 7.9, y: 10.4, w: 1.4, d: 0.42, h: 1.6, z: 10.5, c: 'var(--iso-stone)' });
     add(ar.x + ar.w / 2, ar.y + ar.d / 2, bwrap(pl.salle, arena));
@@ -1901,7 +1911,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <div class="mbelow"><div style="display:grid;gap:20px;align-content:start">
             <section class="panel"><div class="dropzone mdz" data-drop="bench"><h3>Banc · ${bench.length}/7</h3><div class="mbench">${bench.map(benchRow).join('') || '<span class="muted">Personne sur le banc.</span>'}</div>
               <p class="malert" style="color:var(--${gkBench ? 'good' : 'warn'})">${gkBench ? '✓ Gardien remplaçant' : '⚠ Pas de gardien remplaçant'}</p>${noCover.length ? `<p class="malert" style="color:var(--warn)" title="Un joueur d'un poste voisin dépannera">⚠ Pas de doublure : ${noCover.map((pos) => H.POS_LABEL[pos].toLowerCase()).join(', ')}</p>` : ''}</div></section>
-            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const chip = (p) => `<span class="chip dragchip" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}</span>`;
+            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const chip = (p) => `<span class="chip dragchip" draggable="true" data-drag="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}${lstars(p, { sm: true })}</span>`;
               return `<div class="row" style="gap:6px">${res.map(chip).join('') || '<span class="muted">Aucun jeune hors de la feuille.</span>'}</div><p class="legend">Les jeunes du centre et les moins de 23 ans hors de la feuille jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p>${trib.length ? `<span class="label" style="display:block;margin-top:10px">Tribune · ${trib.length}</span><div class="row" style="gap:6px">${trib.map(chip).join('')}</div><p class="legend">Un pro de 23 ans et plus ne joue pas avec la réserve : hors de la feuille, il reste en tribune, sans match.</p>` : ''}`; })()}</div></section>` : ''}</div>
             <section class="panel"><h3>Infirmerie · ${hurtP.length}</h3>${hurtP.length ? hurtP.map((p) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}<span class="muted">${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}</span></div>`).join('') : '<p class="muted" style="margin:0">Tout le monde est valide.</p>'}<p class="legend">Les blessés ne peuvent pas aller sur la feuille de match.</p></section>
           </div></div></div>`;
