@@ -791,6 +791,7 @@ nav.tabs .tutobtn:hover { color: var(--fg); border-color: var(--muted); }
 .dragchip.dragging, .mrow.dragging, .slot.dragging { opacity: 0.4; }
 .mgrip { display: grid; place-items: center; height: 24px; margin-left: -4px; padding-inline: 2px; border-radius: 4px; color: var(--muted); opacity: 0.35; cursor: grab; transition: opacity 120ms, color 120ms; }
 .mrow:hover .mgrip { opacity: 1; }
+.mrow.droptg, .slot.droptg { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px var(--accent); border-radius: 6px; }
 .mgrip:hover { color: var(--accent); background: var(--accent-soft); }
 .mgrip:active { cursor: grabbing; }
 .mrow.dragging { background: var(--accent-soft); outline: 1.5px dashed var(--accent); outline-offset: -1.5px; border-radius: 6px; }
@@ -4875,7 +4876,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const inOut = t.out.includes(pid);
     const slotOf = (id) => Object.keys(t.lineup).find((k) => t.lineup[k] === id);
     const tg = targetId && targetId !== pid ? P(targetId) : null;
-    if (zone === 'slot') { if (!setLineup(t, pos, pid)) return false; }
+    if (zone === 'slot') { const prev = t.lineup[pos]; if (!setLineup(t, pos, pid)) return false; if (inOut && prev && prev !== pid) t.out.push(prev); }
     // Titulaire posé sur un joueur précis du banc ou de la réserve : les deux s'échangent
     else if (starters.has(pid) && tg && !starters.has(tg.id) && (tg.pos === 'GB') === (p.pos === 'GB')) {
       const toOut = t.out.includes(tg.id);
@@ -5018,14 +5019,14 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       ${(() => { const q = U.pick && t.players.find((x) => x.id === U.pick); return q ? `<p class="pickhint"><span><b>${esc(q.name)}</b> sélectionné : clique sur un poste du terrain, un joueur du banc ou la réserve.</span><button class="btn sm" data-act="unpick">Annuler</button></p>` : ''; })()}
       <div class="mgrid${U.pick ? ' picking' : ''}">
         <section class="panel"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3 style="margin:0">Groupe · ${fit.length}</h3><span class="seg sm mseg">${[['tous', 'Tous'], ['pros', 'Pros'], ['centre', 'Centre']].map(([k, l]) => `<button data-act="sflt" data-id="${k}" aria-pressed="${flt === k}">${l}</button>`).join('')}</span></div>
-          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Les boutons T, B, R d'une ligne proposent un échange 1-1 : tu choisis qui fait le chemin inverse. Tu peux aussi cliquer sur un joueur puis sur sa destination (poste du terrain, joueur du banc, réserve), ou le glisser par sa poignée (⠿). Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
+          <p class="legend" style="margin:0 0 4px">T titulaire · B banc · R réserve (jeunes du centre et moins de 23 ans) · Tr tribune (pros de 23 ans et plus, sans match). Les boutons T, B, R d'une ligne proposent un échange 1-1 : tu choisis qui fait le chemin inverse. Tu peux aussi cliquer sur un joueur puis sur sa destination (poste du terrain, joueur du banc, réserve), ou le glisser par sa poignée (⠿) sur le joueur qu'il remplace (banc, réserve, tribune ou poste du terrain). Clic sur un poste pour le replier ; âge, robustesse et expérience au survol d'une ligne.</p>${groups}</section>
         <div class="mright">
           <section class="panel"><h3>Les 7 de départ</h3><div class="court mbig">${COURT}${H.POS.map(slot).join('')}</div><p class="legend">${LINEUP_LEGEND}</p></section>
           <div class="mbelow"><div style="display:grid;gap:20px;align-content:start">
             <section class="panel"><div class="dropzone mdz" data-drop="bench"><h3>Banc · ${bench.length}/7</h3><div class="mbench">${bench.map(benchRow).join('') || '<span class="muted">Personne sur le banc.</span>'}</div>
               <p class="malert" style="color:var(--${gkBench ? 'good' : 'warn'})">${gkBench ? '✓ Gardien remplaçant' : '⚠ Pas de gardien remplaçant'}</p>${noCover.length ? `<p class="malert" style="color:var(--warn)" title="Un joueur d'un poste voisin dépannera">⚠ Pas de doublure : ${noCover.map((pos) => H.POS_LABEL[pos].toLowerCase()).join(', ')}</p>` : ''}</div></section>
-            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const chip = (p) => `<span class="chip dragchip${U.pick === p.id ? ' picked' : ''}" draggable="true" data-drag="${p.id}" data-pick="${p.id}" title="${esc(rowTip(p))}"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}${ptags(p)}${lstars(p, { sm: true })}</span>`;
-              return `<div class="row" style="gap:6px">${res.map(chip).join('') || '<span class="muted">Aucun jeune hors de la feuille.</span>'}</div><p class="legend">Les jeunes du centre et les moins de 23 ans hors de la feuille jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p>${trib.length ? `<span class="label" style="display:block;margin-top:10px">Tribune · ${trib.length}</span><div class="row" style="gap:6px">${trib.map(chip).join('')}</div><p class="legend">Un pro de 23 ans et plus ne joue pas avec la réserve : hors de la feuille, il reste en tribune, sans match.</p>` : ''}`; })()}</div></section>` : ''}</div>
+            ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const offRow = (p) => benchRow(p).replace('class="mrow mb', 'class="mrow mb mres');
+              return `<div class="mbench">${res.map(offRow).join('') || '<span class="muted">Aucun jeune hors de la feuille.</span>'}</div><p class="legend">Les jeunes du centre et les moins de 23 ans hors de la feuille jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p>${trib.length ? `<span class="label" style="display:block;margin-top:10px">Tribune · ${trib.length}</span><div class="mbench">${trib.map(offRow).join('')}</div><p class="legend">Un pro de 23 ans et plus ne joue pas avec la réserve : hors de la feuille, il reste en tribune, sans match.</p>` : ''}`; })()}</div></section>` : ''}</div>
             <section class="panel"><h3>Infirmerie · ${hurtP.length}</h3>${hurtP.length ? hurtP.map((p) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}<span class="muted">${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}</span></div>`).join('') : '<p class="muted" style="margin:0">Tout le monde est valide.</p>'}<p class="legend">Les blessés ne peuvent pas aller sur la feuille de match.</p></section>
           </div></div></div>`;
   }
@@ -5379,7 +5380,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   document.addEventListener('dragend', () => {
     U.dragId = null;
     document.body.classList.remove('isdragging');
-    document.querySelectorAll('.dragging, .dropover').forEach((x) => x.classList.remove('dragging', 'dropover'));
+    document.querySelectorAll('.dragging, .dropover, .droptg').forEach((x) => x.classList.remove('dragging', 'dropover', 'droptg'));
   });
   document.addEventListener('dragover', (e) => {
     const z = U.dragId && e.target.closest && e.target.closest('[data-drop]');
@@ -5388,12 +5389,17 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     e.dataTransfer.dropEffect = 'move';
     document.querySelectorAll('.dropover').forEach((x) => x !== z && x.classList.remove('dropover'));
     z.classList.add('dropover');
+    // Joueur visé (X remplace Y) : surligné
+    const tg = e.target.closest('.mrow[data-drag], .slot[data-drag]'), on = tg && tg.dataset.drag !== U.dragId && z.contains(tg) ? tg : null;
+    document.querySelectorAll('.droptg').forEach((x) => x !== on && x.classList.remove('droptg'));
+    if (on) on.classList.add('droptg');
   });
   document.addEventListener('drop', (e) => {
     const z = U.dragId && e.target.closest && e.target.closest('[data-drop]');
     if (!z) return;
     e.preventDefault();
     const tgt = e.target.closest('[data-drag]');
+    document.querySelectorAll('.droptg').forEach((x) => x.classList.remove('droptg'));
     const id = U.dragId;
     U.dragId = null;
     document.body.classList.remove('isdragging');
@@ -5544,7 +5550,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     ville: { h: 'Bienvenue en ville, coach', at: '.nextbtn', t: "Chaque bâtiment est un écran du club : la salle pour jouer, le vestiaire pour l'effectif, le gymnase pour l'entraînement… Pas besoin de tout visiter : le bouton en haut à droite mène toujours à l'étape suivante." },
     mods: { h: 'Ton bonus et ton malus', at: '.modsbtn', t: "Ils jouent toute la saison. Ce bouton te les rappelle quand tu veux. Et si tu te perds, le « ? » au bout des onglets rouvre mes conseils." },
     avantmatch: { h: "L'avant-match", at: '[data-act=kickoff]', t: "À gauche ton plan de match, au centre l'adversaire : sa forme, sa tactique, ses joueurs à surveiller. Quand tu es prêt, « Préparer le match »." },
-    feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Pour un changement, les boutons T, B, R de sa ligne : tu choisis qui prend sa place. Tu peux aussi cliquer sur un joueur puis sur sa nouvelle place. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
+    feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Pour un changement, les boutons T, B, R de sa ligne : tu choisis qui prend sa place. Tu peux aussi glisser un joueur par sa poignée (⠿) sur celui qu'il remplace. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
     tactique: { h: 'La tactique du match', at: '[data-tuto=face]', t: "Choisis ta défense, ton attaque et ton rythme. Aucun réglage ne gagne à tous les coups : chacun a son contre. Le face-à-face, en bas, compare tes arrières à leurs défenseurs. En cas de doute, garde tout tel quel et donne le coup d'envoi." },
     live: { h: 'Le match en direct', at: '.lbpause', ok: "Compris, coup d'envoi", t: "Le match attend que tu aies lu. Le fil raconte chaque action, la courbe sous le score montre qui domine. Changements et réglages se font en pause (barre d'espace ou bouton en bas). Tu peux aussi accélérer en ×2 ou ×4." },
     post: { h: 'Après le match', at: 'main .btn.primary[data-id=entrainement]', t: "Les notes de tes joueurs, l'homme du match, les blessés éventuels. Ensuite, une semaine d'entraînement avant la journée suivante." },
