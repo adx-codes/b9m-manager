@@ -3196,6 +3196,15 @@ html.locked #gate { display: grid; }
     return null;
   }
   const FREE_T = { id: 'LIB', name: 'Joueur libre', color: '#6f747a' };
+  // Jeune libéré par un centre pour faire place à une recrue : où il est aujourd'hui (retrouvé par les mouvements de la journée)
+  function releasedTxt(l) {
+    const m = (G.moves || []).find((x) => x.round === l.round && x.from === l.team && x.name === l.out);
+    const f = m && findPlayer(m.id), who = f ? plink(f.p) : esc(l.out);
+    const fate = !m ? '' : !f ? `<span title="Resté sans club 6 semaines : il a quitté la ${LEAGUE}">, parti hors ${LEAGUE}</span>`
+      : f.t === FREE_T ? '<span title="Toujours sur le marché : à voir au siège, onglet Joueurs libres">, toujours libre</span>'
+      : `, signe à ${badge(f.t, true)} ${esc(f.t.name)}`;
+    return `Recruté · ${who} libéré${fate}`;
+  }
   function matchNote(p, h) {
     const [, , min, g, sh, sv, fa, to, ex] = h;
     return H.noteOf(p.pos, min, g, sh, sv, fa, to, ex);
@@ -4197,7 +4206,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     lst.sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || lo(b) - lo(a) || H.stars(b.ovr, sref()) - H.stars(a.ovr, sref()));
     const rows = lst.map((l) => {
       const t = T(l.team), q = l.p || { id: l.id, age: l.age, ovr: l.ovr, pot: l.pot };
-      const dec = l.mine ? '<b>À toi de décider</b>' : l.ok ? (l.out ? `Recruté · ${esc(l.out)} libéré` : 'Recruté') : '<span class="tag refused">Refusé</span>';
+      const dec = l.mine ? '<b>À toi de décider</b>' : l.ok ? (l.out ? releasedTxt(l) : 'Recruté') : '<span class="tag refused">Refusé</span>';
       return `<tr class="${l.mine ? 'me' : ''}${!l.mine && !l.ok ? ' refused' : ''}"><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${l.p ? plink(l.p) : esc(l.name)}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${dec}</td></tr>`;
     }).join('');
     const kept = lst.filter((l) => !l.mine && l.ok).length;
@@ -4397,7 +4406,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       const t = T(l.team), f = l.ok && l.id ? findPlayer(l.id) : null, p = f ? f.p : null;
       const q = p || { id: l.id || l.name, age: l.age || 18, ovr: l.ovr, pot: l.pot };
       const who = p ? plink(p) : `<span class="muted" title="${l.ok ? "N'est plus dans le championnat" : 'Pas gardé par le club'}">${esc(l.name)}</span>`;
-      const dec = l.ok ? (l.out ? `Recruté · ${esc(l.out)} libéré` : 'Recruté') : `<span class="tag refused">${esc(l.dec || 'Refusé')}</span>`;
+      const dec = l.ok ? (l.out ? releasedTxt(l) : 'Recruté') : `<span class="tag refused">${esc(l.dec || 'Refusé')}</span>`;
       return `<tr class="${l.team === G.userId ? 'me' : ''}${l.ok ? '' : ' refused'}"><td class="r">J${l.round}</td><td class="nw">${badge(t, true)} ${esc(t.name)}</td><td class="nw"><span class="pos${l.pos === 'GB' ? ' gb' : ''}">${l.pos}</span> ${who}</td><td class="r">${q.age}</td><td class="nw">${vstars(q.ovr, { sm: true })}</td><td class="nw">${pot(q, { sm: true })}</td><td class="muted">${dec}</td></tr>`;
     }).join('');
     const byClub = recruited.reduce((a, l) => (a[l.team] = (a[l.team] || 0) + 1, a), {});
