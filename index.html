@@ -4379,7 +4379,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function leagueYouthPanel() {
     // Toutes les propositions des centres de la ligue : recrutées et refusées (les tiennes comprises)
-    const mine = (G.youthLog || []).map((l) => { const ok = /^Recruté/.test(l.decision); return { round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, ok, dec: ok ? null : l.decision, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }; });
+    const mine = (G.youthLog || []).map((l) => { const ok = /^(Recruté|Intégré)/.test(l.decision); return { round: l.round, team: G.userId, id: l.id, name: l.name, pos: l.pos, age: l.age, ovr: l.ovr, pot: l.pot, ok, dec: ok ? null : l.decision, out: (l.decision.match(/^Recruté, (.+) quitte le club$/) || [])[1] || null }; });
     const every = (G.leagueYouth || []).map((l) => ({ ...l, out: l.ok ? l.out : null })).concat(mine).sort((a, b) => b.round - a.round || (b.ok - a.ok) || a.team.localeCompare(b.team));
     const recruited = every.filter((l) => l.ok), nRef = every.length - recruited.length;
     // Filtres : clubs (menu déroulant à cases), niveau et potentiel minimum en étoiles, jeunes refusés
