@@ -17,7 +17,8 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 2. `python3 build.py` pour régénérer `index.html`.
 3. Vérifier : `node --check src/engine.js src/ui.js`, puis simuler avec Node (`require('./src/engine.js')`) pour tout changement d'équilibrage, et tester l'interface (Playwright) si elle change.
 4. Ne jamais casser les sauvegardes existantes : toute nouvelle donnée passe par `migrate()` dans `engine.js` (sauvegarde `localStorage`, clé `hbm-save-v1`).
-5. Pousser sur `main` : GitHub Pages publie https://adx-codes.github.io/b9m-manager/ en une à deux minutes.
+5. Tuto de l'adjoint : à chaque ajustement d'interface ou de gameplay, compléter ou adapter les étapes concernées (objet des étapes du tuto dans `ui.js`, cible `at` comprise) pour qu'il reste juste.
+6. Pousser sur `main` : GitHub Pages publie https://adx-codes.github.io/b9m-manager/ en une à deux minutes.
 
 ## Repères d'équilibrage (à préserver)
 
