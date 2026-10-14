@@ -28,6 +28,8 @@ Jeu de gestion de handball type « Football Manager », jouable dans le navigate
 - Un club 4 étoiles prend environ 75–80 % des points contre un 2 étoiles.
 - Bonus et malus de club : 1 à 3 points chacun sur une saison, jamais plus.
 - Chaque réglage tactique a un contre ; aucun choix ne gagne à tous les coups.
+- Les réglages tactiques dépendent du contexte (tes joueurs, l'adversaire, son système et son style) : bien choisi, un réglage rapporte environ +10 à +14 % des points d'un match, à contre-emploi il en coûte autant. Aucun indice dans le jeu : le coach analyse l'adversaire. Outil de calibrage : comparer un contexte favorable et un défavorable (constantes `CS` dans engine.js).
+- Consignes : une au plus par type (attaque, défense, transition et gestion), modifiables dans la tactique, l'avant-match, la feuille de match et en pause.
 
 ## Préférences d'Anaëlle
 

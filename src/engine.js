@@ -414,14 +414,13 @@
       longues: CS.longues.off + CS.longues.k * FIT(gap / 1.5) - 0.01,
       maillon: CS.maillon.k * 0.4 * FIT(weak / 5)
     });
-    // Prise individuelle : selon la part des buts de la saison prise par le meilleur buteur (à défaut, sa supériorité)
-    const sc = o.players.filter(p => p.pos !== 'GB').sort((x, y) => (y.goals || 0) - (x.goals || 0) || y.ovr - x.ovr);
-    const tot = sc.reduce((a, p) => a + (p.goals || 0), 0);
-    const share = tot >= 30 ? sc[0].goals / tot : 0.15 + ((sc[0] ? sc[0].ovr : 12) - (sc[1] ? sc[1].ovr : 12)) * 0.03;
+    // Prise individuelle : selon la supériorité du joueur visé sur ses partenaires (comme dans le moteur)
+    const tg = priseTarget(o), mates = field.map(pos => at(o, pos)).filter(p => tg && p.id !== tg.id);
+    const dep = tg ? FIT((tg.ovr - mates.reduce((a, p) => a + p.ovr, 0) / Math.max(1, mates.length) - 1.4) / 1.2) : -1;
     const center = (v(at(o, 'Piv'), 'tirPres') + avg(o, backs, 'duel')) / 2, side = avg(o, wings, 'tirAile');
     const def = pick({
       agressive: CS.agressive.to + CS.agressive.tok * FIT((avg(t, field, 'duelDef') - avg(o, field, 'duel')) / 4) - 0.02 + 0.01 * FIT((avg(t, field, 'discipline') - 13) / 4),
-      prise: CS.prise.shot * share - CS.prise.others * (1 - share) - 0.01,
+      prise: 0.045 * dep - 0.01,
       axe: 0.035 * FIT((center - side) / 3),
       fermeailes: 0.035 * FIT((side - center) / 3),
       interception: 0.03 * FIT((avg(t, field, 'vitesse') - avg(o, field, 'passes')) / 4) - 0.005,
@@ -842,15 +841,15 @@
     ailes: { w: 1.8, k: 0.11, off: 0, style: { zone: 0.3, homme: -0.3 } },
     tirloin: { w: 1.8, piv: 0.8, k: 0.08, off: 0, sys: { '6-0': 0.5, '5-1': -0.6, '4-2': -0.3 } },
     intervalles: { w: 1.7, loin: 0.85, k: 0.08, off: 0, sys: { '6-0': -0.2, '5-1': 0, '4-2': 0.3 }, homme: 0.4, pf: 0.025, seven: 0.5, ex: 0.03, fat: 1.1 },
-    longues: { poss: 2, k: 0.08, off: 0.01, to: 0.015 },
+    longues: { poss: 2, k: 0.045, off: 0, to: 0.015 },
     maillon: { w: 2.2, zone: 1.4, k: 0.12, off: -0.02, dec: 1 / 25, floor: -0.3 },
     // Défense
-    prise: { w: 0.3, shot: 0.16, others: 0.025, fat: 1.2 },
-    axe: { pivot: -0.16, percee: -0.12, aile: 0.12 },
-    fermeailes: { aile: -0.17, pivot: 0.1, percee: 0.08 },
+    prise: { w: 0.35, shot: 0.12, others: 0.035, dep: 0.07, fat: 1.2 },
+    axe: { pivot: -0.2, percee: -0.15, aile: 0.08, zw: { pivot: 0.65, percee: 0.75, aile: 1.2 } },
+    fermeailes: { aile: -0.22, pivot: 0.12, percee: 0.1, zw: { aile: 0.6, pivot: 1.2, percee: 1.15 } },
     interception: { to: 0.025, tok: 0.025, ca: 0.08, shot: 0.03, shotk: 0.015 },
     agressive: { to: 0.015, tok: 0.03, ex: 0.05, exk: 0.025, perk: 0.03 },
-    disciplinee: { ex: 0.45, seven: 0.6, to: -0.012 },
+    disciplinee: { ex: 0.35, seven: 0.5, to: -0.025 },
     // Transition et gestion
     repli: { caOpp: -0.22, erOpp: 0.3, caOwn: -0.16, erOwn: 0.5 },
     tourner: { on: 6, off: 3, share: 0.2 },
@@ -981,7 +980,7 @@
       s.run = 0; s.press = 0; s.snap = null; s.streak = null;
     });
     const fast = s => (s.tac.att === 'rapide' ? 3 : 0) - (s.tac.cons.includes('longues') ? CS.longues.poss : 0);
-    this.N = 2 * (54 + fast(this.h) + fast(this.a) + ri(-2, 2));
+    this.N = 2 * (55 + fast(this.h) + fast(this.a) + ri(-2, 2));
     this.i = 0;
     this.ev = [];
     this.last = null;
@@ -1077,7 +1076,9 @@
     const x = this.field(A, i).find(y => y.p.id === D.priseId);
     if (!x) return null;
     const d = this.field(D, i).find(y => y.pos === (FACING[x.pos] || 'DC'));
-    return { id: x.p.id, def: d ? d.p.id : null };
+    const mates = this.field(A, i).filter(y => y.p.id !== x.p.id);
+    const avgO = mates.length ? mates.reduce((a, y) => a + y.p.ovr, 0) / mates.length : x.p.ovr;
+    return { id: x.p.id, def: d ? d.p.id : null, dep: FIT((x.p.ovr - avgO - 1.4) / 1.2) };
   };
   // Isoler le maillon faible : le poste dont le vis-à-vis défensif est le plus faible
   P.weakLink = function (A, D, i) {
@@ -1297,7 +1298,7 @@
     }
     // Contre-attaque
     if (last && last.by === 1 - ai && last.kind === 'to') {
-      const pca = 0.32 + intensity(A) * 0.03 + (A.tac.att === 'rapide' ? 0.15 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * (A.tac.att === 'rapide' ? 0.035 : 0.015)
+      const pca = 0.32 + intensity(A) * 0.03 + (A.tac.att === 'rapide' ? 0.15 : 0) + (this.avg(A, i, 'vitesse') - this.avg(D, i, 'vitesse')) * (A.tac.att === 'rapide' ? 0.05 : 0.015)
         + (dsys === '4-2' ? 0.03 : 0) + (dsys === '6-0' ? -0.05 : 0)
         + (A.tac.att === 'rapide' && hasMod(A.team, 'physique+') ? 0.05 : 0)
         + (has(D, 'repli') ? CS.repli.caOpp : 0) + (has(A, 'repli') ? CS.repli.caOwn : 0) + (last.int ? CS.interception.ca : 0);
@@ -1378,6 +1379,7 @@
       if (has(A, 'ailes')) zw.aile *= CS.ailes.w;
       if (has(A, 'tirloin')) { zw.loin *= CS.tirloin.w; zw.pivot *= CS.tirloin.piv; }
       if (has(A, 'intervalles')) { zw.percee *= CS.intervalles.w; zw.loin *= CS.intervalles.loin; }
+      for (const k of ['axe', 'fermeailes']) if (has(D, k)) for (const z in CS[k].zw) zw[z] *= CS[k].zw[z];
       const wl = has(A, 'maillon') ? this.weakLink(A, D, i) : null;
       if (wl) { const M = CS.maillon.zone; if (wl === 'Piv') zw.pivot *= M; else if (wl.startsWith('Ai')) zw.aile *= M; else { zw.loin *= Math.sqrt(M); zw.percee *= Math.sqrt(M); } }
       const pz = this.prise(D, A, i);
@@ -1428,7 +1430,8 @@
         const gap = FIT((skill - this.defFace(D, i, fpos, 'duelDef').v) / 5);
         cb += CS.maillon.off + CS.maillon.k * Math.max(CS.maillon.floor, 1 - CS.maillon.dec * A.mailN) * gap;
       }
-      if (pz) cb += p.id === pz.id ? -CS.prise.shot : CS.prise.others;
+      // Prise individuelle : plus l'attaque dépend du joueur visé, plus elle se grippe ; sinon ses partenaires profitent de l'espace
+      if (pz) cb += p.id === pz.id ? -CS.prise.shot : CS.prise.others - (CS.prise.others + CS.prise.dep) * Math.max(0, pz.dep);
       A.consB = cb;
     }
     let gk = D.lineup.GB;

@@ -191,28 +191,32 @@ Chaque secteur a toujours deux réglages : en attaque le rythme et le jeu, en d�
 
 Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvre des espaces au pivot et aux changements de secteur. Le 4-2 provoque des pertes de balle, mais ouvre les espaces à 6 m, avec une fatigue accrue.
 
-**Consignes : une au plus par type** (attaque, défense, transition et gestion). Un clic sur une autre consigne du même type la remplace ; un clic sur la consigne choisie la retire. Elles se changent aussi en pause pendant le match. Chaque consigne a un contre ; face à « aucune consigne », aucune ne rapporte plus de 2 points sur une saison (simulations à niveau égal).
+**Consignes : une au plus par type** (attaque, défense, transition et gestion). Un clic sur une autre consigne du même type la remplace ; un clic sur la consigne choisie la retire. Elles se règlent dans l'onglet Tactique, l'avant-match, la feuille de match (onglet et préparation) et en pause (mi-temps, temps morts, y compris adverses).
 
-| Type | Consigne | Effet | Contrepartie ou contre |
+**Principe : tout dépend du contexte.** Chaque réglage tactique (consignes, rythme, style défensif, jeu) a un effet calculé à chaque possession à partir d'une adéquation, de −1 (contre-emploi) à +1 (choix idéal), entre tes joueurs sur le terrain, ceux d'en face, leur système et leur style. Bien choisi, un réglage rapporte environ +10 à +14 % des points d'un match ; à contre-emploi, il en coûte autant. Aucun indice n'est donné dans le jeu : c'est au coach d'analyser l'adversaire (notes, face-à-face, tactique observée lors de son dernier match). Sans consigne, une équipe va déjà un peu plus vers ses points forts (poids de zone ×(1 + 0,06 × (note − 13))).
+
+| Type | Consigne | Mécanique | Adéquation (ce qui la rend forte ou faible) |
 | --- | --- | --- | --- |
-| Attaque | Cibler le pivot | Jeu au pivot ×1,7 | Fermer l'axe |
-| Attaque | Cibler les ailes | Jeu aux ailes ×1,7 | Fermer les ailes |
-| Attaque | Tirer de loin | Tirs à 9 m ×1,7, jeu au pivot ×0,8 ; +2 % de réussite à 9 m contre une 6-0 | −2 % à 9 m contre une 5-1 ou une 4-2 |
-| Attaque | Attaquer les intervalles | Percées ×1,6 (+2 % de réussite), 7 m obtenus ×1,45, +3,5 % d'exclusions provoquées | Plus de passages en force et de pertes, arrières ×1,1 de fatigue |
-| Attaque | Attaques longues | 2 possessions de moins par équipe, +2,5 % au tir en attaque placée | +2 % de pertes de balle (jeu passif). Arme de l'outsider |
-| Attaque | Isoler le maillon faible | Le jeu va vers le poste dont le vis-à-vis (duel défensif) est le plus faible : tireur ×2,2, +4 % au tir | Le bonus baisse de 0,3 % à chaque tir sur lui, jusqu'à −2 % (jeu lisible) |
-| Défense | Défense agressive | Plus de pertes provoquées | Plus d'exclusions, de fatigue et de blessures |
-| Défense | Prise individuelle | Le meilleur buteur adverse de la saison (à défaut le meilleur joueur de champ) : tireur ×0,45, −8 % au tir | Ses partenaires +0,8 % au tir ; son vis-à-vis fatigue ×1,2 |
-| Défense | Fermer l'axe | Pivot −6 %, percées −5 % | Ailes adverses +6,5 % |
-| Défense | Fermer les ailes | Ailes −7 % | Pivot +5 %, percées +4,5 % |
-| Défense | Chercher l'interception | +2,2 % de pertes provoquées, +6 % de contre-attaque derrière | +2 % de réussite adverse en attaque placée (décalages) |
-| Défense | Défense disciplinée | Exclusions ×0,65, 7 m concédés ×0,8 | −1 % de pertes provoquées |
-| Transition et gestion | Rotations fréquentes | Titulaires vers 35 minutes au lieu de 40 | Plus de temps de jeu pour le banc |
-| Transition et gestion | Repli prioritaire | Contre-attaques adverses −12 %, engagements rapides adverses ×0,5 | Ses propres contre-attaques −6 %, engagements rapides ×0,7 ; compatible avec le jeu rapide |
-| Transition et gestion | Gardien spécialiste des 7 m | Le gardien remplaçant entre (sans message) sur chaque 7 m adverse s'il est meilleur en arrêts sur 7 m | Aucune |
-| Transition et gestion | Faire tourner si l'écart est large | À +6, les titulaires visent 20 % du temps de jeu (le banc et les jeunes jouent plus, sans autre bonus) ; retour à la normale sous +3 | Risque de se faire remonter |
+| Attaque | Cibler le pivot | Jeu au pivot ×2,4 ; réussite ±16 % selon l'adéquation | Pivot (tir de près, prise de position) contre son vis-à-vis ; −0,4 contre une 6-0, +0,3 contre une 5-1, +0,4 contre une 4-2 |
+| Attaque | Cibler les ailes | Jeu aux ailes ×1,8 ; ±11 % | Ailiers contre leurs vis-à-vis, gardien adverse ; +0,3 contre une défense collective, −0,3 contre l'homme à homme |
+| Attaque | Tirer de loin | Tirs à 9 m ×1,8, pivot ×0,8 ; ±8 % | Tir de loin contre les contreurs, gardien adverse ; +0,5 contre une 6-0, −0,6 contre une 5-1, −0,3 contre une 4-2 |
+| Attaque | Attaquer les intervalles | Percées ×1,7 ; ±8 %, 7 m obtenus jusqu'à +50 %, exclusions provoquées, passages en force ±2,5 % ; arrières ×1,1 de fatigue | Duel des arrières contre duel défensif adverse ; +0,4 contre l'homme à homme, +0,3 contre une 4-2, −0,2 contre une 6-0 |
+| Attaque | Attaques longues | 2 possessions de moins par équipe ; ±4,5 % au tir ; +1,5 % de pertes (jeu passif) | Écart de niveau : aide l'outsider, pénalise le favori |
+| Attaque | Isoler le maillon faible | Le jeu va vers le poste au vis-à-vis le plus faible ; jusqu'à ±12 % (−2 % de base) | Écart réel attaquant contre défenseur ; le bonus s'érode de 4 % à chaque tir sur lui |
+| Défense | Défense agressive | Pertes provoquées +1,5 % ±3 %, percées adverses ±3 % ; exclusions +5 % ±2,5 % | Duel défensif contre duel adverse ; discipline de tes joueurs pour les exclusions |
+| Défense | Prise individuelle | Le meilleur buteur adverse (à défaut, le meilleur joueur) tire ×0,35 et −12 % ; son vis-à-vis fatigue ×1,2 | Dépendance : supériorité du joueur visé sur ses partenaires. Équipe dépendante : jusqu'à −7 % pour les autres ; équipe équilibrée : +3,5 % pour les autres |
+| Défense | Fermer l'axe | Pivot −20 %, percées −15 %, ailes +8 % ; l'adversaire va plus aux ailes | Ce que vaut l'adversaire au centre et sur les ailes |
+| Défense | Fermer les ailes | Ailes −22 %, pivot +12 %, percées +10 % ; l'adversaire va plus au centre | L'inverse |
+| Défense | Chercher l'interception | Pertes provoquées +2,5 % ±2,5 %, +8 % de contre-attaque derrière ; décalages +3 % ∓1,5 % | Vitesse de ta défense contre qualité de passe adverse |
+| Défense | Défense disciplinée | Exclusions ×0,35, 7 m concédés ×0,5, −2,5 % de pertes provoquées | Utile si tes joueurs manquent de discipline face à des attaquants qui provoquent |
+| Transition et gestion | Rotations fréquentes | Titulaires vers 32 minutes au lieu de 40 | Profondeur du banc, endurance des titulaires |
+| Transition et gestion | Repli prioritaire | Contre-attaques adverses −22 %, engagements rapides adverses ×0,3 ; les tiens −16 % et ×0,5 | Menace de contre-attaque adverse (jeu rapide, vitesse) |
+| Transition et gestion | Gardien spécialiste des 7 m | Le remplaçant entre (sans message) sur chaque 7 m adverse s'il est meilleur sur ce geste | Écart entre les deux gardiens |
+| Transition et gestion | Faire tourner si l'écart est large | À +6, les titulaires visent 20 % du temps de jeu ; retour sous +3 | Profondeur du banc ; outil de gestion (fatigue, blessures) plus que de résultat |
 
-**Coach IA :** avant chaque match, une consigne par type selon les deux effectifs : attaques longues s'il est nettement plus faible (il passe alors en jeu placé), sinon le secteur fort de son attaque ou le maillon faible adverse ; en défense, prise individuelle face à un buteur qui domine, sinon fermer le secteur fort adverse, discipline si ses joueurs en manquent, interception s'ils sont rapides ; en gestion, repli contre une équipe rapide, gardien des 7 m si son remplaçant est bien meilleur sur ce geste, faire tourner s'il est favori, rotations si ses titulaires sont fatigués. Mené de 4 buts après la pause, il abandonne attaques longues et repli. Ses consignes apparaissent dans la « Tactique observée » de l'avant-match.
+**Rythme, style et jeu, eux aussi selon le contexte :** le jeu rapide vaut surtout par la vitesse (contre-attaques +5 % par point d'écart de vitesse moyenne, engagements rapides ×(1 + 0,08 × écart)) et coûte des ballons avec de mauvais passeurs (+0,8 % de pertes par point sous 12,5) ; l'homme à homme fait perdre des ballons aux attaquants plus lents que leurs gardes (0,6 % par point d'écart) ; le bonus ou malus du jeu collectif ou individuel va jusqu'à ±6 %.
+
+**Coach IA :** avant chaque match, il lit les deux effectifs avec les mêmes critères que le moteur et garde, dans chaque type, la consigne qui rapporte le plus (aucune si rien ne rapporte) ; il choisit aussi son rythme et son style défensif. Sur des affiches réelles, son plan prend environ 56–58 % des points contre une équipe sans consigne, un plan tiré au hasard environ 48 %. Mené de 4 buts après la pause, il abandonne attaques longues et repli. La « tactique observée » de l'avant-match montre son plan lors de son dernier match, pas celui du jour.
 
 **Pendant le match :** un temps mort par mi-temps pour changer de rythme, de jeu, de style, de gardien, ou forcer un système (5-1 ou 4-2) à la place des règles. Il donne aussi un petit regain (+3 % au tir pendant 6 possessions, 4 points de fatigue en moins). Pause automatique à la mi-temps. 7 contre 6 activable à tout moment. Curseur d'intensité (de Gestion à Tout donner) dans les temps morts et à la mi-temps.
 
@@ -266,7 +270,7 @@ Public et Formation ne sont plus tirés : ils sont remplacés par les caractéri
 
 ## Moteur de match
 
-Le match est simulé possession par possession : environ 54 par équipe (2 de moins en attaques longues, 3 de plus en jeu rapide) sur 60 minutes, chacune résolue en une issue tirée au sort selon les attributs et les tactiques.
+Le match est simulé possession par possession : environ 55 par équipe (2 de moins en attaques longues, 3 de plus en jeu rapide) sur 60 minutes, chacune résolue en une issue tirée au sort selon les attributs et les tactiques.
 
 **Déroulé d'une possession :**
 
