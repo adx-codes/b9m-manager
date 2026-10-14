@@ -80,6 +80,31 @@
     rapide: ['Jeu rapide', 'Contre-attaques et engagements rapides, plus de pertes de balle, fatigue accrue']
   };
   const CONS = Object.fromEntries(H.CONSIGNES);
+  // Consignes : une au plus par type ; le détail s'affiche au survol et sous la consigne choisie
+  const CONS_TXT = {
+    pivot: 'Le jeu passe plus souvent par le pivot. Contre : fermer l\'axe.',
+    ailes: 'Le jeu s\'écarte plus souvent vers les ailiers. Contre : fermer les ailes.',
+    tirloin: 'Tes arrières tirent beaucoup plus à 9 m, moins de jeu au pivot. Utile contre une 6-0 basse, moins face à une 5-1 ou une 4-2 et à de bons contreurs.',
+    intervalles: 'Plus de percées, de 7 m et d\'exclusions provoquées, mais plus de passages en force et de pertes de balle, et tes arrières fatiguent plus vite.',
+    longues: 'Moins de possessions pour les deux équipes et un peu plus de réussite au tir, mais un risque de jeu passif (perte de balle). L\'arme de l\'outsider pour réduire l\'écart.',
+    maillon: 'Le jeu va vers le vis-à-vis le plus faible de la défense adverse. Très efficace au début, puis la défense s\'adapte et le jeu devient lisible.',
+    agressive: 'Plus de contacts : plus de pertes de balle provoquées, mais plus d\'exclusions, de fatigue et de blessures.',
+    prise: 'Le meilleur buteur adverse est pris en individuel : il tire moins et moins bien. Ses partenaires ont plus d\'espace, et ton défenseur désigné fatigue plus vite.',
+    axe: 'Pivot et percées adverses perdent en réussite, les ailes adverses en gagnent.',
+    fermeailes: 'Les ailiers adverses perdent en réussite, le pivot et les percées adverses en gagnent.',
+    interception: 'Plus de ballons récupérés et de contre-attaques, mais plus de buts encaissés sur les décalages quand l\'interception échoue.',
+    disciplinee: 'Moins d\'exclusions et de 7 m concédés, mais moins de pertes de balle provoquées.',
+    rotations: 'Les titulaires jouent environ 35 minutes au lieu de 40 : moins de fatigue, mais plus de temps de jeu pour le banc.',
+    repli: 'Beaucoup moins de contre-attaques encaissées, mais moins de contre-attaques pour toi. Compatible avec le jeu rapide, qu\'il freine en partie.',
+    gk7m: 'Sur chaque 7 m adverse, ton gardien remplaçant entre s\'il est meilleur sur ce geste.',
+    tourner: 'Au-delà de +6, les remplaçants et les jeunes jouent davantage, jusqu\'à ce que l\'écart retombe sous +3. Moins de fatigue pour les cadres, mais un risque de se faire remonter.'
+  };
+  // Lignes de consignes pour un type (att, def, ges) ; opp : adversaire, pour nommer la cible de la prise individuelle
+  function consRow(tac, cat, act, opp, full) {
+    const list = H.CONSIGNES.filter((c) => c[2] === cat), cur = tac.cons.find((k) => H.consCat(k) === cat);
+    const tgt = cur === 'prise' && opp ? H.priseTarget(opp) : null;
+    return `<div class="opt"><span class="label">Consigne${full ? ' · ' + H.CONS_CAT[cat].toLowerCase() : ''}</span><div class="row" style="gap:8px">${list.map(([k, l]) => `<button class="chip" data-act="${act}" data-id="${k}" aria-pressed="${cur === k}" title="${esc(CONS_TXT[k])}">${l}</button>`).join('')}</div>${full ? '' : `<p>${cur ? CONS_TXT[cur] + (tgt ? ` Cible : <b style="color:var(--fg)">${esc(tgt.name)}</b>.` : '') : 'Aucune consigne. Une seule possible ; un clic sur la consigne choisie la retire.'}</p>`}</div>`;
+  }
   const SLOT = {
     GB: 'left:50%;top:max(30px,10%)', AiG: 'left:max(84px,15%);top:24%', AiD: 'left:min(calc(100% - 84px),85%);top:24%',
     Piv: 'left:50%;top:46%', ArG: 'left:22%;top:65%', ArD: 'left:78%;top:65%', DC: 'left:50%;top:85%'
@@ -475,7 +500,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <div style="display:grid;gap:12px">
             <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
             ${oppForm(opp)}
-            <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
+            <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(H.aiTactic(opp, t))}<br>${rulesLine(opp.tactic.rules)}</p></div>
             <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${traitsHtml(opp)}${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             ${(() => { const mv = opp.players.filter((p) => p.mvp).sort((x, y) => y.mvp - x.mvp); return mv.length ? `<div class="opt"><span class="label">MVP dans leur effectif</span>${mv.slice(0, 3).map((p) => `<div class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted">${p.mvp} fois MVP${p.mvpBoost === G.round ? ' · en confiance' : ''}</span></div>`).join('')}</div>` : ''; })()}
             <div class="opt"><span class="label">Joueurs à surveiller</span>
@@ -573,7 +598,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="opt"><span class="label">Attaque</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="matt" data-id="${x}" aria-pressed="${s.tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div></div>
         ${intensityHtml(s)}
         <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="mjeu" data-id="${k}" aria-pressed="${s.tac.jeu === k}">${l}</button>`).join('')}</div></div>
-        <div class="opt"><span class="label">Consignes (2 maximum)</span><div class="row">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="mcons" data-id="${k}" aria-pressed="${s.tac.cons.includes(k)}">${l}</button>`).join('')}</div></div>
+        ${['att', 'def', 'ges'].map((c) => consRow(s.tac, c, 'mcons', m.S[1 - U.side].team, true)).join('')}
         <div><button class="btn primary" data-act="resume">${ht ? 'Lancer la 2e mi-temps' : 'Reprendre le match'}</button></div></div>`;
     }
     return `<h3>Banc de touche</h3><div style="display:grid;gap:12px">
@@ -1231,7 +1256,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const o = G.odds && G.odds.key === key ? G.odds : null;
     if (!o && !U.oddsBusy) {
       U.oddsBusy = true;
-      setTimeout(() => { if (U.view !== 'pre' || U.tab !== 'match') { U.oddsBusy = false; return; } const r = H.odds(h, a, 200); G.odds = { key, ...r }; U.oddsBusy = false; save(); if (U.tab === 'match' && U.view === 'pre') render(); }, 60);
+      setTimeout(() => { if (U.view !== 'pre' || U.tab !== 'match') { U.oddsBusy = false; return; } const r = H.odds(h, a, 200, G.userId); G.odds = { key, ...r }; U.oddsBusy = false; save(); if (U.tab === 'match' && U.view === 'pre') render(); }, 60);
     }
     const share = o ? (() => { const v = [o.pw, o.pd, o.pl].map((p) => Math.pow(p, 2)), t = v.reduce((x, y) => x + y, 0); const r = v.map((x) => Math.round((x / t) * 100)); r[1] = 100 - r[0] - r[2]; return r; })() : [0, 0, 0];
     const fav = o ? [o.ow, o.od, o.ol].indexOf(Math.min(o.ow, o.ol)) : -1;
@@ -1863,6 +1888,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderTactics() {
     H.ensureSheet(me());
     const t = me(), tac = t.tactic, r = tac.rules, fi = fitInfo(t);
+    const nx = nextFixture(), oppNext = nx && !nx.rest ? T(nx.h === t.id ? nx.a : nx.h) : null;
     const sel = (rule, field, opts, cur, fmt) => `<select class="rsel" data-rule="${rule}" data-field="${field}" aria-label="${rule} ${field}">${opts.map((o) => `<option value="${o}" ${String(o) === String(cur) ? 'selected' : ''}>${fmt ? fmt(o) : o}</option>`).join('')}</select>`;
     return `
       <section class="panel"><h3>Système de jeu</h3><div class="tgrid">
@@ -1872,6 +1898,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="jeu" data-id="${k}" aria-pressed="${tac.jeu === k}">${l}</button>`).join('')}</div>
             <p>${JEU_TXT[tac.jeu]} Ton équipe est <b style="color:var(--fg)">${fi.id.label.toLowerCase()}</b> (esprit collectif moyen ${fi.id.v.toFixed(1)}) : <span class="${fi.cls}">${fi.txt}</span>.</p></div>
           ${backStyleSummary(t)}
+          ${consRow(tac, 'att', 'cons', oppNext)}
         </div>
         <div class="tsec"><span class="tsech">Défense</span>
           <div class="opt"><span class="label">Style</span><div class="seg">${Object.entries(H.DSTYLE).map(([k, l]) => `<button data-act="dstyle" data-id="${k}" aria-pressed="${tac.dstyle === k}">${l}</button>`).join('')}</div>
@@ -1886,9 +1913,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
                 <span>Si un arrière adverse a 16 ou plus en tir de loin sur le terrain, passer en ${sel('tireur', 'sys', ['5-1', '4-2'], r.tireur.sys)}</span></div>
             </div>
             <p class="legend" style="margin:6px 0 0">5-1 : ${DEF_TXT['5-1'][0].toLowerCase()} ; ${DEF_TXT['5-1'][1].toLowerCase()}. 4-2 : ${DEF_TXT['4-2'][0].toLowerCase()} ; ${DEF_TXT['4-2'][1].toLowerCase()}.</p></div>
+          ${consRow(tac, 'def', 'cons', oppNext)}
         </div>
-        <div class="opt"><span class="label">Consignes · 2 maximum</span><div class="row" style="gap:8px">${H.CONSIGNES.map(([k, l]) => `<button class="chip" data-act="cons" data-id="${k}" aria-pressed="${tac.cons.includes(k)}">${l}</button>`).join('')}</div>
-          <p>Une troisième consigne remplace la plus ancienne.</p></div>
+        <div class="tsec" style="grid-column:1 / -1"><span class="tsech">Transition et gestion</span>
+          ${consRow(tac, 'ges', 'cons', oppNext)}
+        </div>
       </div></section>`;
   }
 
@@ -2239,11 +2268,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     e.preventDefault();
     g.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
-  function toggleCons(tac, id) {
-    const i = tac.cons.indexOf(id);
-    if (i >= 0) tac.cons.splice(i, 1);
-    else { tac.cons.push(id); if (tac.cons.length > 2) tac.cons.shift(); }
-  }
+  function toggleCons(tac, id) { H.setCons(tac, id); }
   document.addEventListener('change', (e) => {
     if (e.target.matches && e.target.matches('input[data-tutoopt]')) { U.tutoOpt = e.target.checked; return; }
     if (e.target.matches && e.target.matches('input[data-prekeep]')) { if (G && G.pre) { G.pre.keep = e.target.checked; save(); } return; }
@@ -2471,7 +2496,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     mods: { h: 'Ton bonus et ton malus', at: '.modsbtn', t: "Ils jouent toute la saison. Ce bouton te les rappelle quand tu veux. Et si tu te perds, le « ? » au bout des onglets rouvre mes conseils." },
     avantmatch: { h: "L'avant-match", at: '[data-act=kickoff]', t: "À gauche ton plan de match, au centre l'adversaire : sa forme, sa tactique, ses joueurs à surveiller. Quand tu es prêt, « Préparer le match »." },
     feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Pour un changement, les boutons T, B, R de sa ligne : tu choisis qui prend sa place. Tu peux aussi glisser un joueur par sa poignée (⠿) sur celui qu'il remplace. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail." },
-    tactique: { h: 'La tactique du match', at: '[data-tuto=face]', t: "Choisis ta défense, ton attaque et ton rythme. Aucun réglage ne gagne à tous les coups : chacun a son contre. Le face-à-face, en bas, compare tes arrières à leurs défenseurs. En cas de doute, garde tout tel quel et donne le coup d'envoi." },
+    tactique: { h: 'La tactique du match', at: '[data-tuto=face]', t: "Choisis ta défense, ton attaque et ton rythme, puis au plus une consigne par type : attaque, défense, transition et gestion (le détail s'affiche au survol). Aucun réglage ne gagne à tous les coups : chacun a son contre. Le face-à-face, en bas, compare tes arrières à leurs défenseurs. En cas de doute, garde tout tel quel et donne le coup d'envoi." },
     live: { h: 'Le match en direct', at: '.lbpause', ok: "Compris, coup d'envoi", t: "Le match attend que tu aies lu. Le fil raconte chaque action, la courbe sous le score montre qui domine. Changements et réglages se font en pause (barre d'espace ou bouton en bas). Tu peux aussi accélérer en ×2 ou ×4." },
     post: { h: 'Après le match', at: 'main .btn.primary[data-id=entrainement]', t: "Les notes de tes joueurs, l'homme du match, les blessés éventuels. Ensuite, une semaine d'entraînement avant la journée suivante." },
     entrainement: { h: "L'entraînement", at: '[data-act=dotrain]', t: "Choisis un thème et une intensité. Plus c'est dur, plus tes joueurs progressent, mais plus ils arrivent fatigués au match et plus le risque de blessure monte. Puis « Lancer la semaine »." },

@@ -191,7 +191,28 @@ Chaque secteur a toujours deux réglages : en attaque le rythme et le jeu, en d�
 
 Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvre des espaces au pivot et aux changements de secteur. Le 4-2 provoque des pertes de balle, mais ouvre les espaces à 6 m, avec une fatigue accrue.
 
-**Consignes (deux au choix) :** cibler le pivot, cibler les ailes, défense agressive, rotations fréquentes.
+**Consignes : une au plus par type** (attaque, défense, transition et gestion). Un clic sur une autre consigne du même type la remplace ; un clic sur la consigne choisie la retire. Elles se changent aussi en pause pendant le match. Chaque consigne a un contre ; face à « aucune consigne », aucune ne rapporte plus de 2 points sur une saison (simulations à niveau égal).
+
+| Type | Consigne | Effet | Contrepartie ou contre |
+| --- | --- | --- | --- |
+| Attaque | Cibler le pivot | Jeu au pivot ×1,7 | Fermer l'axe |
+| Attaque | Cibler les ailes | Jeu aux ailes ×1,7 | Fermer les ailes |
+| Attaque | Tirer de loin | Tirs à 9 m ×1,7, jeu au pivot ×0,8 ; +2 % de réussite à 9 m contre une 6-0 | −2 % à 9 m contre une 5-1 ou une 4-2 |
+| Attaque | Attaquer les intervalles | Percées ×1,6 (+2 % de réussite), 7 m obtenus ×1,45, +3,5 % d'exclusions provoquées | Plus de passages en force et de pertes, arrières ×1,1 de fatigue |
+| Attaque | Attaques longues | 2 possessions de moins par équipe, +2,5 % au tir en attaque placée | +2 % de pertes de balle (jeu passif). Arme de l'outsider |
+| Attaque | Isoler le maillon faible | Le jeu va vers le poste dont le vis-à-vis (duel défensif) est le plus faible : tireur ×2,2, +4 % au tir | Le bonus baisse de 0,3 % à chaque tir sur lui, jusqu'à −2 % (jeu lisible) |
+| Défense | Défense agressive | Plus de pertes provoquées | Plus d'exclusions, de fatigue et de blessures |
+| Défense | Prise individuelle | Le meilleur buteur adverse de la saison (à défaut le meilleur joueur de champ) : tireur ×0,45, −8 % au tir | Ses partenaires +0,8 % au tir ; son vis-à-vis fatigue ×1,2 |
+| Défense | Fermer l'axe | Pivot −6 %, percées −5 % | Ailes adverses +6,5 % |
+| Défense | Fermer les ailes | Ailes −7 % | Pivot +5 %, percées +4,5 % |
+| Défense | Chercher l'interception | +2,2 % de pertes provoquées, +6 % de contre-attaque derrière | +2 % de réussite adverse en attaque placée (décalages) |
+| Défense | Défense disciplinée | Exclusions ×0,65, 7 m concédés ×0,8 | −1 % de pertes provoquées |
+| Transition et gestion | Rotations fréquentes | Titulaires vers 35 minutes au lieu de 40 | Plus de temps de jeu pour le banc |
+| Transition et gestion | Repli prioritaire | Contre-attaques adverses −12 %, engagements rapides adverses ×0,5 | Ses propres contre-attaques −6 %, engagements rapides ×0,7 ; compatible avec le jeu rapide |
+| Transition et gestion | Gardien spécialiste des 7 m | Le gardien remplaçant entre (sans message) sur chaque 7 m adverse s'il est meilleur en arrêts sur 7 m | Aucune |
+| Transition et gestion | Faire tourner si l'écart est large | À +6, les titulaires visent 20 % du temps de jeu (le banc et les jeunes jouent plus, sans autre bonus) ; retour à la normale sous +3 | Risque de se faire remonter |
+
+**Coach IA :** avant chaque match, une consigne par type selon les deux effectifs : attaques longues s'il est nettement plus faible (il passe alors en jeu placé), sinon le secteur fort de son attaque ou le maillon faible adverse ; en défense, prise individuelle face à un buteur qui domine, sinon fermer le secteur fort adverse, discipline si ses joueurs en manquent, interception s'ils sont rapides ; en gestion, repli contre une équipe rapide, gardien des 7 m si son remplaçant est bien meilleur sur ce geste, faire tourner s'il est favori, rotations si ses titulaires sont fatigués. Mené de 4 buts après la pause, il abandonne attaques longues et repli. Ses consignes apparaissent dans la « Tactique observée » de l'avant-match.
 
 **Pendant le match :** un temps mort par mi-temps pour changer de rythme, de jeu, de style, de gardien, ou forcer un système (5-1 ou 4-2) à la place des règles. Il donne aussi un petit regain (+3 % au tir pendant 6 possessions, 4 points de fatigue en moins). Pause automatique à la mi-temps. 7 contre 6 activable à tout moment. Curseur d'intensité (de Gestion à Tout donner) dans les temps morts et à la mi-temps.
 
@@ -245,7 +266,7 @@ Public et Formation ne sont plus tirés : ils sont remplacés par les caractéri
 
 ## Moteur de match
 
-Le match est simulé possession par possession : environ 55 par équipe sur 60 minutes, chacune résolue en une issue tirée au sort selon les attributs et les tactiques.
+Le match est simulé possession par possession : environ 54 par équipe (2 de moins en attaques longues, 3 de plus en jeu rapide) sur 60 minutes, chacune résolue en une issue tirée au sort selon les attributs et les tactiques.
 
 **Déroulé d'une possession :**
 
