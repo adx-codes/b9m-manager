@@ -195,9 +195,18 @@
   const fansOf = (t) => clubOf(t).fans || { h: 3, a: 2, name: 'Les Supporters' };
   const academyOf = (t) => clubOf(t).academy || 3;
   // Décalage de niveau et de potentiel des jeunes : −1 (centre à 1) à +1 (centre à 5)
+  // Coach IA du club, de 1 à 5 : sa lecture tactique (fixe, la même à chaque partie). Plutôt meilleur dans les grands clubs, avec des exceptions
+  function coachOf(t) {
+    const c = clubOf(t);
+    if (c.coach) return c.coach;
+    const h = String(t && t.id).split('').reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) % 1009, 17);
+    return clamp(Math.round(3 + ((c.rep || 3) - 3) * 0.6 + [-1, -1, 0, 0, 0, 1, 1, 2][h % 8] * 0.8), 1, 5);
+  }
+  // Part d'aléatoire dans ses choix (bruit sur ce qu'il croit que rapporte chaque option) et poids de ses habitudes
+  const COACH = { noise: [0, 0.07, 0.045, 0.028, 0.014, 0.005], habit: [0, 0.45, 0.3, 0.18, 0.1, 0.05] };
   const academyOff = (t) => (academyOf(t) - 3) * 0.5;
   // Ferveur à domicile : de +2 % (1) à +5 % (5) de réussite au tir
-  const homeShot = (t) => 0.02 + (fansOf(t).h - 1) * 0.0075;
+  const homeShot = (t) => 0.025 + (fansOf(t).h - 1) * 0.0075;
   // Supporters en déplacement : réduisent le handicap du visiteur, de 0 % (1) à 50 % (5)
   const awayCut = (t) => (fansOf(t).a - 1) * 0.125;
   function modInfo(key) {
@@ -400,17 +409,20 @@
     const gk = (tm) => (v(at(tm, 'GB'), 'reflexes') + v(at(tm, 'GB'), 'placement')) / 2;
     return { at, v, avg, backs, wings, field, lvl, gk };
   }
-  function aiCons(t, o) {
+  // Le coach lit le plan adverse du dernier match (pas celui du jour) ; il se trompe parfois, d'autant plus que son niveau est bas
+  function aiCons(t, o, level) {
     const { at, v, avg, backs, wings, field, lvl, gk } = aiRead(t, o);
-    const gap = lvl(o) - lvl(t), pick = (sc) => { const e = Object.entries(sc).sort((x, y) => y[1] - x[1])[0]; return e[1] > 0.002 ? e[0] : null; };
+    const L = level || coachOf(t), sig = COACH.noise[L];
+    const ot = o.seen || o.tactic;
+    const gap = lvl(o) - lvl(t), pick = (sc) => { const e = Object.entries(sc).map(([k, x]) => [k, x + gauss() * sig]).sort((x, y) => y[1] - x[1])[0]; return e[1] > 0.002 ? e[0] : null; };
     const pivSk = v(at(t, 'Piv'), 'tirPres') * 0.7 + v(at(t, 'Piv'), 'position') * 0.3;
-    const tireur = o.tactic.rules && o.tactic.rules.tireur.on && Math.max(...backs.map(pos => v(at(t, pos), 'tirLoin'))) >= 16;
+    const tireur = ot.rules && ot.rules.tireur.on && Math.max(...backs.map(pos => v(at(t, pos), 'tirLoin'))) >= 16;
     const weak = Math.max(...field.map(pos => (pos.startsWith('Ai') ? v(at(t, pos), 'tirAile') : v(at(t, pos), 'duel')) - v(at(o, FACING[pos]), 'duelDef')));
     const att = pick({
       pivot: CS.pivot.k * FIT((pivSk - avg(o, ['Piv', 'DC'], 'duelDef')) / 4 + CS.pivot.sys['6-0']),
-      ailes: CS.ailes.k * FIT((avg(t, wings, 'tirAile') - (12 + (avg(o, wings, 'duelDef') - 12) * 0.5)) / 4 + (13 - gk(o)) / 5 + CS.ailes.style[o.tactic.dstyle]),
+      ailes: CS.ailes.k * FIT((avg(t, wings, 'tirAile') - (12 + (avg(o, wings, 'duelDef') - 12) * 0.5)) / 4 + (13 - gk(o)) / 5 + CS.ailes.style[ot.dstyle]),
       tirloin: CS.tirloin.k * FIT((avg(t, backs, 'tirLoin') - avg(o, field, 'contre')) / 4 + (13 - gk(o)) / 5 + (tireur ? CS.tirloin.sys['5-1'] : CS.tirloin.sys['6-0'])),
-      intervalles: CS.intervalles.k * FIT((avg(t, backs, 'duel') - avg(o, field, 'duelDef')) / 4 + CS.intervalles.sys['6-0'] + (o.tactic.dstyle === 'homme' ? CS.intervalles.homme : 0)) * 0.8,
+      intervalles: CS.intervalles.k * FIT((avg(t, backs, 'duel') - avg(o, field, 'duelDef')) / 4 + CS.intervalles.sys['6-0'] + (ot.dstyle === 'homme' ? CS.intervalles.homme : 0)) * 0.8,
       longues: CS.longues.off + CS.longues.k * FIT(gap / 1.5) - 0.01,
       maillon: CS.maillon.k * 0.4 * FIT(weak / 5)
     });
@@ -430,7 +442,7 @@
     const g7 = gks.length ? Math.max(...gks.map(p => v(p, 'gk7m'))) - v(at(t, 'GB'), 'gk7m') : -9;
     const tired = POS.reduce((a, pos) => a + (at(t, pos).fatigue || 0), 0) / POS.length;
     const ges = pick({
-      repli: 0.03 * FIT((o.tactic.att === 'rapide' ? 0.6 : -0.5) + (avg(o, field, 'vitesse') - avg(t, field, 'vitesse')) / 4),
+      repli: 0.03 * FIT((ot.att === 'rapide' ? 0.6 : -0.5) + (avg(o, field, 'vitesse') - avg(t, field, 'vitesse')) / 4),
       gk7m: g7 >= 2 ? 0.006 * g7 : -1,
       tourner: gap <= -1.5 ? 0.004 : -1,
       rotations: 0.02 * FIT((tired - 20) / 15 + (13 - avg(t, field, 'endurance')) / 4)
@@ -438,11 +450,14 @@
     return [att, def, ges].filter(Boolean);
   }
   // Plan du coach IA pour un match : ses consignes, son rythme et son style défensif
-  function aiTactic(t, o) {
-    const { avg, field } = aiRead(t, o);
-    const cons = aiCons(t, o);
-    const rap = FIT((avg(t, field, 'vitesse') - avg(o, field, 'vitesse')) / 4 + (avg(t, field, 'passes') - 12.5) / 4 + (avg(t, field, 'endurance') - 13) / 6);
-    const hom = FIT((avg(t, field, 'duelDef') - avg(o, field, 'duel')) / 4 + (avg(t, field, 'vitesse') - avg(o, field, 'vitesse')) / 4);
+  // Un coach faible garde souvent son plan du dernier match ; sinon il lit l'affiche, avec sa part d'erreur
+  function aiTactic(t, o, level) {
+    const L = level || coachOf(t);
+    if (t.seen && rnd() < COACH.habit[L]) return { ...t.tactic, cons: cleanCons(t.seen.cons), att: t.seen.att, dstyle: t.seen.dstyle };
+    const { avg, field } = aiRead(t, o), sig = COACH.noise[L] * 25;
+    const cons = aiCons(t, o, L);
+    const rap = FIT((avg(t, field, 'vitesse') - avg(o, field, 'vitesse')) / 4 + (avg(t, field, 'passes') - 12.5) / 4 + (avg(t, field, 'endurance') - 13) / 6) + gauss() * sig;
+    const hom = FIT((avg(t, field, 'duelDef') - avg(o, field, 'duel')) / 4 + (avg(t, field, 'vitesse') - avg(o, field, 'vitesse')) / 4) + gauss() * sig;
     return { ...t.tactic, cons, att: cons.includes('longues') ? 'place' : rap > 0.15 ? 'rapide' : 'place', dstyle: hom > 0.15 ? 'homme' : 'zone' };
   }
   function migrate(st) {
@@ -1862,7 +1877,7 @@
   }
 
   const API = {
-    setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, CONS_CAT, consCat, setCons, cleanCons, aiCons, aiTactic, priseTarget, CS, TACTIC_DEFS,
+    setSeed, rnd, POS, POS_LABEL, FIELD, GKA, WEIGHTS, CLUBS, CONSIGNES, CONS_CAT, consCat, setCons, cleanCons, aiCons, aiTactic, coachOf, COACH, priseTarget, CS, TACTIC_DEFS,
     newGame, makeTeam, autoLineup, overall, Match, applyResult, recover, aiPrepare, standings, scorers, team,
     FREE, freeRound, signFree, freeRefusal, freeRoom, freeLevel, TRAIN, INTENSITY, train, TRAITS, ROBUST, REP_LEVEL, LEGACY_CLUBS, DATA, clubOf, reserveRound, RESERVE, inReserve, CF, canJoinCF, joinCF, releasePlayer, cfOf, robMult, hurt, heal, trainInjuries, rushBack, canRushBack, rushBlock, MIN_FIELD, fixLineup, INJ, INJ_LABEL, JEU, DSTYLE, defaultRules, identity, experience, migrate, starters, MODS, modInfo, hasMod, FAT, HOME, BACK_STYLES, INTENSITY_LV, MANUAL_MIN, flagOf, FOREIGN, autoStyle, backStyle, BACK_POS, DLINE, FACING, matchXP, makeYouth, ensureSheet, POS_ATTRS, SECONDARY, ovrAt, potFor, odds, noteOf, mvps, aiYouth, youthRound, starRef, stars, potRange, fansOf, academyOf, academyOff, homeShot, awayCut, potMargin, starLabel, potLabel
   };

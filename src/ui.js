@@ -30,6 +30,7 @@
     const f = H.fansOf(t), tip = fanTips(t);
     const rows = [['Domicile', pips(f.h, tip.h, 'Ferveur à domicile')], ['Déplacement', pips(f.a, tip.a, 'Supporters en déplacement')]];
     if (!(opts && opts.noAcademy)) rows.push(['Formation', pips(H.academyOf(t), tip.f, 'Centre de formation')]);
+    if (opts && opts.coach) rows.push(['Coach', pips(H.coachOf(t), 'Lecture tactique du coach : plus elle est haute, plus ses choix collent à l\'affiche. Même un bon coach se trompe parfois.', 'Coach')]);
     return `<div class="traits">${opts && opts.noName ? '' : `<span class="fansname">${esc(f.name)}</span>`}${rows.map(([l, v]) => `<span class="trait"><span class="muted">${l}</span>${v}</span>`).join('')}</div>`;
   }
   // Étoiles des joueurs : relatives au niveau de ton club, demi-étoiles, jamais la note chiffrée
@@ -503,7 +504,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
             ${oppForm(opp)}
             <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.seen || opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
-            <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${traitsHtml(opp)}${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
+            <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${traitsHtml(opp, { coach: true })}${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             ${(() => { const mv = opp.players.filter((p) => p.mvp).sort((x, y) => y.mvp - x.mvp); return mv.length ? `<div class="opt"><span class="label">MVP dans leur effectif</span>${mv.slice(0, 3).map((p) => `<div class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted">${p.mvp} fois MVP${p.mvpBoost === G.round ? ' · en confiance' : ''}</span></div>`).join('')}</div>` : ''; })()}
             <div class="opt"><span class="label">Joueurs à surveiller</span>
               ${best.map((p) => `<div class="row" style="gap:8px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span>${vstars(p.ovr, { sm: true })}</div>`).join('')}

@@ -61,7 +61,7 @@ Chaque club a trois notes de 1 à 5, les mêmes à chaque partie et indépendant
 
 | Caractéristique | Effet |
 | --- | --- |
-| Ferveur à domicile | Bonus au tir à domicile : +2 % (1) à +5 % (5), soit 0,75 point par niveau |
+| Ferveur à domicile | Bonus au tir à domicile : +2,5 % (1) à +5,5 % (5), soit 0,75 point par niveau |
 | Supporters en déplacement | À l'extérieur, réduit le handicap du visiteur (pertes de balle, exclusions, fatigue du trajet) : 0 % (1) à −50 % (5), 12,5 % par niveau |
 | Centre de formation | Moins de 23 ans de l'effectif de départ et jeunes du centre : −1 (1) à +1 (5) en niveau et en potentiel, 0,5 par niveau ; pépites (+3 de potentiel) de 6 % (1) à 20 % (5) des jeunes du centre. Sans effet sur les légendes |
 
@@ -216,7 +216,19 @@ Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvr
 
 **Rythme, style et jeu, eux aussi selon le contexte :** le jeu rapide vaut surtout par la vitesse (contre-attaques +5 % par point d'écart de vitesse moyenne, engagements rapides ×(1 + 0,08 × écart)) et coûte des ballons avec de mauvais passeurs (+0,8 % de pertes par point sous 12,5) ; l'homme à homme fait perdre des ballons aux attaquants plus lents que leurs gardes (0,6 % par point d'écart) ; le bonus ou malus du jeu collectif ou individuel va jusqu'à ±6 %.
 
-**Coach IA :** avant chaque match, il lit les deux effectifs avec les mêmes critères que le moteur et garde, dans chaque type, la consigne qui rapporte le plus (aucune si rien ne rapporte) ; il choisit aussi son rythme et son style défensif. Sur des affiches réelles, son plan prend environ 56–58 % des points contre une équipe sans consigne, un plan tiré au hasard environ 48 %. Mené de 4 buts après la pause, il abandonne attaques longues et repli. La « tactique observée » de l'avant-match montre son plan lors de son dernier match, pas celui du jour.
+**Coach IA :** avant chaque match, il lit les deux effectifs avec les mêmes critères que le moteur et garde, dans chaque type, la consigne qui semble rapporter le plus (aucune si rien ne rapporte) ; il choisit aussi son rythme et son style défensif. Il lit le plan adverse du dernier match, pas celui du jour (comme le joueur avec la tactique observée).
+
+**Niveau du coach (1 à 5, fixe par club, pastilles « Coach » dans le profil de l'adversaire) :** plutôt meilleur dans les grands clubs, avec des exceptions. Sa lecture a une part d'aléatoire (bruit sur ce qu'il croit que rapporte chaque option) et il garde parfois son plan du dernier match par habitude :
+
+| Niveau | Bruit | Plan du dernier match gardé | Consignes identiques au meilleur choix estimé | Points contre une équipe sans consigne |
+| --- | --- | --- | --- | --- |
+| 1 | 0,07 | 45 % des matchs | 37 % | ≈ 51 % |
+| 2 | 0,045 | 30 % | 43 % | ≈ 52,5 % |
+| 3 | 0,028 | 18 % | 52 % | ≈ 55 % |
+| 4 | 0,014 | 10 % | 70 % | ≈ 55 % |
+| 5 | 0,005 | 5 % | 87 % | ≈ 56,5 % |
+
+Un plan tiré au hasard prend environ 48 % des points. Mené de 4 buts après la pause, il abandonne attaques longues et repli. La « tactique observée » de l'avant-match montre son plan lors de son dernier match, pas celui du jour.
 
 **Pendant le match :** un temps mort par mi-temps pour changer de rythme, de jeu, de style, de gardien, ou forcer un système (5-1 ou 4-2) à la place des règles. Il donne aussi un petit regain (+3 % au tir pendant 6 possessions, 4 points de fatigue en moins). Pause automatique à la mi-temps. 7 contre 6 activable à tout moment. Curseur d'intensité (de Gestion à Tout donner) dans les temps morts et à la mi-temps.
 
@@ -342,7 +354,7 @@ Un match dure environ 2 × 53 à 59 possessions, déroulées en direct à trois 
 
 Le coach IA monte d'un cran en homme à homme, demande de tout donner s'il est mené en fin de match, et lève le pied avec 6 buts d'avance.
 
-**Avantage du terrain :** l'équipe qui reçoit a +2 à +5 % de réussite au tir selon la ferveur de son public ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus, un handicap réduit par ses supporters en déplacement (jusqu'à −50 %) et modifié par le bonus ou malus Déplacements.
+**Avantage du terrain :** l'équipe qui reçoit a +2,5 à +5,5 % de réussite au tir selon la ferveur de son public ; le visiteur perd un peu plus de ballons, prend plus d'exclusions et démarre avec 4 points de fatigue en plus, un handicap réduit par ses supporters en déplacement (jusqu'à −50 %) et modifié par le bonus ou malus Déplacements.
 
 **Cotes Bet9M (préparation du match) :** un bookmaker fictif, clin d'œil à Beyond9M, affiche les cotes victoire, nul, défaite. Elles viennent de 200 matchs simulés sur des copies des deux équipes (effectifs, fatigue et tactiques du moment), le nul lissé vers 7,5 %, avec une marge de bookmaker de 7 %. Sous chaque cote, la part des parieurs (proportionnelle au carré de la probabilité : le public suit le favori). Calculées une fois par journée et gardées dans la sauvegarde ; purement indicatives, sans effet sur le match.
 
