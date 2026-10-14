@@ -204,7 +204,7 @@ Rappel des systèmes : le 5-1 gêne la circulation et les tirs de 9 m, mais ouvr
 | Attaque | Attaques longues | 2 possessions de moins par équipe ; ±4,5 % au tir ; +1,5 % de pertes (jeu passif) | Écart de niveau : aide l'outsider, pénalise le favori |
 | Attaque | Isoler le maillon faible | Le jeu va vers le poste au vis-à-vis le plus faible ; jusqu'à ±12 % (−2 % de base) | Écart réel attaquant contre défenseur ; le bonus s'érode de 4 % à chaque tir sur lui |
 | Défense | Défense agressive | Pertes provoquées +1,5 % ±3 %, percées adverses ±3 % ; exclusions +5 % ±2,5 % | Duel défensif contre duel adverse ; discipline de tes joueurs pour les exclusions |
-| Défense | Prise individuelle | Le meilleur buteur adverse (à défaut, le meilleur joueur) tire ×0,35 et −12 % ; son vis-à-vis fatigue ×1,2 | Dépendance : supériorité du joueur visé sur ses partenaires. Équipe dépendante : jusqu'à −7 % pour les autres ; équipe équilibrée : +3,5 % pour les autres |
+| Défense | Prise individuelle | Le meilleur buteur adverse (à défaut, le meilleur joueur) tire ×0,35 et −12 % ; son vis-à-vis fatigue ×1,2 | Dépendance : supériorité du joueur visé sur ses partenaires. Équipe dépendante : jusqu'à −8 % pour les autres ; équipe équilibrée : +4,5 % pour les autres |
 | Défense | Fermer l'axe | Pivot −20 %, percées −15 %, ailes +8 % ; l'adversaire va plus aux ailes | Ce que vaut l'adversaire au centre et sur les ailes |
 | Défense | Fermer les ailes | Ailes −22 %, pivot +12 %, percées +10 % ; l'adversaire va plus au centre | L'inverse |
 | Défense | Chercher l'interception | Pertes provoquées +2,5 % ±2,5 %, +8 % de contre-attaque derrière ; décalages +3 % ∓1,5 % | Vitesse de ta défense contre qualité de passe adverse |
