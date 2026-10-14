@@ -82,23 +82,25 @@
   const CONS = Object.fromEntries(H.CONSIGNES);
   // Consignes : une au plus par type ; le détail s'affiche au survol et sous la consigne choisie
   const CONS_TXT = {
-    pivot: 'Le jeu passe plus souvent par le pivot. Contre : fermer l\'axe.',
-    ailes: 'Le jeu s\'écarte plus souvent vers les ailiers. Contre : fermer les ailes.',
-    tirloin: 'Tes arrières tirent beaucoup plus à 9 m, moins de jeu au pivot. Utile contre une 6-0 basse, moins face à une 5-1 ou une 4-2 et à de bons contreurs.',
-    intervalles: 'Plus de percées, de 7 m et d\'exclusions provoquées, mais plus de passages en force et de pertes de balle, et tes arrières fatiguent plus vite.',
-    longues: 'Moins de possessions pour les deux équipes et un peu plus de réussite au tir, mais un risque de jeu passif (perte de balle). L\'arme de l\'outsider pour réduire l\'écart.',
-    maillon: 'Le jeu va vers le vis-à-vis le plus faible de la défense adverse. Très efficace au début, puis la défense s\'adapte et le jeu devient lisible.',
-    agressive: 'Plus de contacts : plus de pertes de balle provoquées, mais plus d\'exclusions, de fatigue et de blessures.',
-    prise: 'Le meilleur buteur adverse est pris en individuel : il tire moins et moins bien. Ses partenaires ont plus d\'espace, et ton défenseur désigné fatigue plus vite.',
-    axe: 'Pivot et percées adverses perdent en réussite, les ailes adverses en gagnent.',
-    fermeailes: 'Les ailiers adverses perdent en réussite, le pivot et les percées adverses en gagnent.',
-    interception: 'Plus de ballons récupérés et de contre-attaques, mais plus de buts encaissés sur les décalages quand l\'interception échoue.',
-    disciplinee: 'Moins d\'exclusions et de 7 m concédés, mais moins de pertes de balle provoquées.',
-    rotations: 'Les titulaires jouent environ 35 minutes au lieu de 40 : moins de fatigue, mais plus de temps de jeu pour le banc.',
-    repli: 'Beaucoup moins de contre-attaques encaissées, mais moins de contre-attaques pour toi. Compatible avec le jeu rapide, qu\'il freine en partie.',
+    pivot: 'Le jeu passe plus souvent par le pivot.',
+    ailes: 'Le jeu s\'écarte plus souvent vers les ailiers.',
+    tirloin: 'Tes arrières tirent beaucoup plus à 9 m, avec moins de jeu au pivot.',
+    intervalles: 'Plus de percées et de duels : on cherche les 7 m et les exclusions, au risque des passages en force. Tes arrières fatiguent plus vite.',
+    longues: 'On fait tourner le ballon : moins de possessions pour les deux équipes, des tirs mieux préparés, mais un risque de jeu passif.',
+    maillon: 'Le jeu va vers le vis-à-vis le plus faible de la défense adverse. La défense finit par s\'adapter.',
+    agressive: 'Plus de contacts pour récupérer le ballon, au risque des exclusions, de la fatigue et des blessures.',
+    prise: 'Le meilleur buteur adverse est pris en individuel. Ses partenaires ont plus d\'espace, et ton défenseur désigné fatigue plus vite.',
+    axe: 'La défense resserre le centre (pivot, percées) et laisse plus d\'espace sur les ailes.',
+    fermeailes: 'La défense ferme les ailes et laisse plus d\'espace au centre (pivot, percées).',
+    interception: 'La défense anticipe les passes pour voler des ballons et partir en contre-attaque ; une interception manquée laisse un décalage.',
+    disciplinee: 'Moins d\'exclusions et de 7 m concédés, mais moins de ballons récupérés.',
+    rotations: 'Les titulaires jouent environ 32 minutes au lieu de 40 : plus de temps de jeu pour le banc.',
+    repli: 'Tout le monde se replie vite : moins de contre-attaques encaissées, mais moins de contre-attaques pour toi.',
     gk7m: 'Sur chaque 7 m adverse, ton gardien remplaçant entre s\'il est meilleur sur ce geste.',
-    tourner: 'Au-delà de +6, les remplaçants et les jeunes jouent davantage, jusqu\'à ce que l\'écart retombe sous +3. Moins de fatigue pour les cadres, mais un risque de se faire remonter.'
+    tourner: 'Au-delà de +6, les remplaçants et les jeunes jouent davantage, jusqu\'à ce que l\'écart retombe sous +3.'
   };
+  // Les trois types de consignes, en version compacte (feuille de match, avant-match, pause)
+  function consBlock(tac, act, opp) { return ['att', 'def', 'ges'].map((c) => consRow(tac, c, act, opp, true)).join(''); }
   // Lignes de consignes pour un type (att, def, ges) ; opp : adversaire, pour nommer la cible de la prise individuelle
   function consRow(tac, cat, act, opp, full) {
     const list = H.CONSIGNES.filter((c) => c[2] === cat), cur = tac.cons.find((k) => H.consCat(k) === cat);
@@ -489,7 +491,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <div style="display:grid;gap:12px">
             <div class="opt"><span class="label">Attaque · ${ATT_TXT[tac.att][0]} · jeu ${H.JEU[tac.jeu].toLowerCase()}</span><p>${ATT_TXT[tac.att][1]}. Identité de l'équipe : ${fitInfo(t).id.label.toLowerCase()} (${fitInfo(t).txt}).</p></div>
             <div class="opt"><span class="label">Défense · ${H.DSTYLE[tac.dstyle]}</span><p>${rulesLine(tac.rules)}.</p></div>
-            <div class="opt"><span class="label">Consignes</span><p>${tac.cons.length ? tac.cons.map((c) => CONS[c]).join(' · ') : 'Aucune consigne'}</p></div>
+            ${consBlock(tac, 'cons', opp)}
             <div class="opt"><span class="label">${home ? 'À domicile' : "À l'extérieur"}</span><p>${home ? `${esc(H.fansOf(t).name)} te portent : +${pctTxt(H.homeShot(t))} de réussite au tir. ${esc(opp.name)} perd plus de ballons et prend plus d'exclusions${H.awayCut(opp) ? `, un peu moins grâce à ses supporters en déplacement (−${Math.round(H.awayCut(opp) * 100)} %)` : ''}.` : `Chez ${esc(H.fansOf(opp).name)}, l'adversaire tire mieux (+${pctTxt(H.homeShot(opp))}) et l'arbitre siffle plus sévèrement ta défense : évite la défense agressive. ${H.awayCut(t) ? `Tes supporters en déplacement réduisent ce handicap de ${Math.round(H.awayCut(t) * 100)} %.` : 'Tes supporters ne se déplacent pas : tu pars avec tout le handicap.'}`}</p></div>
             ${adviceHtml(t, 'match')}
             ${tired.length ? `<div class="callout"><span><b>${tired.length} titulaire${tired.length > 1 ? 's' : ''} fatigué${tired.length > 1 ? 's' : ''}</b> : ${tired.map((p) => esc(short(p.name))).join(', ')}. Pense à vérifier ta composition.</span></div>` : ''}
@@ -500,7 +502,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
           <div style="display:grid;gap:12px">
             <div class="row">${badge(opp)}<div><b>${esc(opp.name)}</b><br>${stars(opp.rep)}</div></div>
             ${oppForm(opp)}
-            <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(H.aiTactic(opp, t))}<br>${rulesLine(opp.tactic.rules)}</p></div>
+            <div class="opt"><span class="label">Tactique observée</span><p>${tacLine(opp.seen || opp.tactic)}<br>${rulesLine(opp.tactic.rules)}</p></div>
             <div class="opt"><span class="label">Profil</span><p>Identité ${H.identity(opp).label.toLowerCase()} · cohésion ${opp.cohesion || 50} · expérience ${H.experience(opp)}</p>${traitsHtml(opp)}${(opp.mods || []).map((k) => `<div class="modline">${modChip(k, true)}</div>`).join('')}</div>
             ${(() => { const mv = opp.players.filter((p) => p.mvp).sort((x, y) => y.mvp - x.mvp); return mv.length ? `<div class="opt"><span class="label">MVP dans leur effectif</span>${mv.slice(0, 3).map((p) => `<div class="row" style="gap:8px"><span class="mvpmini">${CROWN}</span><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span><span>${plink(p)}</span><span class="muted">${p.mvp} fois MVP${p.mvpBoost === G.round ? ' · en confiance' : ''}</span></div>`).join('')}</div>` : ''; })()}
             <div class="opt"><span class="label">Joueurs à surveiller</span>
@@ -598,7 +600,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         <div class="opt"><span class="label">Attaque</span><div class="seg">${['place', 'rapide'].map((x) => `<button data-act="matt" data-id="${x}" aria-pressed="${s.tac.att === x}">${ATT_TXT[x][0]}</button>`).join('')}</div></div>
         ${intensityHtml(s)}
         <div class="opt"><span class="label">Jeu</span><div class="seg">${Object.entries(H.JEU).map(([k, l]) => `<button data-act="mjeu" data-id="${k}" aria-pressed="${s.tac.jeu === k}">${l}</button>`).join('')}</div></div>
-        ${['att', 'def', 'ges'].map((c) => consRow(s.tac, c, 'mcons', m.S[1 - U.side].team, true)).join('')}
+        ${consBlock(s.tac, 'mcons', m.S[1 - U.side].team)}
         <div><button class="btn primary" data-act="resume">${ht ? 'Lancer la 2e mi-temps' : 'Reprendre le match'}</button></div></div>`;
     }
     return `<h3>Banc de touche</h3><div style="display:grid;gap:12px">
@@ -1977,9 +1979,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
             ${can ? `<section class="panel"><div class="dropzone mdz" data-drop="tribune"><h3>Réserve · ${res.length}</h3>${(() => { const offRow = (p) => benchRow(p).replace('class="mrow mb', 'class="mrow mb mres');
               return `<div class="mbench">${res.map(offRow).join('') || '<span class="muted">Aucun jeune hors de la feuille.</span>'}</div><p class="legend">Les jeunes du centre et les moins de 23 ans hors de la feuille jouent avec la réserve le jour du match : 60 minutes à 7, partagées entre eux.</p>${trib.length ? `<span class="label" style="display:block;margin-top:10px">Tribune · ${trib.length}</span><div class="mbench">${trib.map(offRow).join('')}</div><p class="legend">Un pro de 23 ans et plus ne joue pas avec la réserve : hors de la feuille, il reste en tribune, sans match.</p>` : ''}`; })()}</div></section>` : ''}</div>
             <section class="panel"><h3>Infirmerie · ${hurtP.length}</h3>${hurtP.length ? hurtP.map((p) => `<div class="row" style="gap:8px;padding-block:3px"><span class="pos${p.pos === 'GB' ? ' gb' : ''}">${p.pos}</span>${plink(p, short(p.name))}<span class="muted">${esc(p.inj.type.toLowerCase())}, ${absTxt(p.inj.n)}</span></div>`).join('') : '<p class="muted" style="margin:0">Tout le monde est valide.</p>'}<p class="legend">Les blessés ne peuvent pas aller sur la feuille de match.</p></section>
+            <section class="panel"><h3>Consignes</h3><div style="display:grid;gap:12px">${consBlock(t.tactic, 'cons', nf && !nf.rest ? T(nf.h === t.id ? nf.a : nf.h) : null)}</div></section>
           </div></div></div>`;
   }
-  const LINEUP_LEGEND = `Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (35 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.`;
+  const LINEUP_LEGEND = `Le niveau affiché (en étoiles) est celui du joueur à ce poste. Un joueur de champ peut être aligné hors de son poste, avec le niveau correspondant. Latéralité : à l'arrière droit et à l'aile droite, un gaucher gagne +3 à +4 % de réussite au tir, un droitier perd 2 à 3 %. Poste secondaire (DC et arrières entre eux, ailier vers l'arrière de son côté) : il garde 85 % de son niveau ; ailleurs, tout dépend de ses attributs. Les titulaires jouent environ 40 minutes (32 avec rotations fréquentes) et restent sur le terrain dans les 10 dernières minutes d'un match serré. Les gardiens se partagent les mi-temps, sauf si tu changes le tien en pause depuis le terrain et le banc.`;
   // Changement 1-1 depuis les boutons T / B / R : on choisit qui fait le chemin inverse
   // B → R : qui monte sur la feuille · R → B : qui en sort · T → B / R : qui prend son poste · B / R → T : quel titulaire il remplace
   function swapCands(t, p, to) {
