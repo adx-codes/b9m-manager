@@ -215,9 +215,7 @@ tr.click:hover td { background: var(--sunk); }
 /* Ville isométrique : plan en plein cadre, HUD discret par-dessus, pop-up au survol */
 .citypanel { margin-top: 4px; }
 .citywrap { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 14px; background: radial-gradient(120% 90% at 50% 40%, color-mix(in srgb, var(--iso-sky) 70%, var(--bg)), var(--bg) 75%); box-shadow: inset 0 0 80px rgba(0,0,0,0.25); user-select: none; -webkit-user-select: none; }
-.city { width: 100%; height: auto; display: block; cursor: grab; }
-.citywrap.zoomed .city { touch-action: none; }
-.citywrap.dragging .city, .citywrap.dragging .city .bld { cursor: grabbing; }
+.city { width: 100%; height: auto; display: block; }
 .city .bld { cursor: pointer; outline: none; }
 .city .bld .body, .city .gbld .body { transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease; }
 .city .bld:hover .body, .city .bld:focus-visible .body { transform: translateY(-6px); filter: brightness(1.1) drop-shadow(0 0 6px color-mix(in srgb, var(--pc) 70%, transparent)); }
@@ -241,11 +239,8 @@ tr.click:hover td { background: var(--sunk); }
 .city .sl1 { font-family: var(--f-display); font-weight: 700; font-size: 12.5px; letter-spacing: 0.04em; fill: #f2f4f6; }
 .city .sign.ghost .sl1 { fill: #a8aeb4; }
 .city .isotxt { font-family: var(--f-display); letter-spacing: 0.08em; }
-.city .bantxt { font-family: var(--f-display); font-weight: 800; font-size: 7.2px; letter-spacing: 0.06em; fill: #1d2228; }
-.city .plane, .city .pshadow { pointer-events: none; }
-.city .pshadow { opacity: 0.12; filter: blur(3px); }
 .city .ripple { fill: none; stroke: #fff; stroke-opacity: 0; stroke-width: 0.8; transform-box: fill-box; transform-origin: center; }
-.city .walk, .city .plane { opacity: 0; }
+.city .walk { opacity: 0; }
 /* HUD : carte de la ville, options, caméra, aide */
 .cityhud { position: absolute; top: 14px; left: 14px; display: grid; gap: 8px; justify-items: start; max-width: 380px; pointer-events: none; }
 .cityhud > * { pointer-events: auto; }
@@ -265,9 +260,6 @@ tr.click:hover td { background: var(--sunk); }
 .cswitch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .cswitch[aria-pressed="true"] i { background: var(--good); }
 .cswitch[aria-pressed="true"] i::after { transform: translateX(13px); }
-.citycam { position: absolute; right: 14px; bottom: 14px; display: grid; gap: 2px; padding: 4px; border-radius: 10px; border: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(8px); box-shadow: 0 8px 22px rgba(0,0,0,0.2); }
-.citycam button { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 7px; background: none; color: var(--fg); font: 600 1.15rem/1 var(--f-body); cursor: pointer; }
-.citycam button:hover { background: var(--sunk); }
 .cityhint { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); font-size: 0.76rem; color: var(--muted); background: color-mix(in srgb, var(--surface) 85%, transparent); backdrop-filter: blur(6px); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; white-space: nowrap; pointer-events: none; }
 /* Pop-up du bâtiment */
 .citycard { position: absolute; z-index: 3; width: 300px; pointer-events: none; opacity: 0; transform: translateX(-8px) scale(0.97); transform-origin: left center; transition: opacity 0.18s ease, transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), top 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -386,9 +378,6 @@ table.ly tr.refused td { opacity: 0.6; }
   .city .walk { animation: drive 24s linear infinite; }
   .city .walk .bob { animation: bob 0.5s ease-in-out infinite alternate; }
   @keyframes bob { to { transform: translateY(-0.9px); } }
-  .city .plane { animation: fly 46s linear infinite -30s; }
-  @keyframes fly { 0% { opacity: 1; transform: translate(-260px, 380px); } 34% { opacity: 1; transform: translate(1150px, 101px); } 34.1%, 100% { opacity: 0; transform: translate(1150px, 101px); } }
-  .city .nav { animation: blink 1.1s steps(2, start) infinite; }
   .city .ring ellipse { animation: ring 2.6s ease-out infinite; }
   @keyframes ring { 0% { opacity: 0.9; transform: scale(0.75); } 100% { opacity: 0; transform: scale(1.35); } }
   .city .beam { animation: beam 3.2s ease-in-out infinite alternate; }
@@ -397,14 +386,10 @@ table.ly tr.refused td { opacity: 0.6; }
   @keyframes jet { to { transform: scaleY(0.82); } }
   .city .ripple { animation: ripple 2.8s ease-out infinite; }
   @keyframes ripple { 0% { stroke-opacity: 0.6; transform: scale(0.25); } 100% { stroke-opacity: 0; transform: scale(1); } }
-  /* Arrivée en ville : le plan se pose, les bâtiments sortent de terre */
-  .citywrap.intro .city .cam { animation: camin 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; transform-origin: 50% 60%; }
-  @keyframes camin { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
-  .citywrap.intro .city .ob { transform-box: fill-box; transform-origin: 50% 100%; animation: rise 0.6s cubic-bezier(0.34, 1.45, 0.64, 1) backwards; animation-delay: calc(0.25s + var(--i)); }
-  @keyframes rise { from { opacity: 0; transform: scaleY(0.05); } 40% { opacity: 1; } }
-  .citywrap.intro .city .shadows, .citywrap.intro .city .moves, .citywrap.intro .city .glows { animation: shin 0.8s ease-out backwards 0.9s; }
-  @keyframes shin { from { opacity: 0; } }
-  .citywrap.intro .cityhud, .citywrap.intro .cityopts, .citywrap.intro .citycam { animation: hudin 0.5s ease-out backwards 0.5s; }
+  /* Arrivée en ville : simple fondu */
+  .citywrap.intro .city .cam { animation: camin 0.45s ease-out backwards; }
+  @keyframes camin { from { opacity: 0; } }
+  .citywrap.intro .cityhud, .citywrap.intro .cityopts { animation: hudin 0.4s ease-out backwards 0.15s; }
   @keyframes hudin { from { opacity: 0; transform: translateY(-6px); } }
   /* Résultat de la semaine d'entraînement : dépouillement */
   .reveal .pitems .up { animation: tick-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i) * 110ms + 150ms); }

@@ -332,7 +332,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const ib = document.querySelector('#inboxov .wamsgs');
     if (ib) ib.scrollTop = ib.scrollHeight;
     U.ctlSig = ctlSig();
-    if (U.tab === 'ville') camApply();
     U.lastTab = U.tab;
     tutoSync();
   }
@@ -1473,9 +1472,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     if (y0 < TOP) { y0 = TOP; cx = sx + w / 2 + 26; lx = cx - w / 2; ly = y0 + hh / 2; }
     const attrs = ghost ? `data-gsign="${o.key}"` : `data-psign="${o.key}"`;
     return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs} style="--pc:${ghost ? 'var(--muted)' : o.c}"><line x1="${sx}" y1="${sy}" x2="${lx}" y2="${ly}" class="sline"/><circle cx="${sx}" cy="${sy}" r="2.2" class="sdot"/>
-      <g class="stag" data-ax="${lx.toFixed(1)}" data-ay="${ly.toFixed(1)}"><rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="${hh / 2}" class="spill"/>
+      <rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="${hh / 2}" class="spill"/>
       <circle cx="${(cx - w / 2 + 12).toFixed(1)}" cy="${(y0 + hh / 2).toFixed(1)}" r="4" class="sdot"/>
-      <text x="${(cx - w / 2 + 21).toFixed(1)}" y="${(y0 + 15).toFixed(1)}" class="sl1">${esc(o.tag)}</text></g></g>`;
+      <text x="${(cx - w / 2 + 21).toFixed(1)}" y="${(y0 + 15).toFixed(1)}" class="sl1">${esc(o.tag)}</text></g>`;
   }
   // Matchs joués par un club, du plus récent au plus ancien
   function teamGames(id) {
@@ -1534,14 +1533,16 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     ];
   }
   // Pop-up d'un bâtiment (HTML, posée au-dessus du plan au survol)
+  // Majuscule au premier caractère de texte (hors balises)
+  const capH = (v) => String(v).replace(/^((?:<[^>]*>|\s)*)([a-zà-ÿ])/, (m, a, b) => a + b.toUpperCase());
   function cityCardHtml(o) {
     const c = o.card || {};
-    const tags = (c.tags || []).map(([txt, cls]) => `<span class="cpill${cls ? ' ' + cls : ''}">${esc(txt)}</span>`).join('');
-    const rows = (c.rows || []).filter(Boolean).map(([k, v]) => `<div class="crow"><span>${k}</span><b>${v}</b></div>`).join('');
-    const bars = (c.bars || []).map(([k, fr, txt, col]) => `<div class="cbar"><span>${esc(k)}</span><i><i style="width:${Math.round(Math.max(0.03, Math.min(1, fr)) * 100)}%;background:${col}"></i></i><b>${esc(txt)}</b></div>`).join('');
+    const tags = (c.tags || []).map(([txt, cls]) => `<span class="cpill${cls ? ' ' + cls : ''}">${capH(esc(txt))}</span>`).join('');
+    const rows = (c.rows || []).filter(Boolean).map(([k, v]) => `<div class="crow"><span>${capH(k)}</span><b>${capH(v)}</b></div>`).join('');
+    const bars = (c.bars || []).map(([k, fr, txt, col]) => `<div class="cbar"><span>${esc(k)}</span><i><i style="width:${Math.round(Math.max(0.03, Math.min(1, fr)) * 100)}%;background:${col}"></i></i><b>${capH(esc(txt))}</b></div>`).join('');
     return `<div class="ccard-in" style="--pc:${o.c || 'var(--muted)'}"><div class="ctags"><span class="cpill kind">${esc(c.kind || '')}</span>${tags}</div>
-      <h4>${esc(o.tag || o.label)}</h4><p class="csub">${esc(o.sub)}</p>
-      ${c.alert ? `<div class="calert">${esc(c.alert)}</div>` : ''}${bars ? `<div class="cbars">${bars}</div>` : ''}${rows ? `<div class="crows">${rows}</div>` : ''}
+      <h4>${esc(o.tag || o.label)}</h4><p class="csub">${capH(esc(o.sub))}</p>
+      ${c.alert ? `<div class="calert">${capH(esc(c.alert))}</div>` : ''}${bars ? `<div class="cbars">${bars}</div>` : ''}${rows ? `<div class="crows">${rows}</div>` : ''}
       <div class="cfoot">${o.cta ? `Clique pour entrer · ${esc(o.cta.toLowerCase())}` : esc(o.foot || '')}</div></div>`;
   }
   const GHOSTS = [
@@ -1808,7 +1809,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       moveLayer.push(`<g class="drive" style="--dx:${(bx - ax).toFixed(1)}px;--dy:${(by - ay).toFixed(1)}px;animation-duration:${dur}s;animation-delay:${dl}s">${car(x0, y0, along, col)}</g>`);
     };
     drive(0.15, 6.62, 11.4, 6.62, 'x', cols[3], 17, -2); drive(11.4, 6.14, 0.15, 6.14, 'x', cols[0], 21, -11);
-    drive(5.62, 0.15, 5.62, 11.4, 'y', cols[1], 19, -6); drive(5.14, 11.4, 5.14, 0.15, 'y', cols[2], 23, -15);
+    drive(5.14, 11.4, 5.14, 0.15, 'y', cols[2], 22, -15); drive(5.14, 11.4, 5.14, 0.15, 'y', cols[1], 22, -4);
     drive(0.15, 6.62, 11.4, 6.62, 'x', t.color, 26, -19);
     // Passants sur les trottoirs (un ou deux aux couleurs du club)
     const walker = (x0, y0, x1, y1, col, dur, dl) => {
@@ -1817,13 +1818,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     };
     moveLayer.push(walker(4.9, 0.4, 4.9, 5.5, t.color, 26, -4), walker(6.09, 11.6, 6.09, 7.4, '#d6dbdf', 22, -9), walker(0.5, 5.9, 4.6, 5.9, '#7fb6d6', 20, -3),
       walker(11.5, 7.08, 7.4, 7.08, t.color2 && t.color2.toLowerCase() !== '#ffffff' ? t.color2 : '#c9a7a0', 24, -14), walker(6.09, 0.4, 6.09, 5.4, '#a6b8ab', 28, -20));
-    // Petit avion qui tire une banderole (texte selon la journée)
-    const BAN = ['BUVETTE OUVERTE APRÈS LE MATCH', `${LEAGUE.toUpperCase()} : ÇA VA COLLER`, 'BEYOND 9M : TOUJOURS PLUS LOIN', "TROUVÉ : UN 7 M, LE RÉCLAMER À L'ARBITRE"];
-    const ban = BAN[G.round % BAN.length], bl = ban.length * 4.1 + 14;
-    const plane = `<g class="plane"><g class="pshadow"><ellipse cx="0" cy="150" rx="${(bl / 2 + 30).toFixed(0)}" ry="5" transform="translate(${-bl / 2} 0)" fill="#000"/></g><g class="pbody" transform="rotate(-11.3)"><path d="M-${bl + 26} -1 L-26 -1" stroke="var(--iso-pole)" stroke-width="0.6"/>
-      <g transform="translate(-${bl + 26} -7)"><rect width="${bl.toFixed(1)}" height="12" rx="1.5" fill="#f4f1e8"/><text x="${(bl / 2).toFixed(1)}" y="8.6" text-anchor="middle" class="bantxt">${esc(ban)}</text></g>
-      <g><path d="M-20 -3 L6 -5 Q12 -4 12 -1 Q12 2 6 2 L-20 1 Z" fill="#e9edf1" stroke="var(--iso-edge)" stroke-width="0.6"/><path d="M-4 -3 L-10 -14 L-5 -14 L4 -3 Z" fill="#cfd6dc" stroke="var(--iso-edge)" stroke-width="0.6"/><path d="M-4 1 L-12 9 L-7 9 L4 1 Z" fill="#b9c2ca"/><path d="M-20 -3 L-24 -10 L-19 -10 L-15 -3 Z" fill="${t.color}"/>
-      <circle class="nav" cx="-10" cy="-14" r="1.2" fill="#ef5b4c"/><circle class="nav" cx="12" cy="-1" r="1" fill="#fff" style="animation-delay:-0.5s"/></g></g></g>`;
 
     const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
     const sel = (k, g) => `.city:has([data-place="${k}"]:hover) [data-${g ? 'g' : 'p'}sign="${k}"], .city:has([data-place="${k}"]:focus-visible) [data-${g ? 'g' : 'p'}sign="${k}"]`;
@@ -1831,7 +1825,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const css = GHOSTS.map((g) => sel(g.key, true)).concat(places.map((p) => sel(p.key))).join(',') + '{opacity:1;transform:none}'
       + GHOSTS.concat(places).map((p) => fsel(p.key)).join(',') + '{opacity:1}';
     U.cityCards = Object.fromEntries(places.concat(GHOSTS).map((p) => [p.key, cityCardHtml(p)]));
-    const ob = objs.map((o) => `<g class="ob" style="--i:${(Math.max(0, o.d - 2) * 0.045).toFixed(2)}s">${o.svg}</g>`).join('');
+    const ob = objs.map((o) => o.svg).join('');
     const defs = `<defs>
       <linearGradient id="isoL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.07"/><stop offset="0.55" stop-color="#000" stop-opacity="0.1"/><stop offset="1" stop-color="#000" stop-opacity="0.34"/></linearGradient>
       <linearGradient id="isoR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.2"/><stop offset="1" stop-color="#000" stop-opacity="0.48"/></linearGradient>
@@ -1844,40 +1838,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const [gcx, gcy] = P(6, 6);
     const ground = poly([P(0, 0), P(12, 0), P(12, 12), P(0, 12)], 'url(#groundV)');
     return `<svg class="city" viewBox="${CITY_VB.join(' ')}" role="group" aria-label="Plan de la ville du club">${defs}<style>${css}</style>
-      <ellipse cx="${gcx}" cy="${gcy + 20}" rx="470" ry="270" fill="url(#skyG)" class="sky"/><g class="cam">${flatLayer.join('')}<g class="shadows" filter="url(#softSh)">${shadowLayer.join('')}</g>${ground}<g class="glows">${glowLayer.join('')}</g><g class="moves">${moveLayer.join('')}</g>${ob}${plane}<g class="signs">${signs}</g></g></svg>`;
+      <ellipse cx="${gcx}" cy="${gcy + 20}" rx="470" ry="270" fill="url(#skyG)" class="sky"/><g class="cam">${flatLayer.join('')}<g class="shadows" filter="url(#softSh)">${shadowLayer.join('')}</g>${ground}<g class="glows">${glowLayer.join('')}</g><g class="moves">${moveLayer.join('')}</g>${ob}<g class="signs">${signs}</g></g></svg>`;
   }
-  // Caméra de la ville : zoom (molette, boutons) et déplacement (glisser), bornés au plan
-  const CITY_VB = [40, 92, 780, 448], CAM_MAX = 2.6;
-  const camGet = () => U.cam || (U.cam = { s: 1, x: CITY_VB[0] + CITY_VB[2] / 2, y: CITY_VB[1] + CITY_VB[3] / 2 });
-  function camClamp(c) {
-    c.s = Math.max(1, Math.min(CAM_MAX, c.s));
-    const hw = CITY_VB[2] / 2 / c.s, hh = CITY_VB[3] / 2 / c.s;
-    c.x = Math.max(CITY_VB[0] + hw, Math.min(CITY_VB[0] + CITY_VB[2] - hw, c.x));
-    c.y = Math.max(CITY_VB[1] + hh, Math.min(CITY_VB[1] + CITY_VB[3] - hh, c.y));
-    return c;
-  }
-  function camApply() {
-    const svg = document.querySelector('.city'), c = camClamp(camGet());
-    if (!svg) return;
-    const w = CITY_VB[2] / c.s, h = CITY_VB[3] / c.s;
-    svg.setAttribute('viewBox', `${(c.x - w / 2).toFixed(2)} ${(c.y - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
-    const wrap = svg.closest('.citywrap');
-    if (wrap) wrap.classList.toggle('zoomed', c.s > 1.01);
-    // Les étiquettes gardent leur taille à l'écran quel que soit le zoom
-    for (const g of svg.querySelectorAll('.stag')) { const ax = g.dataset.ax, ay = g.dataset.ay; g.setAttribute('transform', c.s > 1.01 ? `translate(${ax} ${ay}) scale(${(1 / c.s).toFixed(3)}) translate(${-ax} ${-ay})` : ''); }
-  }
-  // Transition douce vers un cadrage (boutons, recentrage)
-  function camTo(tgt, ms) {
-    const c = camGet(), from = { ...c }, t0 = performance.now(), end = camClamp({ ...c, ...tgt });
-    cityCard(null);
-    const step = (now) => {
-      const k = Math.min(1, (now - t0) / (ms || 380)), e = 1 - Math.pow(1 - k, 3);
-      c.s = from.s + (end.s - from.s) * e; c.x = from.x + (end.x - from.x) * e; c.y = from.y + (end.y - from.y) * e;
-      camApply();
-      if (k < 1 && document.querySelector('.city')) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  }
+  const CITY_VB = [40, 92, 780, 448];
   function cityOpts() {
     if (!U.cityOpt) { try { U.cityOpt = Object.assign({ lab: false, beam: true }, JSON.parse(localStorage.getItem('hbm-city') || '{}')); } catch (e) { U.cityOpt = { lab: false, beam: true }; } }
     return U.cityOpt;
@@ -1886,7 +1849,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function cityCard(el) {
     const card = document.getElementById('citycard'), wrap = document.querySelector('.citywrap');
     if (!card || !wrap) return;
-    if (!el || U.camDrag) { card.classList.remove('show'); U.cardKey = null; return; }
+    if (!el) { card.classList.remove('show'); U.cardKey = null; return; }
     const key = el.dataset.place;
     if (U.cardKey !== key) { card.innerHTML = (U.cityCards || {})[key] || ''; U.cardKey = key; }
     const r = el.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), cw = card.offsetWidth, ch = card.offsetHeight, gap = 16;
@@ -1916,8 +1879,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
         ${news ? `<div class="citynews">${badge(lg ? lg.o : t, true)}<span>${news}</span></div>` : ''}
       </div>
       <div class="cityopts">${sw('lab', 'Étiquettes', o.lab)}${sw('beam', 'Faisceaux', o.beam)}</div>
-      <div class="citycam"><button data-act="citycam" data-id="in" aria-label="Zoomer" title="Zoomer">+</button><button data-act="citycam" data-id="out" aria-label="Dézoomer" title="Dézoomer">−</button><button data-act="citycam" data-id="home" aria-label="Recentrer" title="Recentrer"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.4"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg></button></div>
-      <div class="cityhint">Clique sur un bâtiment pour y entrer · glisse pour te déplacer · molette pour zoomer</div>
+      <div class="cityhint">Survole un bâtiment pour l'essentiel, clique pour y entrer</div>
       <div id="citycard" class="citycard" aria-hidden="true"></div>
     </div></section>`;
   }
@@ -2278,41 +2240,13 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
 
   // ---------- Événements ----------
-  // Ville : pop-up au survol, glisser pour se déplacer, molette pour zoomer
+  // Ville : pop-up au survol
   const cityTarget = (e) => e.target.closest && e.target.closest('.city .bld, .city .gbld');
   document.addEventListener('pointerover', (e) => { if (e.pointerType !== 'touch' && e.target.closest && e.target.closest('.city')) cityCard(cityTarget(e)); });
   document.addEventListener('pointerout', (e) => { if (e.target.closest && e.target.closest('.city') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.city .bld, .city .gbld'))) cityCard(null); });
   document.addEventListener('focusin', (e) => { if (e.target.closest && e.target.closest('.city')) cityCard(cityTarget(e)); });
   document.addEventListener('focusout', (e) => { if (e.target.closest && e.target.closest('.city')) cityCard(null); });
-  document.addEventListener('wheel', (e) => {
-    const svg = e.target.closest && e.target.closest('.city');
-    if (!svg) return;
-    e.preventDefault();
-    const c = camGet(), r = svg.getBoundingClientRect(), w = CITY_VB[2] / c.s, h = CITY_VB[3] / c.s;
-    const px = c.x - w / 2 + ((e.clientX - r.left) / r.width) * w, py = c.y - h / 2 + ((e.clientY - r.top) / r.height) * h;
-    const s2 = Math.max(1, Math.min(CAM_MAX, c.s * Math.exp(-e.deltaY * 0.0022))), k = c.s / s2;
-    c.x = px + (c.x - px) * k; c.y = py + (c.y - py) * k; c.s = s2;
-    cityCard(null); camApply();
-  }, { passive: false });
-  document.addEventListener('pointerdown', (e) => {
-    const svg = e.target.closest && e.target.closest('.city');
-    if (!svg || e.button !== 0) return;
-    const c = camGet(), r = svg.getBoundingClientRect();
-    U.camPtr = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: c.x, cy: c.y, k: CITY_VB[2] / c.s / r.width, moved: false };
-  });
-  document.addEventListener('pointermove', (e) => {
-    const d = U.camPtr;
-    if (!d || d.id !== e.pointerId) return;
-    const dx = e.clientX - d.x, dy = e.clientY - d.y;
-    if (!d.moved && Math.hypot(dx, dy) < 5) return;
-    if (!d.moved) { d.moved = true; U.camDrag = true; cityCard(null); const w = document.querySelector('.citywrap'); if (w) w.classList.add('dragging'); }
-    const c = camGet(); c.x = d.cx - dx * d.k; c.y = d.cy - dy * d.k; camApply();
-  });
-  const camEnd = () => { const w = document.querySelector('.citywrap'); if (w) w.classList.remove('dragging'); U.camPtr = null; setTimeout(() => { U.camDrag = false; }, 0); };
-  document.addEventListener('pointerup', camEnd);
-  document.addEventListener('pointercancel', camEnd);
   document.addEventListener('click', (e) => {
-    if (U.camDrag && e.target.closest && e.target.closest('.city')) { e.stopPropagation(); return; }
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     if (e.target.id === 'preov') return;
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
@@ -2369,7 +2303,6 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); G.tuto.on = U.tutoOpt !== false; U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
       case 'citytog': { const o = cityOpts(); o[id] = !o[id]; try { localStorage.setItem('hbm-city', JSON.stringify(o)); } catch (e) { /* stockage indisponible */ }
         const w = document.querySelector('.citywrap'); if (w) w.classList.toggle(id === 'lab' ? 'labels' : 'nobeam', id === 'lab' ? o.lab : !o.beam); b.setAttribute('aria-pressed', String(o[id])); return; }
-      case 'citycam': { const c = camGet(); camTo(id === 'home' ? { s: 1 } : { s: c.s * (id === 'in' ? 1.4 : 1 / 1.4) }); return; }
       case 'tab': U.pick = null; U.swap = null; U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
       case 'kickoff': openPre(); return;
       case 'prenext': U.preStep = 2; U.bsModal = false; render(); return;
