@@ -332,6 +332,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const ib = document.querySelector('#inboxov .wamsgs');
     if (ib) ib.scrollTop = ib.scrollHeight;
     U.ctlSig = ctlSig();
+    if (U.tab === 'ville') camApply();
+    U.lastTab = U.tab;
     tutoSync();
   }
 
@@ -1377,8 +1379,10 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const top = [P(x, y, z + h), P(x + w, y, z + h), P(x + w, y + d, z + h), P(x, y + d, z + h)];
     const left = [P(x, y + d, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x, y + d, z + h)];
     const right = [P(x + w, y, z), P(x + w, y + d, z), P(x + w, y + d, z + h), P(x + w, y, z + h)];
-    return poly(left, c, EDGE) + poly(left, '#000', 'fill-opacity="0.14"') + poly(right, c, EDGE) + poly(right, '#000', 'fill-opacity="0.3"')
-      + (b.noTop ? '' : poly(top, c, EDGE) + poly(top, '#fff', 'fill-opacity="0.2"'));
+    const [ex, ey0] = P(x + w, y + d, z), ey1 = P(x + w, y + d, z + h)[1];
+    return poly(left, c, EDGE) + poly(left, 'url(#isoL)') + poly(right, c, EDGE) + poly(right, 'url(#isoR)')
+      + (b.noTop ? '' : poly(top, c, EDGE) + poly(top, 'url(#isoT)'))
+      + (h > 3 ? `<line x1="${ex.toFixed(1)}" y1="${ey0.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey1.toFixed(1)}" class="isoedge"/>` : '');
   }
   const hsh = (n) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
   function winFace(b, rows, cols, fill, op, side) {
@@ -1411,8 +1415,8 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
   function door(x0, x1, yf, h, fill) { return poly([P(x0, yf, 0), P(x1, yf, 0), P(x1, yf, h), P(x0, yf, h)], fill || 'var(--iso-door)', EDGE); }
   function shadowOf(b) {
-    const { x, y, w, d, h } = b, dx = Math.max(0, Math.min(1.4, h / 40, 12 - x - w));
-    return poly([P(x, y), P(x + w + dx, y), P(x + w + dx, y + d), P(x, y + d)], '#000', 'fill-opacity="0.09"');
+    const { x, y, w, d, h } = b, a = Math.min(h / 36, 12.2 - x - w), c = Math.min(h / 110, 12.2 - y - d);
+    return poly([P(x, y), P(x + w, y), P(x + w + a, y + c), P(x + w + a, y + d + c), P(x + a, y + d + c), P(x, y + d)], '#000');
   }
   function car(x, y, along, col) {
     const L = 0.46, W = 0.24;
@@ -1460,44 +1464,88 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const cap = fs * 0.72, gap = 2.5, z0 = 12 + (17 - lines.length * cap - (lines.length - 1) * gap) / 2;
     return lines.map((l, k) => { const w = l.length * fs * 0.74 / 35.8; return skewText(7.2 + (3 - w) / 2, 10.4, z0 + (lines.length - 1 - k) * (cap + gap), l, fs, '#fff'); }).join('');
   }
+  // Étiquette du bâtiment : pastille sombre au-dessus du toit (au survol, ou toujours avec « Étiquettes »)
   function citySign(o, ghost) {
     const [sx, sy] = P(o.at[0], o.at[1], o.at[2]);
-    const lw = o.label.length * 7.6, sw = o.sub.length * 6.2;
-    const w = Math.max(lw, sw) + 26, hh = 42, TOP = 98;
-    let y0 = sy - 18 - (o.lift || 0) - hh, cx = sx + (o.dx || 0), lx = sx, ly = y0 + hh;
-    // Bâtiment en haut du plan : le panneau sortirait du cadre, il se place à côté du toit
-    if (y0 < TOP) { y0 = TOP; cx = sx + w / 2 + 34; lx = cx - w / 2; ly = y0 + hh / 2; }
+    const w = o.tag.length * 6.7 + 30, hh = 22, TOP = 106;
+    let y0 = sy - 14 - (o.lift || 0) - hh, cx = sx + (o.dx || 0), lx = sx, ly = y0 + hh;
+    // Bâtiment en haut du plan : l'étiquette sortirait du cadre, elle se place à côté du toit
+    if (y0 < TOP) { y0 = TOP; cx = sx + w / 2 + 26; lx = cx - w / 2; ly = y0 + hh / 2; }
     const attrs = ghost ? `data-gsign="${o.key}"` : `data-psign="${o.key}"`;
-    return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs}><line x1="${sx}" y1="${sy}" x2="${lx}" y2="${ly}" stroke="${ghost ? 'var(--muted)' : o.c}" stroke-width="1.4"/><circle cx="${sx}" cy="${sy}" r="2.6" fill="${ghost ? 'var(--muted)' : o.c}"/>
-      <rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="7" fill="var(--surface)" stroke="${ghost ? 'var(--line)' : o.c}" stroke-width="${ghost ? 1 : 1.6}"/>
-      ${ghost ? '' : `<rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="5" height="${hh}" rx="2" fill="${o.c}"/>`}
-      <text x="${cx}" y="${(y0 + 18).toFixed(1)}" text-anchor="middle" class="sl1">${esc(o.label)}</text><text x="${cx}" y="${(y0 + 33).toFixed(1)}" text-anchor="middle" class="sl2">${esc(o.sub)}</text></g>`;
+    return `<g class="sign${ghost ? ' ghost' : ''}" ${attrs} style="--pc:${ghost ? 'var(--muted)' : o.c}"><line x1="${sx}" y1="${sy}" x2="${lx}" y2="${ly}" class="sline"/><circle cx="${sx}" cy="${sy}" r="2.2" class="sdot"/>
+      <g class="stag" data-ax="${lx.toFixed(1)}" data-ay="${ly.toFixed(1)}"><rect x="${(cx - w / 2).toFixed(1)}" y="${y0.toFixed(1)}" width="${w.toFixed(1)}" height="${hh}" rx="${hh / 2}" class="spill"/>
+      <circle cx="${(cx - w / 2 + 12).toFixed(1)}" cy="${(y0 + hh / 2).toFixed(1)}" r="4" class="sdot"/>
+      <text x="${(cx - w / 2 + 21).toFixed(1)}" y="${(y0 + 15).toFixed(1)}" class="sl1">${esc(o.tag)}</text></g></g>`;
   }
+  // Matchs joués par un club, du plus récent au plus ancien
+  function teamGames(id) {
+    const out = [];
+    (G.results || []).forEach((rd, k) => rd.forEach((g) => { if (g.h === id || g.a === id) { const home = g.h === id, us = home ? g.hs : g.as, them = home ? g.as : g.hs; out.push({ j: k + 1, home, us, them, o: T(home ? g.a : g.h), r: us > them ? 'w' : us < them ? 'l' : 'd' }); } }));
+    return out.reverse();
+  }
+  const formPills = (games) => games.length ? `<span class="cform">${games.slice(0, 5).map((g) => `<span class="res ${g.r}" title="J${g.j} · ${g.home ? 'contre' : 'à'} ${esc(g.o.name)} · ${g.us}–${g.them}">${{ w: 'V', d: 'N', l: 'D' }[g.r]}</span>`).join('')}</span>` : '<span class="muted">aucun match joué</span>';
   function cityPlaces() {
     const t = me();
     const nf = nextFixture();
-    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id));
+    const starters = Object.values(t.lineup).map((id) => t.players.find((p) => p.id === id)).filter(Boolean);
     const tired = starters.filter((p) => p.fatigue > 28).length;
+    const fat = starters.length ? starters.reduce((a, p) => a + (p.fatigue || 0), 0) / starters.length : 0;
+    const hurt = t.players.filter(H.hurt).sort((a, b) => a.inj.n - b.inj.n);
+    const games = teamGames(t.id), lastG = games[0];
+    const post = U.view === 'post' && U.post;
+    const s = H.standings(G), row = s.find((r) => r.id === G.userId);
+    const opp = nf && !nf.rest ? T(nf.h === t.id ? nf.a : nf.h) : null, home = nf && nf.h === t.id;
     let arenaSub = 'Saison terminée · bilan';
-    if (U.view === 'post' && U.post) arenaSub = 'Résumé du dernier match';
+    if (post) arenaSub = 'Résumé du dernier match';
     else if (G.trainPending) arenaSub = 'Entraînement à lancer';
     else if (nf && nf.rest) arenaSub = `J${G.round + 1} · repos`;
-    else if (nf) { const home = nf.h === t.id; arenaSub = `J${G.round + 1} · ${home ? 'contre' : 'à'} ${T(home ? nf.a : nf.h).name}`; }
-    const s = H.standings(G), row = s.find((r) => r.id === G.userId);
+    else if (opp) arenaSub = `J${G.round + 1} · ${home ? 'contre' : 'à'} ${opp.name}`;
+    const lastTxt = lastG ? `${{ w: 'Victoire', d: 'Nul', l: 'Défaite' }[lastG.r]} ${lastG.us}–${lastG.them} ${lastG.home ? 'contre' : 'à'} ${esc(lastG.o.name)}` : 'Pas encore de match joué';
+    const nYouth = nextYouthRound(), cf = H.cfOf(t).length, pros = t.players.filter((p) => !p.cf).length, nFree = (G.free || []).length;
+    const tip = fanTips(t), f = H.fansOf(t), tc = t.tactic;
+    const fresh = fat < 12 ? 'au top' : fat < 22 ? 'bonne' : fat < 32 ? 'correcte' : 'entamée';
     return [
-      { key: 'salle', tab: G.trainPending && !(U.view === 'post' && U.post) ? 'entrainement' : 'match', label: 'Salle · Match', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: U.view === 'post' && U.post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan' },
-      { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes' },
-      { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine' },
-      { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', sub: `${H.DSTYLE[t.tactic.dstyle]} · jeu ${H.JEU[t.tactic.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Régler le système' },
-      { key: 'formation', tab: 'formation', label: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nextYouthRound() ? `Prochain jeune après la J${nextYouthRound()}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes' },
-      { key: 'infirmerie', tab: 'infirmerie', label: 'Infirmerie', sub: (() => { const n = t.players.filter(H.hurt).length; return n ? `${n} blessé${n > 1 ? 's' : ''} en soins` : 'Tout le monde est valide'; })(), c: 'var(--iso-med)', at: [3.85, 10.25, 26], cta: 'Voir les soins' },
-      { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', sub: H.fansOf(t).name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters' },
-      { key: 'siege', tab: 'libres', label: 'Siège · Joueurs libres', sub: (() => { const n = (G.free || []).length; return n ? `${n} joueur${n > 1 ? 's' : ''} libre${n > 1 ? 's' : ''}` : 'Personne sur le marché'; })(), c: 'var(--iso-hq)', at: [1.8, 1.8, 64], cta: 'Voir les joueurs libres' },
-      { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement' }
+      { key: 'salle', tab: G.trainPending && !post ? 'entrainement' : 'match', label: 'Salle · Match', tag: 'Salle', sub: arenaSub, c: 'var(--court)', at: [8.7, 9, 52], cta: post ? 'Voir le résumé' : G.trainPending ? "Lancer l'entraînement" : nf ? 'Jouer la journée' : 'Voir le bilan',
+        card: { kind: 'Match', tags: G.ended ? [['Saison terminée']] : nf && nf.rest ? [[`J${G.round + 1}`], ['Repos']] : [[`J${G.round + 1} sur ${G.sched.length}`], [home ? 'À domicile' : "À l'extérieur", home ? 'good' : '']],
+          alert: post ? 'Le résumé du dernier match t\'attend' : G.trainPending ? 'Entraînement à lancer avant le match' : null,
+          rows: [opp ? ['Adversaire', `${badge(opp, true)} ${esc(opp.name)} <span class="muted">· ${ord(rank(opp.id))}</span>`] : null, ['Ta forme', formPills(games)], ['Dernier résultat', lastTxt]] } },
+      { key: 'vestiaire', tab: 'effectif', label: 'Vestiaire · Effectif', tag: 'Vestiaire', sub: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : 'Tout le monde est frais', c: 'var(--accent)', at: [11.2, 9.05, 24], lift: 0, cta: 'Voir les notes',
+        card: { kind: 'Effectif', tags: [[`${pros} pros`], [`${cf} au centre`]], alert: tired ? `${tired} titulaire${tired > 1 ? 's' : ''} fatigué${tired > 1 ? 's' : ''}` : null,
+          bars: [['Fraîcheur du 7', 1 - fat / 100, fresh, fat < 22 ? 'var(--good)' : fat < 32 ? 'var(--warn)' : 'var(--bad)'], ['Cohésion', (t.cohesion || 50) / 100, `${t.cohesion || 50}/100`, 'var(--iso-gym)'], ['Expérience', H.experience(t) / 100, `${H.experience(t)}/100`, 'var(--iso-office)']] } },
+      { key: 'gymnase', tab: 'entrainement', label: 'Gymnase · Entraînement', tag: 'Gymnase', sub: `${H.TRAIN[G.training.focus].label} · intensité ${H.INTENSITY[G.training.intensity].label.toLowerCase()}`, c: 'var(--iso-gym)', at: [8.3, 2.2, 46], cta: 'Régler la semaine', beam: !!G.trainPending && !post,
+        card: { kind: 'Entraînement', tags: [[H.INTENSITY[G.training.intensity].label]], alert: G.trainPending ? 'La semaine d\'entraînement est à lancer' : null,
+          rows: [['Thème de la semaine', esc(H.TRAIN[G.training.focus].label)], ['Intensité', esc(H.INTENSITY[G.training.intensity].label)], ['Blessés', hurt.length ? `${hurt.length} en soins` : 'aucun']] } },
+      { key: 'bureau', tab: 'tactique', label: 'Bureau du coach · Tactique', tag: 'Bureau du coach', sub: `${H.DSTYLE[tc.dstyle]} · jeu ${H.JEU[tc.jeu].toLowerCase()}`, c: 'var(--iso-office)', at: [10.95, 1.85, 62], lift: 66, dx: -46, cta: 'Régler le système',
+        card: { kind: 'Tactique', tags: [[H.DSTYLE[tc.dstyle]], [ATT_TXT[tc.att][0]]],
+          rows: [['Défense', esc(rulesLine(tc.rules))], ['Jeu', esc(H.JEU[tc.jeu])], ['Consignes', (tc.cons || []).length ? esc(tc.cons.map((c) => CONS[c]).join(' · ')) : '<span class="muted">aucune</span>']] } },
+      { key: 'formation', tab: 'formation', label: 'Centre de formation', tag: 'Centre de formation', sub: G.youth ? 'Un jeune attend ta réponse !' : nYouth ? `Prochain jeune après la J${nYouth}` : 'Plus de jeune cette saison', c: 'var(--iso-youth)', at: [8.6, 4.95, 22], lift: 14, cta: G.youth ? 'Voir le jeune' : 'Voir les jeunes', beam: !!G.youth,
+        card: { kind: 'Formation', tags: [[`${cf} jeune${cf > 1 ? 's' : ''} au centre`]], alert: G.youth ? 'Un jeune attend ta réponse !' : null,
+          rows: [['Niveau du centre', pips(H.academyOf(t), tip.f, 'Centre de formation')], ['Prochain jeune', G.youth ? 'en attente de ta décision' : nYouth ? `après la J${nYouth}` : 'plus cette saison']] } },
+      { key: 'infirmerie', tab: 'infirmerie', label: 'Infirmerie', tag: 'Infirmerie', sub: hurt.length ? `${hurt.length} blessé${hurt.length > 1 ? 's' : ''} en soins` : 'Tout le monde est valide', c: 'var(--iso-med)', at: [3.85, 10.25, 26], cta: 'Voir les soins', beam: hurt.length > 0,
+        card: { kind: 'Soins', tags: [[hurt.length ? `${hurt.length} en soins` : 'Effectif valide', hurt.length ? 'bad' : 'good']], alert: null,
+          rows: hurt.length ? hurt.slice(0, 3).map((x) => [esc(x.inj.type), `${esc(short(x.name))} <span class="muted">· retour J${G.round + x.inj.n + 1}</span>`]).concat(hurt.length > 3 ? [['', `<span class="muted">et ${hurt.length - 3} autre${hurt.length > 4 ? 's' : ''}</span>`]] : []) : [['Kiné', 'range ses strappings']] } },
+      { key: 'clubhouse', tab: 'clubhouse', label: 'Club house', tag: 'Club house', sub: f.name, c: 'var(--iso-club)', at: [3.88, 8.05, 26], lift: 4, cta: 'Voir les supporters',
+        card: { kind: 'Supporters', tags: [[f.name]], rows: [['À domicile', pips(f.h, tip.h, 'Ferveur à domicile')], ['En déplacement', pips(f.a, tip.a, 'Supporters en déplacement')], ['À la buvette', esc(BUVETTE[t.id] || H.clubOf(t).buvette || 'merguez-frites')]] } },
+      { key: 'siege', tab: 'libres', label: 'Siège · Joueurs libres', tag: 'Siège', sub: nFree ? `${nFree} joueur${nFree > 1 ? 's' : ''} libre${nFree > 1 ? 's' : ''}` : 'Personne sur le marché', c: 'var(--iso-hq)', at: [1.8, 1.8, 64], cta: 'Voir les joueurs libres',
+        card: { kind: 'Joueurs libres', tags: [[nFree ? `${nFree} sur le marché` : 'Marché calme']], bars: [['Effectif pro', pros / H.FREE.proMax, `${pros}/${H.FREE.proMax}`, 'var(--iso-hq)'], ['Centre de formation', cf / H.FREE.cfMax, `${cf}/${H.FREE.cfMax}`, 'var(--iso-youth)']] } },
+      { key: 'kiosque', tab: 'championnat', label: 'Kiosque · Championnat', tag: 'Kiosque', sub: G.results.length ? `${ord(rank())} · ${row.pts} pts` : 'Calendrier et classement', c: 'var(--iso-press)', at: [2.15, 8.8, 28], cta: 'Lire le classement',
+        card: { kind: LEAGUE, tags: G.results.length ? [[`${ord(rank())} · ${row.pts} pts`]] : [['Avant la 1re journée']],
+          rows: [['Bilan', `${row.g} V · ${row.n} N · ${row.p} D`], ['Forme', formPills(games)], ['En tête', G.results.length ? `${badge(T(s[0].id), true)} ${esc(T(s[0].id).name)} <span class="muted">· ${s[0].pts} pts</span>` : '<span class="muted">tout le monde à zéro</span>']] } }
     ];
   }
+  // Pop-up d'un bâtiment (HTML, posée au-dessus du plan au survol)
+  function cityCardHtml(o) {
+    const c = o.card || {};
+    const tags = (c.tags || []).map(([txt, cls]) => `<span class="cpill${cls ? ' ' + cls : ''}">${esc(txt)}</span>`).join('');
+    const rows = (c.rows || []).filter(Boolean).map(([k, v]) => `<div class="crow"><span>${k}</span><b>${v}</b></div>`).join('');
+    const bars = (c.bars || []).map(([k, fr, txt, col]) => `<div class="cbar"><span>${esc(k)}</span><i><i style="width:${Math.round(Math.max(0.03, Math.min(1, fr)) * 100)}%;background:${col}"></i></i><b>${esc(txt)}</b></div>`).join('');
+    return `<div class="ccard-in" style="--pc:${o.c || 'var(--muted)'}"><div class="ctags"><span class="cpill kind">${esc(c.kind || '')}</span>${tags}</div>
+      <h4>${esc(o.tag || o.label)}</h4><p class="csub">${esc(o.sub)}</p>
+      ${c.alert ? `<div class="calert">${esc(c.alert)}</div>` : ''}${bars ? `<div class="cbars">${bars}</div>` : ''}${rows ? `<div class="crows">${rows}</div>` : ''}
+      <div class="cfoot">${o.cta ? `Clique pour entrer · ${esc(o.cta.toLowerCase())}` : esc(o.foot || '')}</div></div>`;
+  }
   const GHOSTS = [
-    { key: 'boutique', label: 'Boutique du club', sub: 'Supporters et recettes · bientôt', at: [8, 11.4, 18] }
+    { key: 'boutique', label: 'Boutique du club', tag: 'Boutique', sub: 'Supporters et recettes', at: [8, 11.4, 18], foot: 'Le chantier avance, ouverture prochaine', card: { kind: 'Bientôt', rows: [['Rayon maillots', 'en cours de pliage']] } }
   ];
   // Détails décoratifs de la ville (clins d'œil, purement visuels)
   const prop = (svg) => `<g class="deco">${svg}</g>`;
@@ -1505,7 +1553,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   function renderCityMap() {
     const t = me();
     const G1 = 'var(--iso-grey)', WIN = 'var(--iso-win)';
-    const flatLayer = [];
+    const flatLayer = [], shadowLayer = [], glowLayer = [], moveLayer = [];
     const F = (x, y, w, d, fill, extra) => flatLayer.push(flat(x, y, w, d, fill, extra));
     // Socle et sol
     flatLayer.push(isoBox({ x: 0, y: 0, w: 12, d: 12, h: 12, z: -12, c: 'var(--iso-ground)', noTop: true }));
@@ -1550,7 +1598,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     // Place et fontaine
     F(0.9, 5.05, 1.5, 0.7, 'var(--iso-side)', EDGE);
     const [fx, fy] = P(1.65, 5.4, 0);
-    flatLayer.push(`<ellipse cx="${fx}" cy="${fy}" rx="17" ry="8.5" fill="var(--iso-stone)" ${EDGE}/><ellipse cx="${fx}" cy="${fy - 1}" rx="13" ry="6.5" fill="var(--iso-water)"/><line x1="${fx}" y1="${fy - 1}" x2="${fx}" y2="${fy - 9}" stroke="var(--iso-water)" stroke-width="2"/><circle cx="${fx}" cy="${fy - 10}" r="2.5" fill="var(--iso-water)" opacity="0.8"/>`);
+    flatLayer.push(`<ellipse cx="${fx}" cy="${fy}" rx="17" ry="8.5" fill="var(--iso-stone)" ${EDGE}/><ellipse cx="${fx}" cy="${fy - 1}" rx="13" ry="6.5" fill="var(--iso-water)"/><ellipse class="ripple" cx="${fx}" cy="${fy - 1}" rx="12" ry="6"/><ellipse class="ripple" cx="${fx}" cy="${fy - 1}" rx="12" ry="6" style="animation-delay:-1.4s"/><g class="jet" style="transform-origin:${fx}px ${fy - 1}px"><line x1="${fx}" y1="${fy - 1}" x2="${fx}" y2="${fy - 9}" stroke="var(--iso-water)" stroke-width="2"/><circle cx="${fx}" cy="${fy - 10}" r="2.5" fill="var(--iso-water)" opacity="0.8"/></g>`);
     // Parking
     F(9.3, 10.8, 2.5, 1, 'var(--iso-road)');
     for (let k = 9.5; k < 11.8; k += 0.45) F(k, 10.85, 0.04, 0.5, 'var(--iso-mark)');
@@ -1561,9 +1609,20 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const add = (x, y, svg) => objs.push({ d: x + y, svg });
     const places = cityPlaces();
     const pl = Object.fromEntries(places.map((p) => [p.key, p]));
- const bwrap = (p, svg) => `<g class="bld" role="button" tabindex="0" data-act="tab" data-id="${p.tab}" data-place="${p.key}" aria-label="${esc(p.label)} : ${esc(p.sub)}"><g class="body">${svg}</g></g>`;
-    const gwrap = (g, svg) => `<g class="gbld" data-ghost="${g.key}" tabindex="0" aria-label="${esc(g.label)}, ${esc(g.sub)}">${svg}</g>`;
-    const shade = (b) => flatLayer.push(shadowOf(b));
+    const bwrap = (p, svg) => `<g class="bld" role="button" tabindex="0" data-act="tab" data-id="${p.tab}" data-place="${p.key}" aria-label="${esc(p.label)} : ${esc(p.sub)}" style="--pc:${p.c}"><g class="body">${svg}</g></g>`;
+    const gwrap = (g, svg) => `<g class="gbld" data-ghost="${g.key}" data-place="${g.key}" tabindex="0" aria-label="${esc(g.label)}, ${esc(g.sub)}"><g class="body">${svg}</g></g>`;
+    const shade = (b) => shadowLayer.push(shadowOf(b));
+    // Empreinte lumineuse au sol (survol) et, si le lieu attend une action, anneau et faisceau
+    const foot = (key, b, col, beam) => {
+      const m = 0.22, [cx, cy] = P(b.x + b.w / 2, b.y + b.d / 2), r = (b.w + b.d) * 0.5 + 0.35;
+      glowLayer.push(`<g class="foot" data-foot="${key}" style="--pc:${col}">${flat(b.x - m, b.y - m, b.w + 2 * m, b.d + 2 * m, col)}</g>`);
+      if (!beam) return;
+      glowLayer.push(`<g class="ring" style="--pc:${col}"><ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(r * 32).toFixed(1)}" ry="${(r * 16).toFixed(1)}"/><ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(r * 32).toFixed(1)}" ry="${(r * 16).toFixed(1)}" style="animation-delay:-1.3s"/></g>`);
+      const bw = Math.max(34, (b.w + b.d) * 22), top = P(b.x + b.w / 2, b.y + b.d / 2, b.h)[1];
+      const gid = 'beam-' + key;
+      beams.push({ d: b.x + b.w / 2 + b.y + b.d / 2 + 0.05, svg: `<g class="beam"><linearGradient id="${gid}" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="${col}" stop-opacity="0.8"/><stop offset="0.4" stop-color="${col}" stop-opacity="0.3"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></linearGradient><rect x="${(cx - bw / 2).toFixed(1)}" y="40" width="${bw.toFixed(1)}" height="${(top - 40 + 10).toFixed(1)}" fill="url(#${gid})"/><rect x="${(cx - bw / 6).toFixed(1)}" y="40" width="${(bw / 3).toFixed(1)}" height="${(top - 40 + 6).toFixed(1)}" fill="url(#${gid})" class="core"/></g>` });
+    };
+    const beams = [];
 
     // Salle
     const ar = { x: 7, y: 7.6, w: 3.4, d: 2.8, h: 40, c: 'var(--court)' };
@@ -1579,7 +1638,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       + arenaName((t.city + ' HB').toUpperCase())
       + door(8.1, 9.1, 10.4, 10) + `<line x1="${P(8.6, 10.4, 0)[0]}" y1="${P(8.6, 10.4, 0)[1]}" x2="${P(8.6, 10.4, 10)[0]}" y2="${P(8.6, 10.4, 10)[1]}" stroke="var(--iso-glass)" stroke-width="0.8"/>`
       + isoBox({ x: 7.9, y: 10.4, w: 1.4, d: 0.42, h: 1.6, z: 10.5, c: 'var(--iso-stone)' });
-    add(ar.x + ar.w / 2, ar.y + ar.d / 2, bwrap(pl.salle, arena));
+    add(ar.x + ar.w / 2, ar.y + ar.d / 2, bwrap(pl.salle, arena)); foot('salle', ar, pl.salle.c, pl.salle.beam);
     for (const [n, [k, col]] of [[9.7, t.color], [10.0, 'var(--iso-mark)'], [10.3, t.color]].entries()) {
       const [bx, by] = P(6.6, k, 0), [tx, ty] = P(6.6, k, 30);
       add(6.6, k, `<g class="deco"><line x1="${bx}" y1="${by}" x2="${tx}" y2="${ty}" stroke="var(--iso-pole)" stroke-width="1.2"/><g class="flag" style="animation-delay:${-n * 0.7}s">${poly([P(6.6, k, 30), P(6.6, k - 0.3, 30), P(6.6, k - 0.3, 24), P(6.6, k, 24)], col, EDGE)}</g></g>`);
@@ -1587,6 +1646,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     // Vestiaire
     const ve = { x: 10.55, y: 8.1, w: 1.3, d: 1.9, h: 22, c: 'var(--accent)' };
     shade(ve);
+    foot('vestiaire', ve, pl.vestiaire.c, pl.vestiaire.beam);
     add(ve.x + ve.w / 2, ve.y + ve.d / 2, bwrap(pl.vestiaire, isoBox(ve) + parapet(ve) + winL(ve, 1, 2, WIN) + winR(ve, 1, 3, WIN, 0.6) + door(11.0, 11.4, 10, 9) + unit(11.2, 8.4, 22, 0.8)
       + isoBox({ x: 10.9, y: 10, w: 0.6, d: 0.25, h: 1.2, z: 9.5, c: 'var(--iso-stone)' })));
     // Gymnase
@@ -1595,10 +1655,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     let gym = isoBox(gy) + winL(gy, 1, 5, WIN) + winR(gy, 1, 4, WIN, 0.6) + gable(gy, 12, 'var(--iso-gym)')
       + door(8.05, 8.75, 3.2, 10) + isoBox({ x: 7.95, y: 3.2, w: 0.9, d: 0.35, h: 1.4, z: 10.5, c: 'var(--iso-stone)' });
     for (const k of [0.4, 1.2, 2.0]) gym += poly([P(7 + k, 2.1 + 0.05, 30 + 11), P(7 + k + 0.5, 2.1 + 0.05, 30 + 11), P(7 + k + 0.5, 2.85, 30 + 3), P(7 + k, 2.85, 30 + 3)], 'var(--iso-glass)', 'fill-opacity="0.85"');
-    add(gy.x + gy.w / 2, gy.y + gy.d / 2, bwrap(pl.gymnase, gym));
+    add(gy.x + gy.w / 2, gy.y + gy.d / 2, bwrap(pl.gymnase, gym)); foot('gymnase', Object.assign({}, gy, { h: 42 }), pl.gymnase.c, pl.gymnase.beam);
     // Bureau du coach
     const bu = { x: 10.3, y: 1.2, w: 1.3, d: 1.3, h: 56, c: 'var(--iso-office)' };
     shade(bu);
+    foot('bureau', bu, pl.bureau.c, pl.bureau.beam);
     add(bu.x + bu.w / 2, bu.y + bu.d / 2, bwrap(pl.bureau, isoBox(bu) + parapet(bu) + winL(bu, 6, 2, WIN) + winR(bu, 6, 2, WIN, 0.6) + door(10.75, 11.15, 2.5, 8) + unit(10.45, 1.35, 56) + unit(11.0, 1.8, 56, 0.7)
       + `<line x1="${P(11.25, 1.45, 56)[0]}" y1="${P(11.25, 1.45, 56)[1]}" x2="${P(11.25, 1.45, 72)[0]}" y2="${P(11.25, 1.45, 72)[1]}" stroke="var(--iso-pole)" stroke-width="1.2"/><circle cx="${P(11.25, 1.45, 72)[0]}" cy="${P(11.25, 1.45, 72)[1]}" r="1.6" fill="var(--bad)"/>`));
     // Kiosque
@@ -1607,10 +1668,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     let kio = isoBox(ki) + poly([P(1.75, 9.3, 4), P(2.55, 9.3, 4), P(2.55, 9.3, 11), P(1.75, 9.3, 11)], WIN, 'fill-opacity="0.9"') + gable(ki, 10, 'var(--iso-press)');
     for (let k = 0; k < 5; k++) { const x0 = 1.6 + k * 0.22; kio += poly([P(x0, 9.3, 12), P(x0 + 0.22, 9.3, 12), P(x0 + 0.22, 9.62, 8.5), P(x0, 9.62, 8.5)], k % 2 ? 'var(--iso-mark)' : 'var(--iso-press)', EDGE); }
     kio += isoBox({ x: 2.75, y: 8.95, w: 0.25, d: 0.32, h: 6, c: 'var(--iso-stone)' }) + poly([P(3, 8.98, 2), P(3, 9.24, 2), P(3, 9.24, 5), P(3, 8.98, 5)], WIN, 'fill-opacity="0.8"');
-    add(ki.x + ki.w / 2, ki.y + ki.d / 2, bwrap(pl.kiosque, kio));
+    add(ki.x + ki.w / 2, ki.y + ki.d / 2, bwrap(pl.kiosque, kio)); foot('kiosque', Object.assign({}, ki, { h: 25 }), pl.kiosque.c, pl.kiosque.beam);
     // Centre de formation
     const fo = { x: 7, y: 4.3, w: 3.2, d: 1.3, h: 18, c: 'var(--iso-youth)' };
     shade(fo);
+    foot('formation', fo, pl.formation.c, pl.formation.beam);
     add(8.6, 4.95, bwrap(pl.formation, isoBox(fo) + parapet(fo) + winL(fo, 1, 6, WIN, 0.8) + winR(fo, 1, 2, WIN, 0.6) + door(8.4, 8.9, 5.6, 8) + unit(7.3, 4.5, 18) + unit(9.6, 4.6, 18, 0.8)));
     for (const [gx, gy2] of [[10.45, 3.35], [11.6, 3.35]]) add(gx, gy2, isoBox({ x: gx, y: gy2, w: 0.12, d: 0.3, h: 4, c: 'var(--iso-mark)' }));
 
@@ -1641,7 +1703,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       // Terrasse : table haute et parasol aux couleurs du club
       { const [tx, ty] = P(4.45, 9.3, 0), [px, py] = P(4.45, 9.3, 12);
         club += `<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="var(--iso-pole)" stroke-width="0.9"/><ellipse cx="${tx.toFixed(1)}" cy="${(ty - 4.5).toFixed(1)}" rx="3" ry="1.4" fill="var(--iso-stone)" ${EDGE}/><path d="M${(px - 8).toFixed(1)} ${(py + 3).toFixed(1)} Q${px.toFixed(1)} ${(py - 4).toFixed(1)} ${(px + 8).toFixed(1)} ${(py + 3).toFixed(1)} Z" fill="${t.color2}" ${EDGE}/>`; }
-      add(ch.x + ch.w / 2, ch.y + ch.d / 2 + 0.3, bwrap(pl.clubhouse, club));
+      add(ch.x + ch.w / 2, ch.y + ch.d / 2 + 0.3, bwrap(pl.clubhouse, club)); foot('clubhouse', ch, pl.clubhouse.c, pl.clubhouse.beam);
       { const [gx, gy] = P(4.6, 9.0, 0);
         add(4.6, 9.0, `<g class="deco bbq" transform="translate(${gx.toFixed(1)} ${gy.toFixed(1)})">
           <ellipse cx="0" cy="0.5" rx="5" ry="2.2" fill="#000" fill-opacity="0.18"/>
@@ -1659,10 +1721,12 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     const gh = Object.fromEntries(GHOSTS.map((g) => [g.key, g]));
     const si = { x: 1, y: 1, w: 1.6, d: 1.6, h: 62, c: 'var(--iso-hq)' };
     shade(si);
+    foot('siege', si, pl.siege.c, pl.siege.beam);
     add(1.8, 1.8, bwrap(pl.siege, isoBox(si) + parapet(si) + winL(si, 7, 3, WIN, 0.4) + winR(si, 7, 3, WIN, 0.35) + door(1.6, 2.0, 2.6, 8) + unit(1.2, 1.2, 62) + unit(2.0, 1.9, 62, 0.8)
       + isoBox({ x: 1.5, y: 1.5, w: 0.6, d: 0.6, h: 6, z: 62, c: 'var(--iso-hq)' })));
     const inf = { x: 3.2, y: 9.6, w: 1.3, d: 1.3, h: 24, c: 'var(--iso-med)' };
     shade(inf);
+    foot('infirmerie', inf, pl.infirmerie.c, pl.infirmerie.beam);
     add(3.85, 10.25, bwrap(pl.infirmerie, isoBox(inf) + parapet(inf) + winR(inf, 2, 2, WIN, 0.35) + door(3.3, 3.6, 10.9, 8)
       // Croix d'hôpital dressée sur le toit
       // Croix d'hôpital peinte à plat sur le toit
@@ -1675,7 +1739,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     shade(bo);
     let shop = isoBox(bo) + parapet(bo) + winL(bo, 1, 3, WIN, 0.4);
     for (let k = 0; k < 6; k++) { const x0 = 7.2 + k * 0.267; shop += poly([P(x0, 11.8, 11), P(x0 + 0.267, 11.8, 11), P(x0 + 0.267, 12, 8.5), P(x0, 12, 8.5)], k % 2 ? 'var(--iso-mark)' : 'var(--iso-roof)', EDGE); }
-    add(8, 11.4, gwrap(gh.boutique, shop));
+    add(8, 11.4, gwrap(gh.boutique, shop)); foot('boutique', bo, 'var(--muted)', false);
 
     // Décor : immeubles, maisons
     const deco = [
@@ -1705,7 +1769,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     for (const [x, y] of [[4.88, 1.6], [4.88, 4.4], [4.88, 8.6], [4.88, 11.1], [6.1, 3.0], [6.1, 9.4], [2.4, 5.9], [9.8, 5.92], [2.4, 7.05], [9.8, 7.06]]) add(x, y, `<g class="deco">${lamp(x, y)}</g>`);
     for (const [x, y] of [[1.0, 5.8], [2.1, 5.8], [8.2, 3.95]]) add(x, y, `<g class="deco">${bench(x, y)}</g>`);
     const cols = ['#c0392b', '#2e86c1', '#f1c40f', '#ecf0f1', '#34495e', '#16a085', '#8e44ad'];
-    for (const [x, y, a, c] of [[5.12, 2.2, 'y', 0], [5.62, 8.9, 'y', 1], [2.8, 6.12, 'x', 2], [9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6], [5.62, 0.6, 'y', 3]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
+    for (const [x, y, a, c] of [[9.55, 10.95, 'y', 4], [10.45, 10.95, 'y', 5], [11.35, 10.95, 'y', 6]]) add(x + 0.2, y + 0.2, `<g class="deco">${car(x, y, a, cols[c])}</g>`);
     // Buts du terrain de quartier
     for (const g of U.courtGoals || []) {
       const ln = (a, b, c) => `<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/>`;
@@ -1736,18 +1800,126 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     objs.push({ d: 11.9, svg: prop(poly([P(3.55, 8.3, 3.5), P(3.68, 8.3, 3.5), P(3.68, 8.3, 9), P(3.55, 8.3, 9)], '#2b4fa0') + poly([P(3.68, 8.3, 3.5), P(3.81, 8.3, 3.5), P(3.81, 8.3, 9), P(3.68, 8.3, 9)], '#f4f4f4') + poly([P(3.81, 8.3, 3.5), P(3.94, 8.3, 3.5), P(3.94, 8.3, 9), P(3.81, 8.3, 9)], '#c8453b') + skewText(3.57, 8.3, 7.4, '95', 3.2, '#111')) });
     { const [lx, ly] = P(11.25, 1.45, 72);
       objs.push({ d: 12.9, svg: prop(`<circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`) }); }
+    objs.push(...beams);
     objs.sort((a, b) => a.d - b.d);
-    { const [ax, ay] = P(0.15, 6.62), [bx, by] = P(11.4, 6.62);
-      flatLayer.push(`<g class="drive" style="--dx:${(bx - ax).toFixed(1)}px;--dy:${(by - ay).toFixed(1)}px">${car(0.15, 6.62, 'x', cols[3])}</g>`); }
+    // Circulation : deux voies par avenue, dans les deux sens, à des rythmes différents
+    const drive = (x0, y0, x1, y1, along, col, dur, dl) => {
+      const [ax, ay] = P(x0, y0), [bx, by] = P(x1, y1);
+      moveLayer.push(`<g class="drive" style="--dx:${(bx - ax).toFixed(1)}px;--dy:${(by - ay).toFixed(1)}px;animation-duration:${dur}s;animation-delay:${dl}s">${car(x0, y0, along, col)}</g>`);
+    };
+    drive(0.15, 6.62, 11.4, 6.62, 'x', cols[3], 17, -2); drive(11.4, 6.14, 0.15, 6.14, 'x', cols[0], 21, -11);
+    drive(5.62, 0.15, 5.62, 11.4, 'y', cols[1], 19, -6); drive(5.14, 11.4, 5.14, 0.15, 'y', cols[2], 23, -15);
+    drive(0.15, 6.62, 11.4, 6.62, 'x', t.color, 26, -19);
+    // Passants sur les trottoirs (un ou deux aux couleurs du club)
+    const walker = (x0, y0, x1, y1, col, dur, dl) => {
+      const [ax, ay] = P(x0, y0), [bx, by] = P(x1, y1);
+      return `<g class="walk" style="--dx:${(bx - ax).toFixed(1)}px;--dy:${(by - ay).toFixed(1)}px;animation-duration:${dur}s;animation-delay:${dl}s"><g transform="translate(${ax.toFixed(1)} ${ay.toFixed(1)})"><ellipse cx="0" cy="0" rx="2.4" ry="1.1" fill="#000" fill-opacity="0.25"/><g class="bob"><rect x="-1.5" y="-6.4" width="3" height="5" rx="1.3" fill="${col}"/><circle cx="0" cy="-8.1" r="1.55" fill="#e8c7a8"/></g></g></g>`;
+    };
+    moveLayer.push(walker(4.9, 0.4, 4.9, 5.5, t.color, 26, -4), walker(6.09, 11.6, 6.09, 7.4, '#d6dbdf', 22, -9), walker(0.5, 5.9, 4.6, 5.9, '#7fb6d6', 20, -3),
+      walker(11.5, 7.08, 7.4, 7.08, t.color2 && t.color2.toLowerCase() !== '#ffffff' ? t.color2 : '#c9a7a0', 24, -14), walker(6.09, 0.4, 6.09, 5.4, '#a6b8ab', 28, -20));
+    // Petit avion qui tire une banderole (texte selon la journée)
+    const BAN = ['BUVETTE OUVERTE APRÈS LE MATCH', `${LEAGUE.toUpperCase()} : ÇA VA COLLER`, 'BEYOND 9M : TOUJOURS PLUS LOIN', "TROUVÉ : UN 7 M, LE RÉCLAMER À L'ARBITRE"];
+    const ban = BAN[G.round % BAN.length], bl = ban.length * 4.1 + 14;
+    const plane = `<g class="plane"><g class="pshadow"><ellipse cx="0" cy="150" rx="${(bl / 2 + 30).toFixed(0)}" ry="5" transform="translate(${-bl / 2} 0)" fill="#000"/></g><g class="pbody" transform="rotate(-11.3)"><path d="M-${bl + 26} -1 L-26 -1" stroke="var(--iso-pole)" stroke-width="0.6"/>
+      <g transform="translate(-${bl + 26} -7)"><rect width="${bl.toFixed(1)}" height="12" rx="1.5" fill="#f4f1e8"/><text x="${(bl / 2).toFixed(1)}" y="8.6" text-anchor="middle" class="bantxt">${esc(ban)}</text></g>
+      <g><path d="M-20 -3 L6 -5 Q12 -4 12 -1 Q12 2 6 2 L-20 1 Z" fill="#e9edf1" stroke="var(--iso-edge)" stroke-width="0.6"/><path d="M-4 -3 L-10 -14 L-5 -14 L4 -3 Z" fill="#cfd6dc" stroke="var(--iso-edge)" stroke-width="0.6"/><path d="M-4 1 L-12 9 L-7 9 L4 1 Z" fill="#b9c2ca"/><path d="M-20 -3 L-24 -10 L-19 -10 L-15 -3 Z" fill="${t.color}"/>
+      <circle class="nav" cx="-10" cy="-14" r="1.2" fill="#ef5b4c"/><circle class="nav" cx="12" cy="-1" r="1" fill="#fff" style="animation-delay:-0.5s"/></g></g></g>`;
 
     const signs = places.map((p) => citySign(p, false)).join('') + GHOSTS.map((g) => citySign(g, true)).join('');
-    const css = GHOSTS.map((g) => `.city:has([data-ghost="${g.key}"]:hover) [data-gsign="${g.key}"], .city:has([data-ghost="${g.key}"]:focus-visible) [data-gsign="${g.key}"]`)
-      .concat(places.map((p) => `.city:has([data-place="${p.key}"]:hover) [data-psign="${p.key}"], .city:has([data-place="${p.key}"]:focus-visible) [data-psign="${p.key}"]`)).join(',') + '{opacity:1;transform:none}';
-    return `<div class="citywrap"><svg class="city" viewBox="40 92 780 448" role="group" aria-label="Plan de la ville du club"><style>${css}</style>${flatLayer.join('')}${objs.map((o) => o.svg).join('')}<g class="signs">${signs}</g></svg></div>`;
+    const sel = (k, g) => `.city:has([data-place="${k}"]:hover) [data-${g ? 'g' : 'p'}sign="${k}"], .city:has([data-place="${k}"]:focus-visible) [data-${g ? 'g' : 'p'}sign="${k}"]`;
+    const fsel = (k) => `.city:has([data-place="${k}"]:hover) [data-foot="${k}"], .city:has([data-place="${k}"]:focus-visible) [data-foot="${k}"]`;
+    const css = GHOSTS.map((g) => sel(g.key, true)).concat(places.map((p) => sel(p.key))).join(',') + '{opacity:1;transform:none}'
+      + GHOSTS.concat(places).map((p) => fsel(p.key)).join(',') + '{opacity:1}';
+    U.cityCards = Object.fromEntries(places.concat(GHOSTS).map((p) => [p.key, cityCardHtml(p)]));
+    const ob = objs.map((o) => `<g class="ob" style="--i:${(Math.max(0, o.d - 2) * 0.045).toFixed(2)}s">${o.svg}</g>`).join('');
+    const defs = `<defs>
+      <linearGradient id="isoL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.07"/><stop offset="0.55" stop-color="#000" stop-opacity="0.1"/><stop offset="1" stop-color="#000" stop-opacity="0.34"/></linearGradient>
+      <linearGradient id="isoR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0.2"/><stop offset="1" stop-color="#000" stop-opacity="0.48"/></linearGradient>
+      <linearGradient id="isoT" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.3"/><stop offset="1" stop-color="#fff" stop-opacity="0.1"/></linearGradient>
+      <radialGradient id="groundV" cx="0.5" cy="0.45" r="0.6"><stop offset="0.55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.32"/></radialGradient>
+      <radialGradient id="skyG" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="var(--iso-sky)" stop-opacity="1"/><stop offset="1" stop-color="var(--iso-sky)" stop-opacity="0"/></radialGradient>
+      <filter id="softSh" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="2.2"/></filter>
+      <filter id="beamBlur" x="-50%" y="-5%" width="200%" height="110%"><feGaussianBlur stdDeviation="5"/></filter>
+    </defs>`;
+    const [gcx, gcy] = P(6, 6);
+    const ground = poly([P(0, 0), P(12, 0), P(12, 12), P(0, 12)], 'url(#groundV)');
+    return `<svg class="city" viewBox="${CITY_VB.join(' ')}" role="group" aria-label="Plan de la ville du club">${defs}<style>${css}</style>
+      <ellipse cx="${gcx}" cy="${gcy + 20}" rx="470" ry="270" fill="url(#skyG)" class="sky"/><g class="cam">${flatLayer.join('')}<g class="shadows" filter="url(#softSh)">${shadowLayer.join('')}</g>${ground}<g class="glows">${glowLayer.join('')}</g><g class="moves">${moveLayer.join('')}</g>${ob}${plane}<g class="signs">${signs}</g></g></svg>`;
+  }
+  // Caméra de la ville : zoom (molette, boutons) et déplacement (glisser), bornés au plan
+  const CITY_VB = [40, 92, 780, 448], CAM_MAX = 2.6;
+  const camGet = () => U.cam || (U.cam = { s: 1, x: CITY_VB[0] + CITY_VB[2] / 2, y: CITY_VB[1] + CITY_VB[3] / 2 });
+  function camClamp(c) {
+    c.s = Math.max(1, Math.min(CAM_MAX, c.s));
+    const hw = CITY_VB[2] / 2 / c.s, hh = CITY_VB[3] / 2 / c.s;
+    c.x = Math.max(CITY_VB[0] + hw, Math.min(CITY_VB[0] + CITY_VB[2] - hw, c.x));
+    c.y = Math.max(CITY_VB[1] + hh, Math.min(CITY_VB[1] + CITY_VB[3] - hh, c.y));
+    return c;
+  }
+  function camApply() {
+    const svg = document.querySelector('.city'), c = camClamp(camGet());
+    if (!svg) return;
+    const w = CITY_VB[2] / c.s, h = CITY_VB[3] / c.s;
+    svg.setAttribute('viewBox', `${(c.x - w / 2).toFixed(2)} ${(c.y - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`);
+    const wrap = svg.closest('.citywrap');
+    if (wrap) wrap.classList.toggle('zoomed', c.s > 1.01);
+    // Les étiquettes gardent leur taille à l'écran quel que soit le zoom
+    for (const g of svg.querySelectorAll('.stag')) { const ax = g.dataset.ax, ay = g.dataset.ay; g.setAttribute('transform', c.s > 1.01 ? `translate(${ax} ${ay}) scale(${(1 / c.s).toFixed(3)}) translate(${-ax} ${-ay})` : ''); }
+  }
+  // Transition douce vers un cadrage (boutons, recentrage)
+  function camTo(tgt, ms) {
+    const c = camGet(), from = { ...c }, t0 = performance.now(), end = camClamp({ ...c, ...tgt });
+    cityCard(null);
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / (ms || 380)), e = 1 - Math.pow(1 - k, 3);
+      c.s = from.s + (end.s - from.s) * e; c.x = from.x + (end.x - from.x) * e; c.y = from.y + (end.y - from.y) * e;
+      camApply();
+      if (k < 1 && document.querySelector('.city')) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+  function cityOpts() {
+    if (!U.cityOpt) { try { U.cityOpt = Object.assign({ lab: false, beam: true }, JSON.parse(localStorage.getItem('hbm-city') || '{}')); } catch (e) { U.cityOpt = { lab: false, beam: true }; } }
+    return U.cityOpt;
+  }
+  // Pop-up du bâtiment survolé, posée à côté de lui dans le cadre du plan
+  function cityCard(el) {
+    const card = document.getElementById('citycard'), wrap = document.querySelector('.citywrap');
+    if (!card || !wrap) return;
+    if (!el || U.camDrag) { card.classList.remove('show'); U.cardKey = null; return; }
+    const key = el.dataset.place;
+    if (U.cardKey !== key) { card.innerHTML = (U.cityCards || {})[key] || ''; U.cardKey = key; }
+    const r = el.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), cw = card.offsetWidth, ch = card.offsetHeight, gap = 16;
+    let x = r.right - wr.left + gap, side = 'r';
+    if (x + cw > wr.width - 12) { x = r.left - wr.left - cw - gap; side = 'l'; }
+    x = Math.max(12, x);
+    const y = Math.max(12, Math.min(wr.height - ch - 12, r.top - wr.top + r.height / 2 - ch / 2));
+    card.style.left = x + 'px'; card.style.top = y + 'px'; card.dataset.side = side;
+    card.classList.add('show');
   }
   function renderCity() {
-    const t = me();
-    return `<section class="panel citypanel"><div class="row" style="justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(t.city)} · la Cité du hand</h3><span class="legend">Clique sur un bâtiment pour y entrer. Les bâtiments gris arriveront plus tard.</span></div>${renderCityMap()}</section>`;
+    const t = me(), o = cityOpts(), pl = cityPlaces(), intro = U.lastTab !== 'ville';
+    const nf = nextFixture(), hurt = t.players.filter(H.hurt).length, nFree = (G.free || []).length;
+    const chips = [];
+    if (G.youth) chips.push(['formation', 'Un jeune attend', 'youth']);
+    if (G.trainPending && !(U.view === 'post' && U.post)) chips.push(['entrainement', 'Entraînement à lancer', 'warn']);
+    if (hurt) chips.push(['infirmerie', `${hurt} blessé${hurt > 1 ? 's' : ''}`, 'bad']);
+    if (nFree) chips.push(['libres', `${nFree} joueur${nFree > 1 ? 's' : ''} libre${nFree > 1 ? 's' : ''}`, '']);
+    const games = teamGames(t.id), lg = games[0];
+    const news = lg ? `J${lg.j} · ${{ w: 'victoire', d: 'nul', l: 'défaite' }[lg.r]} ${lg.us}–${lg.them} ${lg.home ? 'contre' : 'à'} ${esc(lg.o.name)}` : nf && !nf.rest ? `Ouverture de la saison : ${nf.h === t.id ? 'réception de' : 'déplacement à'} ${esc(T(nf.h === t.id ? nf.a : nf.h).name)}` : '';
+    const sw = (id, lbl, on) => `<button class="cswitch" data-act="citytog" data-id="${id}" aria-pressed="${on}">${lbl}<i></i></button>`;
+    return `<section class="citypanel"><div class="citywrap${intro ? ' intro' : ''}${o.lab ? ' labels' : ''}${o.beam ? '' : ' nobeam'}" style="--club:${t.color}">
+      ${renderCityMap()}
+      <div class="cityhud">
+        <div class="cityhead"><h2>${esc(t.city)}</h2><span class="muted">La Cité du hand · ${pl.length} lieux · journée ${Math.min(G.round + 1, G.sched.length)} sur ${G.sched.length}</span>
+          ${chips.length ? `<div class="cchips">${chips.map(([tab, txt, cls]) => `<button class="cchip ${cls}" data-act="tab" data-id="${tab}">${esc(txt)}</button>`).join('')}</div>` : ''}</div>
+        ${news ? `<div class="citynews">${badge(lg ? lg.o : t, true)}<span>${news}</span></div>` : ''}
+      </div>
+      <div class="cityopts">${sw('lab', 'Étiquettes', o.lab)}${sw('beam', 'Faisceaux', o.beam)}</div>
+      <div class="citycam"><button data-act="citycam" data-id="in" aria-label="Zoomer" title="Zoomer">+</button><button data-act="citycam" data-id="out" aria-label="Dézoomer" title="Dézoomer">−</button><button data-act="citycam" data-id="home" aria-label="Recentrer" title="Recentrer"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="2.4"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></svg></button></div>
+      <div class="cityhint">Clique sur un bâtiment pour y entrer · glisse pour te déplacer · molette pour zoomer</div>
+      <div id="citycard" class="citycard" aria-hidden="true"></div>
+    </div></section>`;
   }
 
   // ---------- Club house : les supporters ----------
@@ -2106,7 +2278,41 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   }
 
   // ---------- Événements ----------
+  // Ville : pop-up au survol, glisser pour se déplacer, molette pour zoomer
+  const cityTarget = (e) => e.target.closest && e.target.closest('.city .bld, .city .gbld');
+  document.addEventListener('pointerover', (e) => { if (e.pointerType !== 'touch' && e.target.closest && e.target.closest('.city')) cityCard(cityTarget(e)); });
+  document.addEventListener('pointerout', (e) => { if (e.target.closest && e.target.closest('.city') && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.city .bld, .city .gbld'))) cityCard(null); });
+  document.addEventListener('focusin', (e) => { if (e.target.closest && e.target.closest('.city')) cityCard(cityTarget(e)); });
+  document.addEventListener('focusout', (e) => { if (e.target.closest && e.target.closest('.city')) cityCard(null); });
+  document.addEventListener('wheel', (e) => {
+    const svg = e.target.closest && e.target.closest('.city');
+    if (!svg) return;
+    e.preventDefault();
+    const c = camGet(), r = svg.getBoundingClientRect(), w = CITY_VB[2] / c.s, h = CITY_VB[3] / c.s;
+    const px = c.x - w / 2 + ((e.clientX - r.left) / r.width) * w, py = c.y - h / 2 + ((e.clientY - r.top) / r.height) * h;
+    const s2 = Math.max(1, Math.min(CAM_MAX, c.s * Math.exp(-e.deltaY * 0.0022))), k = c.s / s2;
+    c.x = px + (c.x - px) * k; c.y = py + (c.y - py) * k; c.s = s2;
+    cityCard(null); camApply();
+  }, { passive: false });
+  document.addEventListener('pointerdown', (e) => {
+    const svg = e.target.closest && e.target.closest('.city');
+    if (!svg || e.button !== 0) return;
+    const c = camGet(), r = svg.getBoundingClientRect();
+    U.camPtr = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: c.x, cy: c.y, k: CITY_VB[2] / c.s / r.width, moved: false };
+  });
+  document.addEventListener('pointermove', (e) => {
+    const d = U.camPtr;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.x, dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 5) return;
+    if (!d.moved) { d.moved = true; U.camDrag = true; cityCard(null); const w = document.querySelector('.citywrap'); if (w) w.classList.add('dragging'); }
+    const c = camGet(); c.x = d.cx - dx * d.k; c.y = d.cy - dy * d.k; camApply();
+  });
+  const camEnd = () => { const w = document.querySelector('.citywrap'); if (w) w.classList.remove('dragging'); U.camPtr = null; setTimeout(() => { U.camDrag = false; }, 0); };
+  document.addEventListener('pointerup', camEnd);
+  document.addEventListener('pointercancel', camEnd);
   document.addEventListener('click', (e) => {
+    if (U.camDrag && e.target.closest && e.target.closest('.city')) { e.stopPropagation(); return; }
     if (e.target.id === 'bsov') { U.bsModal = false; render(); return; }
     if (e.target.id === 'preov') return;
     if (e.target.id === 'modsov') { U.modsModal = false; render(); return; }
@@ -2161,6 +2367,9 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
       case 'pickb': ensureDraft().b = id; render(); return;
       case 'pickm': ensureDraft().m = id; render(); return;
       case 'start': { const d = ensureDraft(); if (!d.b || !d.m) return; G = H.newGame(U.newClub, undefined, [d.b + '+', d.m + '-']); G.tuto.on = U.tutoOpt !== false; U.draft = null; U.homeStep = 1; } me().tactic.rules = H.defaultRules(); U.tab = 'ville'; U.view = 'pre'; U.post = null; save(); render(); return;
+      case 'citytog': { const o = cityOpts(); o[id] = !o[id]; try { localStorage.setItem('hbm-city', JSON.stringify(o)); } catch (e) { /* stockage indisponible */ }
+        const w = document.querySelector('.citywrap'); if (w) w.classList.toggle(id === 'lab' ? 'labels' : 'nobeam', id === 'lab' ? o.lab : !o.beam); b.setAttribute('aria-pressed', String(o[id])); return; }
+      case 'citycam': { const c = camGet(); camTo(id === 'home' ? { s: 1 } : { s: c.s * (id === 'in' ? 1.4 : 1 / 1.4) }); return; }
       case 'tab': U.pick = null; U.swap = null; U.tab = id; if (U.view === 'post' && id === 'match') { /* garde le résumé */ } render(); window.scrollTo(0, 0); return;
       case 'kickoff': openPre(); return;
       case 'prenext': U.preStep = 2; U.bsModal = false; render(); return;
@@ -2496,7 +2705,7 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
   // ---------- Tuto : l'adjoint accompagne la première journée ----------
   // Un conseil par écran, la première fois qu'on y arrive. Le « ? » de la barre d'onglets le rouvre à tout moment.
   const TUTO = {
-    ville: { h: 'Bienvenue en ville, coach', at: '.nextbtn', t: "Chaque bâtiment est un écran du club : la salle pour jouer, le vestiaire pour l'effectif, le gymnase pour l'entraînement… Pas besoin de tout visiter : le bouton en haut à droite mène toujours à l'étape suivante." },
+    ville: { h: 'Bienvenue en ville, coach', at: '.nextbtn', t: "Chaque bâtiment est un écran du club : la salle pour jouer, le vestiaire pour l'effectif, le gymnase pour l'entraînement… Survole-le pour voir l'essentiel, clique pour y entrer ; un faisceau lumineux signale un lieu qui attend ta décision. Pas besoin de tout visiter : le bouton en haut à droite mène toujours à l'étape suivante." },
     mods: { h: 'Ton bonus et ton malus', at: '.modsbtn', t: "Ils jouent toute la saison. Ce bouton te les rappelle quand tu veux. Et si tu te perds, le « ? » au bout des onglets rouvre mes conseils." },
     avantmatch: { h: "L'avant-match", at: '[data-act=kickoff]', t: "À gauche ton plan de match, au centre l'adversaire : sa forme, sa tactique, ses joueurs à surveiller. Quand tu es prêt, « Préparer le match »." },
     feuille: { h: 'La feuille de match', at: '#preov [data-act=auto]', t: "Sur le terrain, tes 7 de départ ; à côté, le banc et la réserve. Pour un changement, les boutons T, B, R de sa ligne : tu choisis qui prend sa place. Tu peux aussi glisser un joueur par sa poignée (⠿) sur celui qu'il remplace. Les étoiles donnent le niveau ; un joueur fatigué rate plus. Pas sûr de toi ? « Composition auto » fait le travail. Tes consignes se règlent aussi ici, en bas." },
