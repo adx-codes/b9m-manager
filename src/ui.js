@@ -1797,10 +1797,11 @@ html:root[data-theme="dark"] { ${css(dark)} }`;
     { const [cx, cy] = P(2.15, 8.8, 25);
       objs.push({ d: 11, svg: prop(`<g transform="translate(${cx.toFixed(1)} ${cy.toFixed(1)})"><ellipse cx="0" cy="-2" rx="2.6" ry="1.7" fill="#8f98a3"/><circle cx="2.2" cy="-3.6" r="1.2" fill="#6f7882"/><path d="M3.2 -3.6 L4.4 -3.3 L3.2 -3.1 Z" fill="#e0a34a"/><path d="M-2.4 -2 L-4.2 -1.2 L-2.4 -1.3 Z" fill="#6f7882"/></g>`) }); }
     objs.push({ d: 12.7, svg: prop(isoBox({ x: 9.0, y: 3.45, w: 0.16, d: 0.16, h: 2.4, c: '#e8c547' }) + isoBox({ x: 8.99, y: 3.44, w: 0.18, d: 0.18, h: 0.5, z: 2.4, c: '#c94f3d' })) });
-    // Panneau « L'Épique » : bloc rouge, filet blanc, lettres blanches en italique (clin d'œil à L'Équipe)
+    // Panneau L'Épique : bloc blanc, filet rouge, lettres rouges en italique (clin d'œil à L'Équipe), texte centré sur le bloc
     { const R = (x0, x1, z0, z1, f, ex) => poly([P(x0, 5.2, z0), P(x1, 5.2, z0), P(x1, 5.2, z1), P(x0, 5.2, z1)], f, ex);
-      objs.push({ d: 8.7, svg: prop(R(3.4, 4.6, 29, 42, '#e3051b', EDGE) + R(3.45, 4.55, 30, 41, 'none', 'stroke="#fff" stroke-width="0.6"')
-        + skewText(3.52, 5.2, 31.6, "L'ÉPIQUE", 11, '#ffffff').replace('class="isotxt"', 'class="isotxt epique"')) }); }
+      const [tx, ty] = P(4.0, 5.2, 35.5);
+      objs.push({ d: 8.7, svg: prop(R(3.4, 4.6, 29, 42, '#ffffff', EDGE) + R(3.46, 4.54, 30, 41, 'none', 'stroke="#e3051b" stroke-width="0.7"')
+        + `<text transform="matrix(0.894 0.447 0 1 ${tx.toFixed(1)} ${ty.toFixed(1)})" font-size="9.6" text-anchor="middle" dominant-baseline="central" fill="#e3051b" class="isotxt epique">L'ÉPIQUE</text>`) }); }
     objs.push({ d: 11.9, svg: prop(poly([P(3.55, 8.3, 3.5), P(3.68, 8.3, 3.5), P(3.68, 8.3, 9), P(3.55, 8.3, 9)], '#2b4fa0') + poly([P(3.68, 8.3, 3.5), P(3.81, 8.3, 3.5), P(3.81, 8.3, 9), P(3.68, 8.3, 9)], '#f4f4f4') + poly([P(3.81, 8.3, 3.5), P(3.94, 8.3, 3.5), P(3.94, 8.3, 9), P(3.81, 8.3, 9)], '#c8453b') + skewText(3.57, 8.3, 7.4, '95', 3.2, '#111')) });
     { const [lx, ly] = P(11.25, 1.45, 72);
       objs.push({ d: 12.9, svg: prop(`<circle class="blink" cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="1.6" fill="#ef5b4c"/>`) }); }
